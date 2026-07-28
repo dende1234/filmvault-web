@@ -1,0 +1,246 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useT } from "@/lib/i18n/locale-provider";
+import { addBarcodesToCollections, getBarcodesForMovie, getUserCollections } from "@/actions/collections";
+import type { Barcode, Collection, MediaType, NewBarcodeInput } from "@/types/database";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const MEDIA_TYPES: MediaType[] = ["DVD", "Blu-ray", "VHS", "4K Ultra HD"];
+
+export function AddToCollectionDialog({
+  open,
+  onOpenChange,
+  tmdbMovieId,
+  movieTitle,
+  moviePoster,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  tmdbMovieId: number;
+  movieTitle: string;
+  moviePoster: string | null;
+}) {
+  const { t } = useT();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(true);
+  const [existingBarcodes, setExistingBarcodes] = useState<Barcode[]>([]);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [selectedExisting, setSelectedExisting] = useState<Set<string>>(new Set());
+  const [staged, setStaged] = useState<NewBarcodeInput[]>([]);
+  const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set());
+  const [newBarcodeText, setNewBarcodeText] = useState("");
+  const [newBarcodeType, setNewBarcodeType] = useState<MediaType>("DVD");
+  const [newBarcodeEditie, setNewBarcodeEditie] = useState("Normaal");
+  const [info, setInfo] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setIsLoading(true);
+    setError(null);
+    Promise.all([getBarcodesForMovie(tmdbMovieId), getUserCollections()])
+      .then(([barcodes, cols]) => {
+        setExistingBarcodes(barcodes);
+        setCollections(cols);
+      })
+      .catch(() => setError(t("add_to_collection_error_load")))
+      .finally(() => setIsLoading(false));
+  }, [open, tmdbMovieId, t]);
+
+  function stageNewBarcode() {
+    const trimmed = newBarcodeText.trim();
+    if (!trimmed) return;
+
+    const existingMatch = existingBarcodes.find((b) => b.barcode.toLowerCase() === trimmed.toLowerCase());
+    if (existingMatch) {
+      setSelectedExisting((prev) => new Set(prev).add(existingMatch.id));
+      setNewBarcodeText("");
+      setInfo(t("add_to_collection_info_barcode_exists"));
+      return;
+    }
+    if (staged.some((s) => s.barcode.toLowerCase() === trimmed.toLowerCase())) {
+      setNewBarcodeText("");
+      setInfo(t("add_to_collection_info_barcode_staged"));
+      return;
+    }
+    setStaged((prev) => [...prev, { barcode: trimmed, type: newBarcodeType, editie: newBarcodeEditie || "Normaal" }]);
+    setNewBarcodeText("");
+    setInfo(null);
+  }
+
+  const stagedCount = selectedExisting.size + staged.length;
+  const canSubmit = stagedCount > 0 && selectedCollections.size > 0 && !isSubmitting;
+
+  async function handleSubmit() {
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const selectedBarcodes = existingBarcodes.filter((b) => selectedExisting.has(b.id));
+      const alreadyContaining = await addBarcodesToCollections(
+        selectedBarcodes,
+        staged,
+        tmdbMovieId,
+        movieTitle,
+        moviePoster,
+        Array.from(selectedCollections),
+      );
+      if (alreadyContaining.size === 0) {
+        toast.success(t("add_to_collection_submit_button"));
+        onOpenChange(false);
+        router.refresh();
+      } else {
+        const skippedNames = collections.filter((c) => alreadyContaining.has(c.id)).map((c) => c.name).join(", ");
+        const allSkipped = alreadyContaining.size === selectedCollections.size;
+        setInfo(
+          allSkipped
+            ? t("add_to_collection_already_in", skippedNames)
+            : t("add_to_collection_already_in_partial", skippedNames),
+        );
+        if (!allSkipped) router.refresh();
+      }
+    } catch {
+      setError(t("add_to_collection_error_submit"));
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t("add_to_collection_dialog_title")}</DialogTitle>
+        </DialogHeader>
+
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">…</p>
+        ) : (
+          <div className="flex flex-col gap-5">
+            <div>
+              <p className="mb-2 text-sm font-medium">{t("add_to_collection_barcodes_for", movieTitle)}</p>
+              {existingBarcodes.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("add_to_collection_no_barcodes")}</p>
+              ) : (
+                <>
+                  <p className="mb-2 text-xs text-muted-foreground">{t("add_to_collection_select_instructions")}</p>
+                  <div className="flex flex-col gap-1.5">
+                    {existingBarcodes.map((b) => (
+                      <label key={b.id} className="flex items-center gap-2 text-sm">
+                        <Checkbox
+                          checked={selectedExisting.has(b.id)}
+                          onCheckedChange={(checked) =>
+                            setSelectedExisting((prev) => {
+                              const next = new Set(prev);
+                              if (checked) next.add(b.id);
+                              else next.delete(b.id);
+                              return next;
+                            })
+                          }
+                        />
+                        {t("barcode_type_editie_line", b.barcode, b.type, b.editie)}
+                      </label>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div>
+              <p className="mb-2 text-sm font-medium">{t("add_to_collection_new_barcode_label")}</p>
+              <div className="flex flex-col gap-2">
+                <Input
+                  placeholder={t("label_barcode")}
+                  value={newBarcodeText}
+                  onChange={(e) => setNewBarcodeText(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <Select value={newBarcodeType} onValueChange={(v) => setNewBarcodeType(v as MediaType)}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MEDIA_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    className="flex-1"
+                    placeholder={t("add_to_collection_editie_label")}
+                    value={newBarcodeEditie}
+                    onChange={(e) => setNewBarcodeEditie(e.target.value)}
+                  />
+                  <Button type="button" variant="outline" onClick={stageNewBarcode}>
+                    {t("action_add")}
+                  </Button>
+                </div>
+                {staged.map((s, i) => (
+                  <div key={i} className="flex items-center justify-between rounded-md bg-muted px-3 py-1.5 text-sm">
+                    <span>{t("add_to_collection_staged_note", s.barcode, s.type, s.editie)}</span>
+                    <button type="button" onClick={() => setStaged((prev) => prev.filter((_, idx) => idx !== i))}>
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-sm font-medium">{t("add_to_collection_select_collections")}</p>
+              {collections.length === 0 ? (
+                <p className="text-sm text-muted-foreground">{t("add_to_collection_no_collections")}</p>
+              ) : (
+                <div className="flex flex-col gap-1.5">
+                  {collections.map((c) => (
+                    <label key={c.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={selectedCollections.has(c.id)}
+                        onCheckedChange={(checked) =>
+                          setSelectedCollections((prev) => {
+                            const next = new Set(prev);
+                            if (checked) next.add(c.id);
+                            else next.delete(c.id);
+                            return next;
+                          })
+                        }
+                      />
+                      {c.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {info && <p className="text-sm text-muted-foreground">{info}</p>}
+            {error && <p className="text-sm text-destructive">{error}</p>}
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            {t("action_cancel")}
+          </Button>
+          <Button disabled={!canSubmit} onClick={handleSubmit}>
+            {t("add_to_collection_submit_button", stagedCount)}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

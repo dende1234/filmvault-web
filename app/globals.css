@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
+/* Palette mirrors the Android app's Material 3 scheme exactly
+   (ui/theme/Color.kt + Theme.kt: Purple40/80 primary, Material defaults for
+   the rest) so the website reads as the same product, not a reskin. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fffbfe;
+  --foreground: #1c1b1f;
+  --card: #ffffff;
+  --card-foreground: #1c1b1f;
+  --border: #e7e0ec;
+  --muted: #f3edf7;
+  --muted-foreground: #49454f;
+  --primary: #6650a4;
+  --primary-foreground: #ffffff;
+  --secondary: #625b71;
+  --secondary-foreground: #ffffff;
+  --tertiary: #7d5260;
+  --destructive: #ba1a1a;
+  --destructive-foreground: #ffffff;
+  --ring: #6650a4;
+}
+
+:root.dark {
+  --background: #1c1b1f;
+  --foreground: #e6e1e5;
+  --card: #262429;
+  --card-foreground: #e6e1e5;
+  --border: #49454f;
+  --muted: #2b2930;
+  --muted-foreground: #cac4d0;
+  --primary: #d0bcff;
+  --primary-foreground: #381e72;
+  --secondary: #ccc2dc;
+  --secondary-foreground: #332d41;
+  --tertiary: #efb8c8;
+  --destructive: #ffb4ab;
+  --destructive-foreground: #690005;
+  --ring: #d0bcff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light):not(.dark) {
+    --background: #1c1b1f;
+    --foreground: #e6e1e5;
+    --card: #262429;
+    --card-foreground: #e6e1e5;
+    --border: #49454f;
+    --muted: #2b2930;
+    --muted-foreground: #cac4d0;
+    --primary: #d0bcff;
+    --primary-foreground: #381e72;
+    --secondary: #ccc2dc;
+    --secondary-foreground: #332d41;
+    --tertiary: #efb8c8;
+    --destructive: #ffb4ab;
+    --destructive-foreground: #690005;
+    --ring: #d0bcff;
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-tertiary: var(--tertiary);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
