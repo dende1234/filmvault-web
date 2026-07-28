@@ -14,12 +14,11 @@ function Dutch() {
   return (
     <>
       <h1>Privacybeleid FilmVault</h1>
-      <p className="text-sm text-muted-foreground">Laatst bijgewerkt: [DATUM]</p>
+      <p className="text-sm text-muted-foreground">Laatst bijgewerkt: 28-07-2026</p>
 
       <p>
-        Dit privacybeleid is van toepassing op zowel de FilmVault-app als deze website, aangeboden door{" "}
-        <mark>[BEDRIJFS-/PERSOONSNAAM]</mark>, gevestigd te <mark>[PLAATS, LAND]</mark>, bereikbaar via{" "}
-        <mark>[CONTACT-E-MAILADRES]</mark>. App en website delen hetzelfde account en dezelfde gegevens.
+        Dit privacybeleid is van toepassing op zowel de FilmVault-app als deze website, bereikbaar via{" "}
+        <mark>filmvault2026@hotmail.com</mark>. App en website delen hetzelfde account en dezelfde gegevens.
       </p>
 
       <h2>Welke gegevens verzamelen we</h2>
@@ -64,12 +63,12 @@ function Dutch() {
       <h2>Jouw rechten</h2>
       <p>
         Je kunt je gegevens inzien en aanpassen via je profiel. Voor overige verzoeken (bijvoorbeeld een volledig
-        overzicht van je gegevens) kun je contact opnemen via <mark>[CONTACT-E-MAILADRES]</mark>.
+        overzicht van je gegevens) kun je contact opnemen via <mark>filmvault2026@hotmail.com</mark>.
       </p>
 
       <h2>Contact</h2>
       <p>
-        Vragen over dit privacybeleid of over je gegevens kun je sturen naar <mark>[CONTACT-E-MAILADRES]</mark>.
+        Vragen over dit privacybeleid or over je gegevens kun je sturen naar <mark>filmvault2026@hotmail.com</mark>.
       </p>
 
       <h2>Wijzigingen</h2>
