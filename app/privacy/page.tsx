@@ -81,12 +81,11 @@ function English() {
   return (
     <>
       <h1>FilmVault Privacy Policy</h1>
-      <p className="text-sm text-muted-foreground">Last updated: [DATE]</p>
+      <p className="text-sm text-muted-foreground">Last updated: 28-07-2026</p>
 
       <p>
-        This privacy policy applies to both the FilmVault app and this website, offered by{" "}
-        <mark>[COMPANY/PERSON NAME]</mark>, based in <mark>[CITY, COUNTRY]</mark>, reachable at{" "}
-        <mark>[CONTACT EMAIL]</mark>. The app and website share the same account and data.
+        This privacy policy applies to both the FilmVault app and this website, reachable at{" "}
+        <mark>filmvault2026@hotmail.com</mark>. The app and website share the same account and data.
       </p>
 
       <h2>What data we collect</h2>
@@ -130,12 +129,12 @@ function English() {
       <h2>Your rights</h2>
       <p>
         You can view and edit your data via your profile. For other requests (for example a full export of your
-        data), contact <mark>[CONTACT EMAIL]</mark>.
+        data), contact <mark>filmvault2026@hotmail.com</mark>.
       </p>
 
       <h2>Contact</h2>
       <p>
-        Questions about this privacy policy or your data can be sent to <mark>[CONTACT EMAIL]</mark>.
+        Questions about this privacy policy or your data can be sent to <mark>filmvault2026@hotmail.com</mark>.
       </p>
 
       <h2>Changes</h2>
