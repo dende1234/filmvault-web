@@ -7,7 +7,7 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { removeCollectionItem } from "@/actions/collections";
-import type { Collection, CollectionItem, MediaType } from "@/types/database";
+import { MEDIA_TYPES, type Collection, type CollectionItem, type MediaType } from "@/types/database";
 import { posterUrl } from "@/types/tmdb";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-const MEDIA_TYPES: MediaType[] = ["DVD", "Blu-ray", "VHS", "4K Ultra HD"];
 const ALL = "all";
 
 export function CollectionDetailClient({ collection, items }: { collection: Collection; items: CollectionItem[] }) {

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { addBarcodesToCollections, getBarcodesForMovie, getUserCollections } from "@/actions/collections";
-import type { Barcode, Collection, MediaType, NewBarcodeInput } from "@/types/database";
+import { EDITIE_OPTIONS, MEDIA_TYPES, type Barcode, type Collection, type MediaType, type NewBarcodeInput } from "@/types/database";
 import {
   Dialog,
   DialogContent,
@@ -17,8 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const MEDIA_TYPES: MediaType[] = ["DVD", "Blu-ray", "VHS", "4K Ultra HD"];
 
 export function AddToCollectionDialog({
   open,
@@ -180,12 +178,18 @@ export function AddToCollectionDialog({
                       ))}
                     </SelectContent>
                   </Select>
-                  <Input
-                    className="flex-1"
-                    placeholder={t("add_to_collection_editie_label")}
-                    value={newBarcodeEditie}
-                    onChange={(e) => setNewBarcodeEditie(e.target.value)}
-                  />
+                  <Select value={newBarcodeEditie} onValueChange={setNewBarcodeEditie}>
+                    <SelectTrigger className="flex-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EDITIE_OPTIONS.map((editie) => (
+                        <SelectItem key={editie} value={editie}>
+                          {editie}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button type="button" variant="outline" onClick={stageNewBarcode}>
                     {t("action_add")}
                   </Button>

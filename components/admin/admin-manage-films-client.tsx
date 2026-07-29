@@ -4,16 +4,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { deleteBarcode, getBarcodesForMovie, updateBarcodeDetails } from "@/actions/collections";
-import type { Barcode, MediaType } from "@/types/database";
+import { EDITIE_OPTIONS, MEDIA_TYPES, type Barcode, type MediaType } from "@/types/database";
 import type { MovieSummaryDto } from "@/types/tmdb";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MovieSearchPickerDialog } from "@/components/movie-search-picker-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-
-const MEDIA_TYPES: MediaType[] = ["DVD", "Blu-ray", "VHS", "4K Ultra HD"];
 
 export function AdminManageFilmsClient() {
   const { t } = useT();
@@ -109,13 +106,21 @@ export function AdminManageFilmsClient() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <Input
-                    className="w-32"
-                    defaultValue={barcode.editie}
-                    onBlur={(e) => {
-                      if (e.target.value !== barcode.editie) handleUpdate(barcode, barcode.type, e.target.value);
-                    }}
-                  />
+                  <Select
+                    value={barcode.editie}
+                    onValueChange={(v) => handleUpdate(barcode, barcode.type, v)}
+                  >
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {EDITIE_OPTIONS.map((editie) => (
+                        <SelectItem key={editie} value={editie}>
+                          {editie}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <Button
                     size="sm"
                     variant="destructive"

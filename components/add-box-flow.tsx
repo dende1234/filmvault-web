@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { addKnownBoxToCollections, addNewBoxAsPending, findBarcodesByCode, getUserCollections } from "@/actions/collections";
-import type { Collection, MediaType } from "@/types/database";
+import { EDITIE_OPTIONS, MEDIA_TYPES, type Collection, type MediaType } from "@/types/database";
 import type { MovieSummaryDto } from "@/types/tmdb";
 import { MovieMultiSelectPickerDialog } from "@/components/movie-search-picker-dialog";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-
-const MEDIA_TYPES: MediaType[] = ["DVD", "Blu-ray", "VHS", "4K Ultra HD"];
 
 export function AddBoxFlow() {
   const { t } = useT();
@@ -132,12 +130,18 @@ export function AddBoxFlow() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Input
-                  className="flex-1"
-                  placeholder={t("add_to_collection_editie_label")}
-                  value={editie}
-                  onChange={(e) => setEditie(e.target.value)}
-                />
+                <Select value={editie} onValueChange={setEditie}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {EDITIE_OPTIONS.map((e) => (
+                      <SelectItem key={e} value={e}>
+                        {e}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>

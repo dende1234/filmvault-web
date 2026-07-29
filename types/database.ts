@@ -3,6 +3,21 @@
 // exactly (snake_case), same as the Kotlin @SerialName annotations.
 
 export type MediaType = "Blu-ray" | "DVD" | "VHS" | "4K Ultra HD";
+// Single source of truth for the "Type" dropdown — order matches the
+// Android app's BARCODE_TYPES/ADMIN_ADD_FILM_TYPES/etc. exactly.
+export const MEDIA_TYPES: MediaType[] = ["Blu-ray", "DVD", "VHS", "4K Ultra HD"];
+// Single source of truth for the "Editie" dropdown — matches Android's
+// AddToCollectionDialog.kt's EDITIE_OPTIONS exactly (also a fixed dropdown
+// there, not free text).
+export const EDITIE_OPTIONS = [
+  "Normaal",
+  "Steelbook",
+  "Collector's Edition",
+  "Limited Edition",
+  "Director's Cut",
+  "Extended Edition",
+  "Special Edition",
+] as const;
 export type Condition = "Nieuw" | "Gebruikt" | "Beschadigd";
 export type ThemePreference = "light" | "dark" | "system";
 export type Language = "nl" | "en";
