@@ -5,6 +5,8 @@ import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
 import { backdropUrl, isReleased, posterUrl } from "@/types/tmdb";
 import { AddToCollectionButton } from "@/components/add-to-collection-button";
+import { WishlistToggleButton } from "@/components/wishlist-toggle-button";
+import { isOnWishlist } from "@/actions/wishlist";
 
 export default async function FilmDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -23,6 +25,7 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
 
   const backdrop = backdropUrl(movie.backdrop_path);
   const poster = posterUrl(movie.poster_path);
+  const onWishlist = await isOnWishlist(movie.id);
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-6">
@@ -49,6 +52,12 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
           {isReleased(movie.status) && (
             <AddToCollectionButton tmdbMovieId={movie.id} movieTitle={movie.title} moviePoster={movie.poster_path} />
           )}
+          <WishlistToggleButton
+            tmdbMovieId={movie.id}
+            movieTitle={movie.title}
+            moviePoster={movie.poster_path}
+            initialOnWishlist={onWishlist}
+          />
 
           <p className="whitespace-pre-line text-sm leading-relaxed">{movie.overview}</p>
 

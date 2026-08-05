@@ -24,6 +24,8 @@ import {
   BarChart3,
   Megaphone,
   ShieldQuestion,
+  CalendarDays,
+  Bookmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/locale-provider";
@@ -73,6 +75,8 @@ export function NavShell({ profile, children }: { profile: Profile | null; child
       <NavLink href="/films" icon={Film} label={t("films_label")} onNavigate={close} />
       <NavLink href="/collections" icon={LibraryBig} label={t("collections_label")} onNavigate={close} />
       <NavLink href="/lists" icon={ListChecks} label={t("nav_lists")} onNavigate={close} />
+      <NavLink href="/recap" icon={CalendarDays} label={t("nav_yearly_recap")} onNavigate={close} />
+      <NavLink href="/wishlist" icon={Bookmark} label={t("nav_wishlist")} onNavigate={close} />
 
       <SectionLabel>{t("nav_section_profile")}</SectionLabel>
       <NavLink href="/profile" icon={User} label={t("profile_title")} onNavigate={close} />

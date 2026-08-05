@@ -48,6 +48,18 @@ export async function sendAnnouncement(title: string, body: string): Promise<voi
   if (error) throw error;
 }
 
+/** Deletes ANOTHER user's account and all their data — via a separate
+ * admin-delete-user Edge Function, not the self-service delete-account
+ * one used by actions/profile.ts's deleteAccount(), since that one trusts
+ * the caller's own JWT alone. */
+export async function deleteUserAccount(targetUserId: string): Promise<void> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.functions.invoke("admin-delete-user", { body: { target_user_id: targetUserId } });
+  if (error) throw error;
+  revalidatePath("/admin/users");
+}
+
 /** Wraps adminRegisterBarcode so the client doesn't need to import
  * lib/tmdb/server.ts directly (it's marked "server-only") just to resolve
  * the conflicting film's title for the duplicate-barcode error message. */

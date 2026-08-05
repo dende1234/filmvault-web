@@ -6,6 +6,7 @@ import { getLocale } from "@/lib/preferences";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddFilmFlow } from "@/components/add-film-flow";
 import { AddBoxFlow } from "@/components/add-box-flow";
+import { SurpriseMeButton } from "@/components/surprise-me-button";
 import { posterUrl } from "@/types/tmdb";
 
 export default async function DashboardPage() {
@@ -41,6 +42,7 @@ export default async function DashboardPage() {
       <div className="flex flex-wrap gap-3">
         <AddFilmFlow />
         <AddBoxFlow />
+        <SurpriseMeButton unwatchedItems={items.filter((i) => !i.watched)} />
       </div>
 
       <Card>

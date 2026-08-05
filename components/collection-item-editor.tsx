@@ -16,7 +16,7 @@ import {
   updateCollectionItemTags,
   updateCollectionItemWatched,
 } from "@/actions/collections";
-import type { CollectionItem, Condition } from "@/types/database";
+import { isLoanOverdue, type CollectionItem, type Condition } from "@/types/database";
 import type { MovieDetailDto } from "@/types/tmdb";
 import { backdropUrl } from "@/types/tmdb";
 import { StarRating } from "@/components/ui/star-rating";
@@ -243,6 +243,11 @@ export function CollectionItemEditor({ item: initial, movie }: { item: Collectio
                 <Button variant="outline" size="sm" onClick={markReturned} className="w-fit">
                   {t("collection_item_detail_loan_return_button")}
                 </Button>
+                {isLoanOverdue(item) && (
+                  <p className="text-sm text-destructive">
+                    {t("collection_item_detail_loan_overdue", item.loaned_to ?? "")}
+                  </p>
+                )}
               </div>
             ) : (
               <div className="flex items-center gap-3">

@@ -69,6 +69,20 @@ export interface CollectionItem {
   condition: Condition | null;
 }
 
+const LOAN_OVERDUE_DAYS = 30;
+
+/** True if item has been loaned out for more than LOAN_OVERDUE_DAYS. Compares only the
+ * yyyy-MM-dd date prefix of loaned_at lexically against a cutoff date string — mirrors
+ * CollectionItem.kt's isLoanOverdue exactly (same reasoning: no need for a full date-parsing
+ * library just for a day-threshold comparison). */
+export function isLoanOverdue(item: Pick<CollectionItem, "loaned_to" | "loaned_at">): boolean {
+  if (!item.loaned_to || !item.loaned_at) return false;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - LOAN_OVERDUE_DAYS);
+  const cutoffDateString = cutoff.toISOString().slice(0, 10);
+  return item.loaned_at.slice(0, 10) < cutoffDateString;
+}
+
 export interface Barcode {
   id: string;
   tmdb_movie_id: number;
@@ -152,8 +166,20 @@ export interface UserBadge {
   earned_at: string | null;
 }
 
-/** Mirrors badges/BadgeId.kt exactly — id + i18n key pair, same 7 fixed
- * badges and thresholds. */
+// --- "Extensions" round Fase 4: Verlanglijst (wishlist) ---
+// Owner-only (supabase/sql/wishlist.sql) — deliberately not visible to
+// friends, unlike collections. Mirrors wishlist/WishlistItem.kt exactly.
+export interface WishlistItem {
+  id: string;
+  user_id: string;
+  tmdb_movie_id: number;
+  movie_title: string;
+  movie_poster: string | null;
+  added_at: string | null;
+}
+
+/** Mirrors badges/BadgeId.kt exactly — id + i18n key pair, same 11 fixed
+ * badges and thresholds (7 original + 4 added in the "extensions" round). */
 export const BADGE_IDS = [
   { id: "first_collection", titleKey: "badge_first_collection_title", descKey: "badge_first_collection_desc" },
   { id: "five_collections", titleKey: "badge_five_collections_title", descKey: "badge_five_collections_desc" },
@@ -162,6 +188,10 @@ export const BADGE_IDS = [
   { id: "fifty_films", titleKey: "badge_fifty_films_title", descKey: "badge_fifty_films_desc" },
   { id: "first_friend", titleKey: "badge_first_friend_title", descKey: "badge_first_friend_desc" },
   { id: "five_friends", titleKey: "badge_five_friends_title", descKey: "badge_five_friends_desc" },
+  { id: "hundred_films", titleKey: "badge_hundred_films_title", descKey: "badge_hundred_films_desc" },
+  { id: "ten_friends", titleKey: "badge_ten_friends_title", descKey: "badge_ten_friends_desc" },
+  { id: "first_review", titleKey: "badge_first_review_title", descKey: "badge_first_review_desc" },
+  { id: "generous_lender", titleKey: "badge_generous_lender_title", descKey: "badge_generous_lender_desc" },
 ] as const;
 
 // --- Fase 3: Curated lijsten ---

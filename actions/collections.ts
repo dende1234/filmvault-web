@@ -82,7 +82,9 @@ export async function getCollectionItemsForCollections(collectionIds: string[]):
   return data as CollectionItem[];
 }
 
-/** Which of collectionIds already contain this movie (any barcode/edition counts as a duplicate). */
+/** Which of collectionIds already contain this movie (any barcode/edition counts as a duplicate).
+ * Only used by the box flows, which intentionally dedup at movie granularity across the whole
+ * box — see getCollectionIdsContainingBarcode for the plain single-item flow. */
 export async function getCollectionIdsContainingMovie(tmdbMovieId: number, collectionIds: string[]): Promise<Set<string>> {
   if (collectionIds.length === 0) return new Set();
   const supabase = await createClient();
@@ -90,6 +92,22 @@ export async function getCollectionIdsContainingMovie(tmdbMovieId: number, colle
     .from("collection_items")
     .select("collection_id")
     .eq("tmdb_movie_id", tmdbMovieId)
+    .in("collection_id", collectionIds);
+  if (error) throw error;
+  return new Set((data as { collection_id: string }[]).map((r) => r.collection_id));
+}
+
+/** Which of collectionIds already contain this exact barcode — i.e. this exact physical copy.
+ * Unlike getCollectionIdsContainingMovie, a different barcode of the same tmdb_movie_id is NOT
+ * a duplicate here; this is what lets two physical copies of the same film coexist in one
+ * collection while still blocking a true re-add of the same barcode. */
+export async function getCollectionIdsContainingBarcode(barcode: string, collectionIds: string[]): Promise<Set<string>> {
+  if (collectionIds.length === 0) return new Set();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("collection_items")
+    .select("collection_id")
+    .eq("barcode", barcode)
     .in("collection_id", collectionIds);
   if (error) throw error;
   return new Set((data as { collection_id: string }[]).map((r) => r.collection_id));
@@ -160,18 +178,35 @@ export async function findBarcodesByCode(code: string): Promise<Barcode[]> {
 }
 
 /** Existing-barcode path: one collection_items row per (barcode x collection)
- * pair, but all rows for the same barcode share one item_group_id. */
+ * pair, but all rows for the same barcode share one item_group_id. Dedup is
+ * per exact barcode, not per movie — a collection may hold several
+ * different barcodes/editions of the same tmdb_movie_id (different
+ * physical copies); it just can't hold the same barcode twice.
+ *
+ * Returns the subset of collectionIds where every barcode in
+ * selectedBarcodes already existed there (so this call inserted nothing
+ * for that collection). */
 export async function addExistingBarcodesToCollections(
   selectedBarcodes: Barcode[],
   tmdbMovieId: number,
   movieTitle: string,
   moviePoster: string | null,
   collectionIds: string[],
-) {
+): Promise<Set<string>> {
+  if (selectedBarcodes.length === 0 || collectionIds.length === 0) return new Set();
   const supabase = await createClient();
+
+  const alreadyContainingByBarcode = new Map<string, Set<string>>();
+  for (const barcode of selectedBarcodes) {
+    alreadyContainingByBarcode.set(barcode.barcode, await getCollectionIdsContainingBarcode(barcode.barcode, collectionIds));
+  }
+
   const inserts = selectedBarcodes.flatMap((barcode) => {
+    const alreadyContaining = alreadyContainingByBarcode.get(barcode.barcode)!;
+    const targetCollectionIds = collectionIds.filter((id) => !alreadyContaining.has(id));
+    if (targetCollectionIds.length === 0) return [];
     const itemGroupId = randomUUID();
-    return collectionIds.map((collectionId) => ({
+    return targetCollectionIds.map((collectionId) => ({
       collection_id: collectionId,
       item_group_id: itemGroupId,
       tmdb_movie_id: tmdbMovieId,
@@ -187,6 +222,12 @@ export async function addExistingBarcodesToCollections(
     if (error) throw error;
   }
   revalidatePath("/collections", "layout");
+
+  return new Set(
+    collectionIds.filter((collectionId) =>
+      selectedBarcodes.every((b) => alreadyContainingByBarcode.get(b.barcode)!.has(collectionId)),
+    ),
+  );
 }
 
 /** Known-box path: films already approved (found via findBarcodesByCode) go
@@ -318,8 +359,11 @@ export async function addNewBarcodesAsPending(
 /**
  * Re-checks staged "new" barcodes against the live barcodes table (another
  * user may have registered the same barcode meanwhile) before deciding which
- * path each one takes. Returns the subset of collectionIds that already
- * contained this movie (and were therefore skipped).
+ * path each one takes. Returns the subset of collectionIds where the ENTIRE
+ * submitted batch resulted in nothing new — only possible when every staged
+ * barcode resolved to an already-known one; genuinely-new barcodes have no
+ * dedup gate, since a fresh admin-approval submission always does something
+ * for every target collection.
  */
 export async function addBarcodesToCollections(
   selectedExistingBarcodes: Barcode[],
@@ -329,29 +373,27 @@ export async function addBarcodesToCollections(
   moviePoster: string | null,
   collectionIds: string[],
 ): Promise<Set<string>> {
-  const alreadyContaining = await getCollectionIdsContainingMovie(tmdbMovieId, collectionIds);
-  const eligibleCollectionIds = collectionIds.filter((id) => !alreadyContaining.has(id));
-
-  if (eligibleCollectionIds.length > 0) {
-    const currentBarcodes = stagedNewBarcodes.length === 0 ? [] : await getBarcodesForMovie(tmdbMovieId);
-    const alreadyKnown: Barcode[] = [];
-    const genuinelyNew: NewBarcodeInput[] = [];
-    for (const staged of stagedNewBarcodes) {
-      const match = currentBarcodes.find((b) => b.barcode.toLowerCase() === staged.barcode.toLowerCase());
-      if (match) alreadyKnown.push(match);
-      else genuinelyNew.push(staged);
-    }
-
-    const allExisting = [...selectedExistingBarcodes, ...alreadyKnown];
-    if (allExisting.length > 0) {
-      await addExistingBarcodesToCollections(allExisting, tmdbMovieId, movieTitle, moviePoster, eligibleCollectionIds);
-    }
-    if (genuinelyNew.length > 0) {
-      await addNewBarcodesAsPending(genuinelyNew, tmdbMovieId, movieTitle, moviePoster, eligibleCollectionIds);
-    }
+  const currentBarcodes = stagedNewBarcodes.length === 0 ? [] : await getBarcodesForMovie(tmdbMovieId);
+  const alreadyKnown: Barcode[] = [];
+  const genuinelyNew: NewBarcodeInput[] = [];
+  for (const staged of stagedNewBarcodes) {
+    const match = currentBarcodes.find((b) => b.barcode.toLowerCase() === staged.barcode.toLowerCase());
+    if (match) alreadyKnown.push(match);
+    else genuinelyNew.push(staged);
   }
 
-  return alreadyContaining;
+  const allExisting = [...selectedExistingBarcodes, ...alreadyKnown];
+  const nothingAddedFor =
+    allExisting.length > 0
+      ? await addExistingBarcodesToCollections(allExisting, tmdbMovieId, movieTitle, moviePoster, collectionIds)
+      : new Set<string>();
+
+  if (genuinelyNew.length > 0) {
+    await addNewBarcodesAsPending(genuinelyNew, tmdbMovieId, movieTitle, moviePoster, collectionIds);
+    return new Set();
+  }
+
+  return nothingAddedFor;
 }
 
 export async function getPendingBarcodes(): Promise<PendingBarcode[]> {
@@ -444,7 +486,7 @@ export async function approvePendingBarcode(pending: PendingBarcode): Promise<vo
 
   const links = await getPendingBarcodeCollectionLinks([pending.id]);
   const targetCollectionIds = links.length > 0 ? links.map((l) => l.collection_id) : [pending.collection_id];
-  const alreadyContaining = await getCollectionIdsContainingMovie(pending.tmdb_movie_id, targetCollectionIds);
+  const alreadyContaining = await getCollectionIdsContainingBarcode(pending.barcode, targetCollectionIds);
   const eligibleCollectionIds = targetCollectionIds.filter((id) => !alreadyContaining.has(id));
 
   if (eligibleCollectionIds.length > 0) {

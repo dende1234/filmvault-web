@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { addBarcodesToCollections, getBarcodesForMovie, getUserCollections } from "@/actions/collections";
+import { removeFromWishlistByMovie } from "@/actions/wishlist";
 import { EDITIE_OPTIONS, MEDIA_TYPES, type Barcode, type Collection, type MediaType, type NewBarcodeInput } from "@/types/database";
 import {
   Dialog,
@@ -48,6 +49,11 @@ export function AddToCollectionDialog({
 
   useEffect(() => {
     if (!open) return;
+    // Resetting loading/error state before kicking off the fetch below is
+    // correct here; this effect was already carefully fixed once this
+    // session for a real infinite-loop bug (t() was unmemoized) — not
+    // restructuring it just to satisfy this lint rule.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
     setError(null);
     Promise.all([getBarcodesForMovie(tmdbMovieId), getUserCollections()])
@@ -88,14 +94,24 @@ export function AddToCollectionDialog({
     setError(null);
     try {
       const selectedBarcodes = existingBarcodes.filter((b) => selectedExisting.has(b.id));
+      const targetCollectionIds = Array.from(selectedCollections);
       const alreadyContaining = await addBarcodesToCollections(
         selectedBarcodes,
         staged,
         tmdbMovieId,
         movieTitle,
         moviePoster,
-        Array.from(selectedCollections),
+        targetCollectionIds,
       );
+      // Best-effort auto-cleanup: only when at least one EXISTING (already-known) barcode was
+      // part of this submit — that's the only path that inserts directly into collection_items
+      // in this same call. A genuinely new barcode goes to pending_barcodes and isn't actually
+      // "owned" yet, so removing the wishlist entry here would be premature. Mirrors
+      // AddToCollectionViewModel.kt's submit() exactly, including the same accepted edge case for
+      // mixed existing+new batches.
+      if (selectedBarcodes.length > 0 && alreadyContaining.size < targetCollectionIds.length) {
+        removeFromWishlistByMovie(tmdbMovieId).catch(() => {});
+      }
       if (alreadyContaining.size === 0) {
         toast.success(t("add_to_collection_submit_button"));
         onOpenChange(false);

@@ -1,11 +1,12 @@
 "use server";
 
-// Direct port of badges/BadgeRepository.kt — same 7 fixed badges/thresholds,
+// Direct port of badges/BadgeRepository.kt — same 11 fixed badges/thresholds,
 // same "check and award on visit" model (no DB trigger/cron).
 
 import { createClient } from "@/lib/supabase/server";
 import { getUserCollections, getCollectionItemsForCollections } from "@/actions/collections";
 import { getAcceptedFriendIds } from "@/actions/friends";
+import { getPostsByAuthor } from "@/actions/posts";
 import type { UserBadge } from "@/types/database";
 
 async function requireUserId() {
@@ -54,6 +55,10 @@ export async function checkAndAwardBadges(): Promise<string[]> {
     }
   }
   const friendCount = (await getAcceptedFriendIds(userId)).length;
+  const reviewCount = (await getPostsByAuthor(userId)).length;
+  // No loan history is kept (returning an item clears loaned_to) — this reflects whether the
+  // user currently has an item on loan at the moment badges are checked, not a lifetime count.
+  const hasLoanedItem = rawItems.some((item) => item.loaned_to !== null);
 
   const shouldHave: string[] = [];
   if (collections.length >= 1) shouldHave.push("first_collection");
@@ -61,8 +66,12 @@ export async function checkAndAwardBadges(): Promise<string[]> {
   if (filmCount >= 1) shouldHave.push("first_film");
   if (filmCount >= 10) shouldHave.push("ten_films");
   if (filmCount >= 50) shouldHave.push("fifty_films");
+  if (filmCount >= 100) shouldHave.push("hundred_films");
   if (friendCount >= 1) shouldHave.push("first_friend");
   if (friendCount >= 5) shouldHave.push("five_friends");
+  if (friendCount >= 10) shouldHave.push("ten_friends");
+  if (reviewCount >= 1) shouldHave.push("first_review");
+  if (hasLoanedItem) shouldHave.push("generous_lender");
 
   const newlyEarned = shouldHave.filter((id) => !alreadyEarned.has(id));
   if (newlyEarned.length > 0) {

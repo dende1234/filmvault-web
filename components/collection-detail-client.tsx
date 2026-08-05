@@ -7,10 +7,11 @@ import Image from "next/image";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { removeCollectionItem } from "@/actions/collections";
-import { MEDIA_TYPES, type Collection, type CollectionItem, type MediaType } from "@/types/database";
+import { isLoanOverdue, MEDIA_TYPES, type Collection, type CollectionItem } from "@/types/database";
 import { posterUrl } from "@/types/tmdb";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { AddFilmFlow } from "@/components/add-film-flow";
 import { AddBoxFlow } from "@/components/add-box-flow";
 import {
@@ -30,6 +31,7 @@ export function CollectionDetailClient({ collection, items }: { collection: Coll
   const [typeFilter, setTypeFilter] = useState<string>(ALL);
   const [watchedFilter, setWatchedFilter] = useState<"all" | "watched" | "not_watched">("all");
   const [sort, setSort] = useState<"name" | "added" | "rating">("name");
+  const [searchQuery, setSearchQuery] = useState("");
   const [pendingDelete, setPendingDelete] = useState<CollectionItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -38,13 +40,14 @@ export function CollectionDetailClient({ collection, items }: { collection: Coll
     if (typeFilter !== ALL) list = list.filter((i) => i.type === typeFilter);
     if (watchedFilter === "watched") list = list.filter((i) => i.watched);
     if (watchedFilter === "not_watched") list = list.filter((i) => !i.watched);
+    if (searchQuery.trim()) list = list.filter((i) => i.movie_title.toLowerCase().includes(searchQuery.trim().toLowerCase()));
 
     const copy = [...list];
     if (sort === "name") copy.sort((a, b) => a.movie_title.localeCompare(b.movie_title));
     else if (sort === "added") copy.sort((a, b) => (b.added_at ?? "").localeCompare(a.added_at ?? ""));
     else copy.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     return copy;
-  }, [items, typeFilter, watchedFilter, sort]);
+  }, [items, typeFilter, watchedFilter, sort, searchQuery]);
 
   async function handleDelete() {
     if (!pendingDelete) return;
@@ -72,6 +75,12 @@ export function CollectionDetailClient({ collection, items }: { collection: Coll
           <AddBoxFlow />
         </div>
       </div>
+
+      <Input
+        placeholder={t("collection_search_placeholder")}
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+      />
 
       <div className="flex flex-wrap gap-2">
         <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -125,6 +134,11 @@ export function CollectionDetailClient({ collection, items }: { collection: Coll
                     {item.watched && (
                       <span className="absolute right-1.5 top-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
                         {t("watched_label")}
+                      </span>
+                    )}
+                    {isLoanOverdue(item) && (
+                      <span className="absolute left-1.5 top-1.5 rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-medium text-destructive-foreground">
+                        {t("collection_item_loan_overdue_short", item.loaned_to ?? "")}
                       </span>
                     )}
                   </div>
