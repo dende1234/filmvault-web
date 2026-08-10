@@ -7,7 +7,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getFollowingIds } from "@/actions/follows";
-import type { Post, PostComment } from "@/types/database";
+import type { FeedResult, Post, PostComment } from "@/types/database";
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -70,17 +70,20 @@ export async function getPostsByAuthor(authorId: string): Promise<Post[]> {
   return (data as Post[]).sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
 }
 
-/** Posts from followed authors that this viewer hasn't seen yet, newest first. */
-export async function getFeedPosts(): Promise<Post[]> {
+/** Posts from followed authors AND the viewer's own posts, newest first — ALL of them, not just
+ * unseen ones (see FeedResult.seenPostIds for which are already seen). A viewer should still see
+ * their own new posts in their own feed, and already-seen posts stay visible (moved under an
+ * "Eerder gezien" divider by the UI layer) rather than disappearing outright. */
+export async function getFeedPosts(): Promise<FeedResult> {
   const supabase = await createClient();
   const viewerId = await requireUserId();
   const followingIds = await getFollowingIds(viewerId);
-  if (followingIds.length === 0) return [];
+  const authorIds = Array.from(new Set([...followingIds, viewerId]));
 
-  const { data: postsData, error } = await supabase.from("posts").select("*").in("author_id", followingIds);
+  const { data: postsData, error } = await supabase.from("posts").select("*").in("author_id", authorIds);
   if (error) throw error;
-  const posts = postsData as Post[];
-  if (posts.length === 0) return [];
+  const posts = (postsData as Post[]).sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+  if (posts.length === 0) return { posts: [], seenPostIds: [] };
 
   const { data: seenData, error: seenError } = await supabase
     .from("seen_posts")
@@ -91,11 +94,9 @@ export async function getFeedPosts(): Promise<Post[]> {
       posts.map((p) => p.id),
     );
   if (seenError) throw seenError;
-  const seenIds = new Set((seenData as { post_id: string }[]).map((r) => r.post_id));
+  const seenPostIds = (seenData as { post_id: string }[]).map((r) => r.post_id);
 
-  return posts
-    .filter((p) => !seenIds.has(p.id))
-    .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""));
+  return { posts, seenPostIds };
 }
 
 export async function markPostsSeen(postIds: string[]): Promise<void> {

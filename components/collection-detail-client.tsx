@@ -11,7 +11,7 @@ import { isLoanOverdue, MEDIA_TYPES, type Collection, type CollectionItem } from
 import { posterUrl } from "@/types/tmdb";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { AddFilmFlow } from "@/components/add-film-flow";
 import { AddBoxFlow } from "@/components/add-box-flow";
 import {
@@ -76,10 +76,10 @@ export function CollectionDetailClient({ collection, items }: { collection: Coll
         </div>
       </div>
 
-      <Input
+      <SearchInput
         placeholder={t("collection_search_placeholder")}
         value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        onValueChange={setSearchQuery}
       />
 
       <div className="flex flex-wrap gap-2">

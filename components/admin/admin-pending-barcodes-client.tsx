@@ -8,7 +8,7 @@ import { useT } from "@/lib/i18n/locale-provider";
 import { approvePendingBarcode, approvePendingBox, rejectPendingBarcode } from "@/actions/collections";
 import type { PendingBarcodeCardItem } from "@/types/database";
 import { posterUrl } from "@/types/tmdb";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -76,7 +76,7 @@ export function AdminPendingBarcodesClient({ cards: initialCards }: { cards: Pen
 
       {cards.length > 0 && (
         <>
-          <Input placeholder={t("pending_barcodes_search_label")} value={query} onChange={(e) => setQuery(e.target.value)} />
+          <SearchInput placeholder={t("pending_barcodes_search_label")} value={query} onValueChange={setQuery} />
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={approveAll} disabled={filtered.length === 0}>
               {t("pending_barcodes_approve_all_button")}

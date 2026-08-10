@@ -272,6 +272,15 @@ export interface FeedPostUiItem {
   post: Post;
   authorName: string | null;
   authorAvatarUrl: string | null;
+  isSeen: boolean;
+}
+
+/** All feed posts (self + followees, seen and unseen alike) plus which of them are already
+ * seen — the UI layer partitions on seenPostIds to show unseen posts first, then an
+ * "Eerder gezien" divider, then the rest. Mirrors PostRepository.FeedResult on Android. */
+export interface FeedResult {
+  posts: Post[];
+  seenPostIds: string[];
 }
 
 // --- Fase 5: Admin ---

@@ -16,7 +16,7 @@ import { follow, unfollow } from "@/actions/follows";
 import type { FriendRequestWithProfile, ProfileSearchResult } from "@/types/database";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 function conflictMessage(t: (key: "friends_already_friends" | "friends_request_already_pending" | "friends_error_send") => string, error: unknown) {
@@ -227,7 +227,7 @@ export function FriendsPageClient({
             <DialogTitle>{t("friends_add_title")}</DialogTitle>
           </DialogHeader>
           <div className="flex gap-2">
-            <Input value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()} />
+            <SearchInput value={query} onValueChange={setQuery} onKeyDown={(e) => e.key === "Enter" && handleSearch()} />
             <Button onClick={handleSearch} disabled={isSearching}>
               {t("friends_search_button")}
             </Button>

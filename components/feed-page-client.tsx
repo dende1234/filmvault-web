@@ -27,6 +27,8 @@ export function FeedPageClient({ items }: { items: FeedPostUiItem[] }) {
   const [error, setError] = useState<string | null>(null);
 
   const canSubmit = body.trim().length > 0 && !isPosting;
+  const newItems = items.filter((item) => !item.isSeen);
+  const seenItems = items.filter((item) => item.isSeen);
 
   function reset() {
     setTitle("");
@@ -70,15 +72,20 @@ export function FeedPageClient({ items }: { items: FeedPostUiItem[] }) {
         <p className="text-sm text-muted-foreground">{t("feed_empty")}</p>
       ) : (
         <div className="flex flex-col gap-2">
-          {items.map((item) => (
-            <div key={item.post.id} className="flex flex-col gap-1">
-              {item.authorName && (
-                <Link href={`/u/${item.post.author_id}`} className="w-fit text-sm font-semibold hover:underline">
-                  {item.authorName}
-                </Link>
-              )}
-              <PostCard post={item.post} ratingStarPrefix={t("rating_star_prefix")} />
+          {newItems.map((item) => (
+            <FeedPostItem key={item.post.id} item={item} />
+          ))}
+          {seenItems.length > 0 && (
+            <div className="my-2 flex items-center gap-3">
+              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {t("feed_seen_divider")}
+              </span>
+              <div className="h-px flex-1 bg-border" />
             </div>
+          )}
+          {seenItems.map((item) => (
+            <FeedPostItem key={item.post.id} item={item} />
           ))}
         </div>
       )}
@@ -126,6 +133,20 @@ export function FeedPageClient({ items }: { items: FeedPostUiItem[] }) {
       </Dialog>
 
       <MovieSearchPickerDialog open={pickerOpen} onOpenChange={setPickerOpen} onSelect={(m) => { setMovie(m); setPickerOpen(false); }} />
+    </div>
+  );
+}
+
+function FeedPostItem({ item }: { item: FeedPostUiItem }) {
+  const { t } = useT();
+  return (
+    <div className="flex flex-col gap-1">
+      {item.authorName && (
+        <Link href={`/u/${item.post.author_id}`} className="w-fit text-sm font-semibold hover:underline">
+          {item.authorName}
+        </Link>
+      )}
+      <PostCard post={item.post} ratingStarPrefix={t("rating_star_prefix")} />
     </div>
   );
 }

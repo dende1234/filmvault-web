@@ -6,7 +6,7 @@ import { useT } from "@/lib/i18n/locale-provider";
 import { posterUrl } from "@/types/tmdb";
 import type { MovieSummaryDto } from "@/types/tmdb";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -76,7 +76,7 @@ export function MovieSearchPickerDialog({
         <DialogHeader>
           <DialogTitle>{t("movie_picker_title")}</DialogTitle>
         </DialogHeader>
-        <Input placeholder={t("movies_search_label")} value={query} onChange={(e) => setQuery(e.target.value)} />
+        <SearchInput placeholder={t("movies_search_label")} value={query} onValueChange={setQuery} />
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <p className="p-4 text-sm text-muted-foreground">…</p>
@@ -142,7 +142,7 @@ export function MovieMultiSelectPickerDialog({
         <DialogHeader>
           <DialogTitle>{t("box_movie_picker_title")}</DialogTitle>
         </DialogHeader>
-        <Input placeholder={t("movies_search_label")} value={query} onChange={(e) => setQuery(e.target.value)} />
+        <SearchInput placeholder={t("movies_search_label")} value={query} onValueChange={setQuery} />
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <p className="p-4 text-sm text-muted-foreground">…</p>

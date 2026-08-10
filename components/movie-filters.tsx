@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useT } from "@/lib/i18n/locale-provider";
-import { Input } from "@/components/ui/input";
+import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { GenreDto } from "@/types/tmdb";
@@ -58,10 +58,10 @@ export function MovieFilters({ genres }: { genres: GenreDto[] }) {
 
   return (
     <div className="flex flex-col gap-3">
-      <Input
+      <SearchInput
         placeholder={t("movies_search_label")}
         value={query}
-        onChange={(e) => handleQueryChange(e.target.value)}
+        onValueChange={handleQueryChange}
       />
 
       <div className="flex flex-wrap items-center gap-2">

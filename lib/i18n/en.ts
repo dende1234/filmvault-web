@@ -288,6 +288,7 @@ export const en: Record<keyof typeof nl, string> = {
   feed_error_post: "Posting failed",
   feed_new_post_title: "New post",
   feed_empty: "No new posts yet. Follow someone to see their reviews and movie info here.",
+  feed_seen_divider: "Previously seen",
   feed_post_title_label: "Title (optional)",
   feed_post_body_label: "Text",
   feed_link_movie_button: "Link a movie",

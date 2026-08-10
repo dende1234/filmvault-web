@@ -291,6 +291,7 @@ export const nl = {
   feed_error_post: "Plaatsen is niet gelukt",
   feed_new_post_title: "Nieuw bericht",
   feed_empty: "Nog geen nieuwe berichten. Volg iemand om hier hun reviews en film-info te zien.",
+  feed_seen_divider: "Eerder gezien",
   feed_post_title_label: "Titel (optioneel)",
   feed_post_body_label: "Tekst",
   feed_link_movie_button: "Film koppelen",
