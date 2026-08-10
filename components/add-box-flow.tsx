@@ -30,7 +30,12 @@ export function AddBoxFlow() {
   const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
-    if (films) getUserCollections().then(setCollections);
+    if (films) {
+      getUserCollections().then((cols) => {
+        setCollections(cols);
+        if (cols.length === 1) setSelectedCollections(new Set([cols[0].id]));
+      });
+    }
   }, [films]);
 
   const canSubmit = !!films && films.length > 0 && boxName.trim() && barcode.trim() && selectedCollections.size > 0 && !isSubmitting;

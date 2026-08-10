@@ -60,6 +60,7 @@ export function AddToCollectionDialog({
       .then(([barcodes, cols]) => {
         setExistingBarcodes(barcodes);
         setCollections(cols);
+        if (cols.length === 1) setSelectedCollections(new Set([cols[0].id]));
       })
       .catch(() => setError(t("add_to_collection_error_load")))
       .finally(() => setIsLoading(false));
