@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { addBarcodesToCollections, getBarcodesForMovie, getUserCollections } from "@/actions/collections";
+import { getEdities, getMediaTypes } from "@/actions/media-types";
 import { removeFromWishlistByMovie } from "@/actions/wishlist";
-import { EDITIE_OPTIONS, MEDIA_TYPES, type Barcode, type Collection, type MediaType, type NewBarcodeInput } from "@/types/database";
+import type { Barcode, Collection, NewBarcodeInput } from "@/types/database";
 import {
   Dialog,
   DialogContent,
@@ -40,8 +41,10 @@ export function AddToCollectionDialog({
   const [selectedExisting, setSelectedExisting] = useState<Set<string>>(new Set());
   const [staged, setStaged] = useState<NewBarcodeInput[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set());
+  const [mediaTypes, setMediaTypes] = useState<string[]>([]);
+  const [edities, setEdities] = useState<string[]>([]);
   const [newBarcodeText, setNewBarcodeText] = useState("");
-  const [newBarcodeType, setNewBarcodeType] = useState<MediaType>("DVD");
+  const [newBarcodeType, setNewBarcodeType] = useState<string>("DVD");
   const [newBarcodeEditie, setNewBarcodeEditie] = useState("Normaal");
   const [info, setInfo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -56,11 +59,15 @@ export function AddToCollectionDialog({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
     setError(null);
-    Promise.all([getBarcodesForMovie(tmdbMovieId), getUserCollections()])
-      .then(([barcodes, cols]) => {
+    Promise.all([getBarcodesForMovie(tmdbMovieId), getUserCollections(), getMediaTypes(), getEdities()])
+      .then(([barcodes, cols, types, eds]) => {
         setExistingBarcodes(barcodes);
         setCollections(cols);
+        setMediaTypes(types);
+        setEdities(eds);
         if (cols.length === 1) setSelectedCollections(new Set([cols[0].id]));
+        setNewBarcodeType(types[0] ?? "DVD");
+        setNewBarcodeEditie(eds[0] ?? "Normaal");
       })
       .catch(() => setError(t("add_to_collection_error_load")))
       .finally(() => setIsLoading(false));
@@ -183,12 +190,12 @@ export function AddToCollectionDialog({
                   onChange={(e) => setNewBarcodeText(e.target.value)}
                 />
                 <div className="flex gap-2">
-                  <Select value={newBarcodeType} onValueChange={(v) => setNewBarcodeType(v as MediaType)}>
+                  <Select value={newBarcodeType} onValueChange={setNewBarcodeType}>
                     <SelectTrigger className="flex-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {MEDIA_TYPES.map((type) => (
+                      {mediaTypes.map((type) => (
                         <SelectItem key={type} value={type}>
                           {type}
                         </SelectItem>
@@ -200,7 +207,7 @@ export function AddToCollectionDialog({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {EDITIE_OPTIONS.map((editie) => (
+                      {edities.map((editie) => (
                         <SelectItem key={editie} value={editie}>
                           {editie}
                         </SelectItem>

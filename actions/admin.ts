@@ -12,7 +12,7 @@ import { adminRegisterBarcode } from "@/actions/collections";
 import { getMovieDetail } from "@/lib/tmdb/server";
 import { BarcodeAlreadyRegisteredError } from "@/lib/errors";
 import { getLocale } from "@/lib/preferences";
-import type { AdminProfile, AdminStats, MediaType } from "@/types/database";
+import type { AdminProfile, AdminStats } from "@/types/database";
 
 export async function getAllProfiles(): Promise<AdminProfile[]> {
   await requireAdmin();
@@ -66,7 +66,7 @@ export async function deleteUserAccount(targetUserId: string): Promise<void> {
 export async function adminRegisterBarcodeWithConflictTitle(
   tmdbMovieId: number,
   barcode: string,
-  type: MediaType,
+  type: string,
   editie: string,
 ): Promise<{ error: "duplicate"; conflictTitle: string } | { error: "other" } | { error: null }> {
   try {

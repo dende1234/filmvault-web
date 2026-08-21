@@ -2,22 +2,10 @@
 // data classes (Fase 1 tables only) — column names match the Postgres schema
 // exactly (snake_case), same as the Kotlin @SerialName annotations.
 
-export type MediaType = "Blu-ray" | "DVD" | "VHS" | "4K Ultra HD";
-// Single source of truth for the "Type" dropdown — order matches the
-// Android app's BARCODE_TYPES/ADMIN_ADD_FILM_TYPES/etc. exactly.
-export const MEDIA_TYPES: MediaType[] = ["Blu-ray", "DVD", "VHS", "4K Ultra HD"];
-// Single source of truth for the "Editie" dropdown — matches Android's
-// AddToCollectionDialog.kt's EDITIE_OPTIONS exactly (also a fixed dropdown
-// there, not free text).
-export const EDITIE_OPTIONS = [
-  "Normaal",
-  "Steelbook",
-  "Collector's Edition",
-  "Limited Edition",
-  "Director's Cut",
-  "Extended Edition",
-  "Special Edition",
-] as const;
+// type/editie are plain strings, not a fixed union — both are admin-managed
+// lookup lists (media_types/edities tables, see actions/media-types.ts),
+// not a compile-time-fixed set. Fetch the current options with
+// getMediaTypes()/getEdities() rather than importing a hardcoded list.
 export type Condition = "Nieuw" | "Gebruikt" | "Beschadigd";
 export type ThemePreference = "light" | "dark" | "system";
 export type Language = "nl" | "en";
@@ -54,7 +42,7 @@ export interface CollectionItem {
   movie_poster: string | null;
   barcode: string;
   added_at: string | null;
-  type: MediaType;
+  type: string;
   rating: number | null;
   watched: boolean;
   editie: string;
@@ -88,7 +76,7 @@ export interface Barcode {
   tmdb_movie_id: number;
   barcode: string;
   created_at: string | null;
-  type: MediaType;
+  type: string;
   editie: string;
   is_box: boolean;
   box_group_id: string | null;
@@ -103,7 +91,7 @@ export interface PendingBarcode {
   movie_title: string;
   movie_poster: string | null;
   barcode: string;
-  type: MediaType | null;
+  type: string | null;
   editie: string | null;
   submitted_by: string;
   submitted_at: string | null;
@@ -122,7 +110,7 @@ export interface PendingBarcodeCollectionRow {
 /** Staged, not-yet-submitted new barcode (client-only, mirrors NewBarcodeInput). */
 export interface NewBarcodeInput {
   barcode: string;
-  type: MediaType;
+  type: string;
   editie: string;
 }
 

@@ -14,7 +14,6 @@ import type {
   Collection,
   CollectionItem,
   Condition,
-  MediaType,
   NewBarcodeInput,
   PendingBarcode,
   PendingBarcodeCollectionRow,
@@ -239,7 +238,7 @@ export async function addKnownBoxToCollections(
   boxGroupId: string,
   boxName: string | null,
   barcode: string,
-  type: MediaType,
+  type: string,
   editie: string,
   collectionIds: string[],
 ): Promise<Set<string>> {
@@ -288,7 +287,7 @@ export async function addNewBoxAsPending(
   films: BoxFilmInput[],
   boxName: string,
   barcode: string,
-  type: MediaType,
+  type: string,
   editie: string,
   collectionIds: string[],
 ) {
@@ -430,7 +429,7 @@ export async function getPendingBarcodeCollectionLinks(pendingBarcodeIds: string
 export async function adminRegisterBarcode(
   tmdbMovieId: number,
   barcode: string,
-  type: MediaType,
+  type: string,
   editie: string,
 ): Promise<void> {
   const existing = await findBarcodesByCode(barcode);
@@ -444,7 +443,7 @@ export async function adminRegisterBarcode(
 /** Admin-only: corrects an existing master film-list entry (e.g. a wrongly
  * registered type/editie), or removes it entirely. Relies on the
  * admin-only barcodes UPDATE/DELETE RLS policies in admin_tools.sql. */
-export async function updateBarcodeDetails(barcodeId: string, type: MediaType, editie: string): Promise<void> {
+export async function updateBarcodeDetails(barcodeId: string, type: string, editie: string): Promise<void> {
   const supabase = await createClient();
   const { error } = await supabase.from("barcodes").update({ type, editie }).eq("id", barcodeId);
   if (error) throw error;

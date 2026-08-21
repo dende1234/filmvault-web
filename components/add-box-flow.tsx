@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { addKnownBoxToCollections, addNewBoxAsPending, findBarcodesByCode, getUserCollections } from "@/actions/collections";
-import { EDITIE_OPTIONS, MEDIA_TYPES, type Collection, type MediaType } from "@/types/database";
+import { getEdities, getMediaTypes } from "@/actions/media-types";
+import type { Collection } from "@/types/database";
 import type { MovieSummaryDto } from "@/types/tmdb";
 import { MovieMultiSelectPickerDialog } from "@/components/movie-search-picker-dialog";
 import { Button } from "@/components/ui/button";
@@ -21,9 +22,11 @@ export function AddBoxFlow() {
   const [films, setFilms] = useState<MovieSummaryDto[] | null>(null);
   const [collections, setCollections] = useState<Collection[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set());
+  const [mediaTypes, setMediaTypes] = useState<string[]>([]);
+  const [edities, setEdities] = useState<string[]>([]);
   const [boxName, setBoxName] = useState("");
   const [barcode, setBarcode] = useState("");
-  const [type, setType] = useState<MediaType>("DVD");
+  const [type, setType] = useState<string>("DVD");
   const [editie, setEditie] = useState("Normaal");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,9 +34,13 @@ export function AddBoxFlow() {
 
   useEffect(() => {
     if (films) {
-      getUserCollections().then((cols) => {
+      Promise.all([getUserCollections(), getMediaTypes(), getEdities()]).then(([cols, types, eds]) => {
         setCollections(cols);
+        setMediaTypes(types);
+        setEdities(eds);
         if (cols.length === 1) setSelectedCollections(new Set([cols[0].id]));
+        setType(types[0] ?? "DVD");
+        setEditie(eds[0] ?? "Normaal");
       });
     }
   }, [films]);
@@ -123,12 +130,12 @@ export function AddBoxFlow() {
               <Input placeholder={t("box_barcode_label")} value={barcode} onChange={(e) => setBarcode(e.target.value)} />
 
               <div className="flex gap-2">
-                <Select value={type} onValueChange={(v) => setType(v as MediaType)}>
+                <Select value={type} onValueChange={setType}>
                   <SelectTrigger className="flex-1">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {MEDIA_TYPES.map((mt) => (
+                    {mediaTypes.map((mt) => (
                       <SelectItem key={mt} value={mt}>
                         {mt}
                       </SelectItem>
@@ -140,7 +147,7 @@ export function AddBoxFlow() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {EDITIE_OPTIONS.map((e) => (
+                    {edities.map((e) => (
                       <SelectItem key={e} value={e}>
                         {e}
                       </SelectItem>

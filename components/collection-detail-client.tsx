@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { removeCollectionItem } from "@/actions/collections";
-import { isLoanOverdue, MEDIA_TYPES, type Collection, type CollectionItem } from "@/types/database";
+import { getMediaTypes } from "@/actions/media-types";
+import { isLoanOverdue, type Collection, type CollectionItem } from "@/types/database";
 import { posterUrl } from "@/types/tmdb";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,11 @@ export function CollectionDetailClient({ collection, items }: { collection: Coll
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingDelete, setPendingDelete] = useState<CollectionItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [mediaTypes, setMediaTypes] = useState<string[]>([]);
+
+  useEffect(() => {
+    getMediaTypes().then(setMediaTypes);
+  }, []);
 
   const filtered = useMemo(() => {
     let list = items;
@@ -89,7 +95,7 @@ export function CollectionDetailClient({ collection, items }: { collection: Coll
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>{t("label_type")}</SelectItem>
-            {MEDIA_TYPES.map((type) => (
+            {mediaTypes.map((type) => (
               <SelectItem key={type} value={type}>
                 {type}
               </SelectItem>
