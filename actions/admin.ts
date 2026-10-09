@@ -8,11 +8,13 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/require-admin";
-import { adminRegisterBarcode } from "@/actions/collections";
-import { getMovieDetail } from "@/lib/tmdb/server";
+import { adminRegisterBarcode, approvePendingBarcode, findBarcodesByCode } from "@/actions/collections";
+import { getMovieDetail, searchMovies } from "@/lib/tmdb/server";
 import { BarcodeAlreadyRegisteredError } from "@/lib/errors";
+import { isValidEanUpc, normalizeBarcode } from "@/lib/barcode";
 import { getLocale } from "@/lib/preferences";
-import type { AdminProfile, AdminStats } from "@/types/database";
+import type { AdminProfile, AdminStats, Barcode, PendingBarcode } from "@/types/database";
+import type { MovieSummaryDto } from "@/types/tmdb";
 
 export async function getAllProfiles(): Promise<AdminProfile[]> {
   await requireAdmin();
@@ -68,10 +70,10 @@ export async function adminRegisterBarcodeWithConflictTitle(
   barcode: string,
   type: string,
   editie: string,
-): Promise<{ error: "duplicate"; conflictTitle: string } | { error: "other" } | { error: null }> {
+): Promise<{ error: "duplicate"; conflictTitle: string } | { error: "other" } | { error: null; id: string }> {
   try {
-    await adminRegisterBarcode(tmdbMovieId, barcode, type, editie);
-    return { error: null };
+    const id = await adminRegisterBarcode(tmdbMovieId, normalizeBarcode(barcode), type, editie);
+    return { error: null, id };
   } catch (e) {
     if (e instanceof BarcodeAlreadyRegisteredError) {
       const locale = await getLocale();
@@ -82,4 +84,142 @@ export async function adminRegisterBarcodeWithConflictTitle(
     }
     return { error: "other" };
   }
+}
+
+/** A master film-list entry plus the TMDB title/poster to show for it. */
+export type KnownBarcodeEntry = Pick<Barcode, "id" | "barcode" | "tmdb_movie_id" | "type" | "editie" | "is_box" | "box_name"> & {
+  title: string;
+  poster_path: string | null;
+};
+
+async function withMovieInfo(entries: Barcode[], locale: string): Promise<KnownBarcodeEntry[]> {
+  const ids = Array.from(new Set(entries.map((e) => e.tmdb_movie_id)));
+  const details = new Map(
+    await Promise.all(
+      ids.map(async (id) => [id, await getMovieDetail(id, locale).catch(() => null)] as const),
+    ),
+  );
+  return entries.map((e) => ({
+    id: e.id,
+    barcode: e.barcode,
+    tmdb_movie_id: e.tmdb_movie_id,
+    type: e.type,
+    editie: e.editie,
+    is_box: e.is_box,
+    box_name: e.box_name,
+    title: details.get(e.tmdb_movie_id)?.title ?? `TMDB #${e.tmdb_movie_id}`,
+    poster_path: details.get(e.tmdb_movie_id)?.poster_path ?? null,
+  }));
+}
+
+/** Barcode-station step 1: is this code already on the master film list? */
+export async function adminLookupBarcode(rawCode: string): Promise<KnownBarcodeEntry[]> {
+  await requireAdmin();
+  const code = normalizeBarcode(rawCode);
+  if (!code) return [];
+  return withMovieInfo(await findBarcodesByCode(code), await getLocale());
+}
+
+/** Existing master-list entries for one film, so the admin sees which
+ * editions are already covered before adding another barcode. */
+export async function adminGetBarcodesForMovie(tmdbMovieId: number): Promise<KnownBarcodeEntry[]> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("barcodes").select("*").eq("tmdb_movie_id", tmdbMovieId);
+  if (error) throw error;
+  return withMovieInfo(data as Barcode[], await getLocale());
+}
+
+export type BulkBarcodeRowInput = { barcode: string; title: string; year: string };
+
+export type BulkBarcodeRowMatch = {
+  barcode: string;
+  validChecksum: boolean;
+  known: KnownBarcodeEntry[];
+  candidates: MovieSummaryDto[];
+};
+
+const BULK_MAX_ROWS = 200;
+const BULK_SEARCH_CONCURRENCY = 5;
+
+/** CSV/bulk import: for every row, normalize + validate the barcode, check
+ * the master list, and fetch the top TMDB candidates for the title (rows
+ * whose release year matches the given year first). One server action for
+ * the whole batch — the client dispatches actions sequentially, so this
+ * parallelizes the TMDB searches server-side instead. */
+export async function adminMatchBarcodeRows(rows: BulkBarcodeRowInput[]): Promise<BulkBarcodeRowMatch[]> {
+  await requireAdmin();
+  if (rows.length > BULK_MAX_ROWS) throw new Error("too_many_rows");
+  const locale = await getLocale();
+  const codes = rows.map((r) => normalizeBarcode(String(r.barcode ?? "")));
+
+  const supabase = await createClient();
+  const uniqueCodes = Array.from(new Set(codes.filter(Boolean)));
+  const { data: knownRows, error } = uniqueCodes.length
+    ? await supabase.from("barcodes").select("*").in("barcode", uniqueCodes)
+    : { data: [], error: null };
+  if (error) throw error;
+  const known = await withMovieInfo((knownRows ?? []) as Barcode[], locale);
+
+  const candidates: MovieSummaryDto[][] = new Array(rows.length).fill([]);
+  let next = 0;
+  async function worker() {
+    while (next < rows.length) {
+      const i = next++;
+      const title = String(rows[i].title ?? "").trim();
+      if (!title) continue;
+      const year = String(rows[i].year ?? "").trim();
+      const results = await searchMovies(title, 1, locale)
+        .then((page) => page.results ?? [])
+        .catch(() => []);
+      const ranked = year
+        ? [...results].sort(
+            (a, b) => Number(b.release_date?.startsWith(year) ?? false) - Number(a.release_date?.startsWith(year) ?? false),
+          )
+        : results;
+      candidates[i] = ranked.slice(0, 5);
+    }
+  }
+  await Promise.all(Array.from({ length: BULK_SEARCH_CONCURRENCY }, worker));
+
+  return codes.map((code, i) => ({
+    barcode: code,
+    validChecksum: isValidEanUpc(code),
+    known: known.filter((k) => k.barcode === code),
+    candidates: candidates[i],
+  }));
+}
+
+/** "Aanpassen & goedkeuren": corrects a single (non-box) pending submission
+ * — film, type, editie — and then approves it. Only ids/values come from
+ * the client; the title/poster are resolved from TMDB server-side. */
+export async function adminApprovePendingWithChanges(
+  pendingId: string,
+  tmdbMovieId: number,
+  type: string,
+  editie: string,
+): Promise<void> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data: row, error: readError } = await supabase
+    .from("pending_barcodes")
+    .select("*")
+    .eq("id", pendingId)
+    .eq("status", "pending")
+    .single();
+  if (readError) throw readError;
+  const pending = row as PendingBarcode;
+  if (pending.box_group_id) throw new Error("box_not_supported");
+
+  const changes: Partial<PendingBarcode> = { type, editie };
+  if (tmdbMovieId !== pending.tmdb_movie_id) {
+    const movie = await getMovieDetail(tmdbMovieId, await getLocale());
+    changes.tmdb_movie_id = movie.id;
+    changes.movie_title = movie.title;
+    changes.movie_poster = movie.poster_path;
+  }
+  const { error: updateError } = await supabase.from("pending_barcodes").update(changes).eq("id", pendingId);
+  if (updateError) throw updateError;
+
+  await approvePendingBarcode({ ...pending, ...changes });
 }

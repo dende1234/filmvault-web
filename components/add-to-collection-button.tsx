@@ -1,5 +1,6 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { useState } from "react";
 import { useT } from "@/lib/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,10 @@ export function AddToCollectionButton({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button onClick={() => setOpen(true)}>{t("movie_add_to_collection_button")}</Button>
+      <Button onClick={() => setOpen(true)}>
+        <Plus />
+        {t("movie_add_to_collection_button")}
+      </Button>
       <AddToCollectionDialog
         open={open}
         onOpenChange={setOpen}

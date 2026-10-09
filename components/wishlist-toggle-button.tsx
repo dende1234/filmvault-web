@@ -1,5 +1,6 @@
 "use client";
 
+import { Bookmark, BookmarkCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
@@ -38,7 +39,8 @@ export function WishlistToggleButton({
   }
 
   return (
-    <Button variant="outline" onClick={toggle} disabled={isToggling} className="w-fit">
+    <Button variant="secondary" onClick={toggle} disabled={isToggling} aria-pressed={onWishlist} className="w-fit">
+      {onWishlist ? <BookmarkCheck className="text-primary" /> : <Bookmark />}
       {t(onWishlist ? "wishlist_remove_button" : "wishlist_add_button")}
     </Button>
   );

@@ -1,61 +1,80 @@
 @import "tailwindcss";
+@import "tw-animate-css";
 
-/* Palette mirrors the Android app's Material 3 scheme exactly
-   (ui/theme/Color.kt + Theme.kt: Purple40/80 primary, Material defaults for
-   the rest) so the website reads as the same product, not a reskin. */
+/* "Bioscoop-donker": dark-first cinema palette — near-black auditorium
+   surfaces, warm off-white text, amber/gold accent (the projector light).
+   The web app deliberately leads here; the Android app (Material 3 purple)
+   can adopt the same tokens later. Token *names* are unchanged from the
+   Material port so every existing utility class keeps working.
+
+   Theme resolution: no class on <html> = follow the OS (light only when the
+   OS asks for it), `.dark` / `.light` = explicit choice. Dark is the base. */
 :root {
-  --background: #fffbfe;
-  --foreground: #1c1b1f;
+  --background: #0b0b0d;
+  --foreground: #f4f1ea;
+  --card: #141417;
+  --card-foreground: #f4f1ea;
+  --elevated: #1c1c21;
+  --border: #26262c;
+  --muted: #1a1a1f;
+  --muted-foreground: #a3a1a8;
+  --primary: #e5a823;
+  --primary-foreground: #1a1306;
+  --secondary: #2a2a31;
+  --secondary-foreground: #f4f1ea;
+  --tertiary: #c9a46a;
+  --destructive: #f2555a;
+  --destructive-foreground: #1a0607;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --ring: #e5a823;
+  --radius: 0.875rem;
+  color-scheme: dark;
+}
+
+:root.light {
+  --background: #faf8f4;
+  --foreground: #16140f;
   --card: #ffffff;
-  --card-foreground: #1c1b1f;
-  --border: #e7e0ec;
-  --muted: #f3edf7;
-  --muted-foreground: #49454f;
-  --primary: #6650a4;
+  --card-foreground: #16140f;
+  --elevated: #ffffff;
+  --border: #e7e2d8;
+  --muted: #f1ede5;
+  --muted-foreground: #5f5b52;
+  --primary: #96600a;
   --primary-foreground: #ffffff;
-  --secondary: #625b71;
-  --secondary-foreground: #ffffff;
-  --tertiary: #7d5260;
-  --destructive: #ba1a1a;
+  --secondary: #ece6da;
+  --secondary-foreground: #16140f;
+  --tertiary: #8a6a3a;
+  --destructive: #c42b30;
   --destructive-foreground: #ffffff;
-  --ring: #6650a4;
+  --success: #15803d;
+  --warning: #a16207;
+  --ring: #96600a;
+  color-scheme: light;
 }
 
-:root.dark {
-  --background: #1c1b1f;
-  --foreground: #e6e1e5;
-  --card: #262429;
-  --card-foreground: #e6e1e5;
-  --border: #49454f;
-  --muted: #2b2930;
-  --muted-foreground: #cac4d0;
-  --primary: #d0bcff;
-  --primary-foreground: #381e72;
-  --secondary: #ccc2dc;
-  --secondary-foreground: #332d41;
-  --tertiary: #efb8c8;
-  --destructive: #ffb4ab;
-  --destructive-foreground: #690005;
-  --ring: #d0bcff;
-}
-
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root:not(.light):not(.dark) {
-    --background: #1c1b1f;
-    --foreground: #e6e1e5;
-    --card: #262429;
-    --card-foreground: #e6e1e5;
-    --border: #49454f;
-    --muted: #2b2930;
-    --muted-foreground: #cac4d0;
-    --primary: #d0bcff;
-    --primary-foreground: #381e72;
-    --secondary: #ccc2dc;
-    --secondary-foreground: #332d41;
-    --tertiary: #efb8c8;
-    --destructive: #ffb4ab;
-    --destructive-foreground: #690005;
-    --ring: #d0bcff;
+    --background: #faf8f4;
+    --foreground: #16140f;
+    --card: #ffffff;
+    --card-foreground: #16140f;
+    --elevated: #ffffff;
+    --border: #e7e2d8;
+    --muted: #f1ede5;
+    --muted-foreground: #5f5b52;
+    --primary: #96600a;
+    --primary-foreground: #ffffff;
+    --secondary: #ece6da;
+    --secondary-foreground: #16140f;
+    --tertiary: #8a6a3a;
+    --destructive: #c42b30;
+    --destructive-foreground: #ffffff;
+    --success: #15803d;
+    --warning: #a16207;
+    --ring: #96600a;
+    color-scheme: light;
   }
 }
 
@@ -64,6 +83,7 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-elevated: var(--elevated);
   --color-border: var(--border);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
@@ -74,13 +94,38 @@
   --color-tertiary: var(--tertiary);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-ring: var(--ring);
+  --radius-card: var(--radius);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-fraunces);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--primary) 35%, transparent);
+}
+
+/* Auditorium glow: a soft amber spotlight from the top plus a vignette —
+   pure gradients, no image request. For hero and auth backgrounds. */
+@utility bg-cinema {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, color-mix(in oklab, var(--primary) 16%, transparent), transparent 70%),
+    radial-gradient(ellipse 120% 80% at 50% 120%, color-mix(in oklab, var(--foreground) 6%, transparent), transparent 60%),
+    var(--background);
+}
+
+/* Horizontal poster rails: hide the scrollbar but keep native scrolling. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }

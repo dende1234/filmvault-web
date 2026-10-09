@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { getLocale } from "@/lib/preferences";
+import { Logo } from "@/components/brand/logo";
 
 // Content is intentionally plain prose (not split into i18n dictionary keys
 // like the rest of the app) — a legal document reads better as continuous
@@ -7,7 +9,7 @@ import { getLocale } from "@/lib/preferences";
 // is actually complete — see the summary given alongside this change.
 
 export const metadata = {
-  title: "Privacybeleid — FilmVault",
+  title: "Privacybeleid",
 };
 
 function Dutch() {
@@ -148,7 +150,10 @@ export default async function PrivacyPolicyPage() {
 
   return (
     <div className="mx-auto min-h-screen max-w-2xl px-4 py-12">
-      <article className="max-w-none text-sm leading-relaxed [&_h1]:text-2xl [&_h1]:font-semibold [&_h2]:mt-6 [&_h2]:text-lg [&_h2]:font-semibold [&_mark]:rounded [&_mark]:bg-primary/15 [&_mark]:px-1 [&_mark]:font-medium [&_mark]:text-primary [&_p]:mt-2 [&_ul]:mt-2 [&_ul]:list-disc [&_ul]:pl-5">
+      <Link href="/" className="mb-10 inline-block">
+        <Logo markClassName="size-7" />
+      </Link>
+      <article className="max-w-none text-sm leading-relaxed text-foreground/90 [&_h1]:font-display [&_h1]:text-4xl [&_h1]:font-semibold [&_h1]:tracking-tight [&_h1]:text-foreground [&_h2]:mt-8 [&_h2]:font-display [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-foreground [&_mark]:rounded [&_mark]:bg-primary/15 [&_mark]:px-1 [&_mark]:font-medium [&_mark]:text-primary [&_p]:mt-2 [&_ul]:mt-2 [&_ul]:list-disc [&_ul]:pl-5">
         {locale === "en" ? <English /> : <Dutch />}
       </article>
     </div>

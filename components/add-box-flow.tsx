@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Package } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { addKnownBoxToCollections, addNewBoxAsPending, findBarcodesByCode, getUserCollections } from "@/actions/collections";
@@ -100,7 +101,8 @@ export function AddBoxFlow() {
 
   return (
     <>
-      <Button variant="outline" onClick={() => setPickerOpen(true)}>
+      <Button variant="secondary" onClick={() => setPickerOpen(true)}>
+        <Package />
         {t("dashboard_add_box_button")}
       </Button>
       <MovieMultiSelectPickerDialog

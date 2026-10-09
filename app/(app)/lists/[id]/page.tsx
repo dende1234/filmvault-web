@@ -16,7 +16,7 @@ export default async function ListDetailPage({ params }: { params: Promise<{ id:
   if (!list) notFound();
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-6xl">
       <CuratedListDetailClient
         list={list}
         items={items}

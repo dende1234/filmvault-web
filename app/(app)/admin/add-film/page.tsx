@@ -1,9 +1,11 @@
-import { AdminAddFilmClient } from "@/components/admin/admin-add-film-client";
+import { loadPendingBarcodeCards } from "@/lib/admin/pending-cards";
+import { AdminBarcodeStationClient } from "@/components/admin/admin-barcode-station-client";
 
-export default function AdminAddFilmPage() {
+export default async function AdminAddFilmPage() {
+  const pendingCards = await loadPendingBarcodeCards();
   return (
     <div className="mx-auto max-w-2xl">
-      <AdminAddFilmClient />
+      <AdminBarcodeStationClient pendingCards={pendingCards} />
     </div>
   );
 }

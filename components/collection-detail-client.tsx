@@ -3,13 +3,17 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { Eye, Film, SearchX, X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { removeCollectionItem } from "@/actions/collections";
 import { getMediaTypes } from "@/actions/media-types";
 import { isLoanOverdue, type Collection, type CollectionItem } from "@/types/database";
-import { posterUrl } from "@/types/tmdb";
+import { Poster, PosterCorner } from "@/components/movie/poster";
+import { PosterGrid } from "@/components/movie/poster-grid";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
@@ -71,96 +75,121 @@ export function CollectionDetailClient({ collection, items }: { collection: Coll
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">{collection.name}</h1>
-          {collection.description && <p className="text-sm text-muted-foreground">{collection.description}</p>}
-        </div>
-        <div className="flex gap-2">
-          <AddFilmFlow />
-          <AddBoxFlow />
-        </div>
-      </div>
-
-      <SearchInput
-        placeholder={t("collection_search_placeholder")}
-        value={searchQuery}
-        onValueChange={setSearchQuery}
+      <PageHeader
+        title={collection.name}
+        description={
+          <>
+            {t("collections_film_count", items.length)}
+            {collection.description && <> · {collection.description}</>}
+          </>
+        }
+        actions={
+          <>
+            <AddFilmFlow />
+            <AddBoxFlow />
+          </>
+        }
       />
 
-      <div className="flex flex-wrap gap-2">
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder={t("label_type")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>{t("label_type")}</SelectItem>
-            {mediaTypes.map((type) => (
-              <SelectItem key={type} value={type}>
-                {type}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {items.length > 0 && (
+        <div className="sticky top-[57px] z-20 -mx-4 flex flex-col gap-2 border-b border-border/60 bg-background/85 px-4 py-3 backdrop-blur-md md:top-0 md:-mx-8 md:px-8 lg:flex-row lg:items-center">
+          <SearchInput
+            placeholder={t("collection_search_placeholder")}
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
 
-        <Select value={watchedFilter} onValueChange={(v) => setWatchedFilter(v as typeof watchedFilter)}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("label_type")}</SelectItem>
-            <SelectItem value="watched">{t("watched_label")}</SelectItem>
-            <SelectItem value="not_watched">{t("not_watched_label")}</SelectItem>
-          </SelectContent>
-        </Select>
+          <div className="flex flex-wrap gap-2 lg:flex-nowrap">
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder={t("label_type")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("filter_all_types")}</SelectItem>
+                {mediaTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-        <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
-          <SelectTrigger className="w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="name">{t("label_name")}</SelectItem>
-            <SelectItem value="added">{t("collections_sort_newest")}</SelectItem>
-            <SelectItem value="rating">{t("rating_star_prefix", "")}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+            <Select value={watchedFilter} onValueChange={(v) => setWatchedFilter(v as typeof watchedFilter)}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("filter_all_films")}</SelectItem>
+                <SelectItem value="watched">{t("watched_label")}</SelectItem>
+                <SelectItem value="not_watched">{t("not_watched_label")}</SelectItem>
+              </SelectContent>
+            </Select>
 
-      {filtered.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("collection_detail_empty")}</p>
+            <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">{t("label_name")}</SelectItem>
+                <SelectItem value="added">{t("collections_sort_newest")}</SelectItem>
+                <SelectItem value="rating">{t("sort_rating")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      )}
+
+      {items.length === 0 ? (
+        <EmptyState
+          icon={Film}
+          title={t("collection_detail_empty")}
+          description={t("collection_detail_empty_description")}
+          action={<AddFilmFlow />}
+        />
+      ) : filtered.length === 0 ? (
+        <EmptyState icon={SearchX} title={t("collection_detail_no_matches")} />
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          {filtered.map((item) => {
-            const poster = posterUrl(item.movie_poster, "w200");
-            return (
-              <div key={item.id} className="group relative flex flex-col gap-2">
-                <Link href={`/collections/${collection.id}/items/${item.id}`}>
-                  <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-muted">
-                    {poster && <Image src={poster} alt={item.movie_title} fill className="object-cover" />}
+        <PosterGrid>
+          {filtered.map((item) => (
+            <div key={item.id} className="group relative flex flex-col gap-2">
+              <Link href={`/collections/${collection.id}/items/${item.id}`} className="flex flex-col gap-2 focus-visible:outline-none">
+                <Poster path={item.movie_poster} title={item.movie_title} hover>
+                  <PosterCorner position="bl">
+                    <Badge variant="overlay">{item.type}</Badge>
                     {item.watched && (
-                      <span className="absolute right-1.5 top-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-                        {t("watched_label")}
-                      </span>
+                      <Badge variant="overlay" className="px-1.5" title={t("watched_label")}>
+                        <Eye className="text-success" />
+                      </Badge>
                     )}
-                    {isLoanOverdue(item) && (
-                      <span className="absolute left-1.5 top-1.5 rounded-full bg-destructive px-1.5 py-0.5 text-[10px] font-medium text-destructive-foreground">
+                  </PosterCorner>
+                  {isLoanOverdue(item) && (
+                    <PosterCorner position="tl">
+                      <Badge variant="destructive" className="bg-destructive text-destructive-foreground">
                         {t("collection_item_loan_overdue_short", item.loaned_to ?? "")}
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 line-clamp-2 text-sm font-medium">{item.movie_title}</p>
-                </Link>
+                      </Badge>
+                    </PosterCorner>
+                  )}
+                </Poster>
+                <div className="min-w-0">
+                  <p className="line-clamp-2 text-sm font-medium leading-snug transition-colors group-hover:text-primary">
+                    {item.movie_title}
+                  </p>
+                  {item.editie && item.editie !== "Normaal" && <p className="text-xs text-muted-foreground">{item.editie}</p>}
+                </div>
+              </Link>
+              <PosterCorner position="tr">
                 <button
+                  type="button"
                   onClick={() => setPendingDelete(item)}
-                  className="absolute right-1 top-1 hidden rounded-full bg-black/60 p-1 text-white group-hover:block"
+                  className="rounded-full bg-black/70 p-1.5 text-white backdrop-blur-sm transition-opacity hover:bg-destructive focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
                   aria-label={t("action_delete")}
                 >
-                  ✕
+                  <X className="size-3.5" />
                 </button>
-              </div>
-            );
-          })}
-        </div>
+              </PosterCorner>
+            </div>
+          ))}
+        </PosterGrid>
       )}
 
       <Dialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>

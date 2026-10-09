@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import Link from "next/link";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
@@ -18,7 +18,9 @@ import {
 } from "@/actions/collections";
 import { isLoanOverdue, type CollectionItem, type Condition } from "@/types/database";
 import type { MovieDetailDto } from "@/types/tmdb";
-import { backdropUrl } from "@/types/tmdb";
+import { BackdropHero } from "@/components/movie/backdrop-hero";
+import { Poster } from "@/components/movie/poster";
+import { Badge } from "@/components/ui/badge";
 import { StarRating } from "@/components/ui/star-rating";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
@@ -169,28 +171,34 @@ export function CollectionItemEditor({ item: initial, movie }: { item: Collectio
     }
   }
 
-  const backdrop = movie ? backdropUrl(movie.backdrop_path) : null;
-
   return (
-    <div className="flex flex-col gap-6">
-      {backdrop && (
-        <div className="relative -mx-4 -mt-4 aspect-[16/7] overflow-hidden sm:mx-0 sm:mt-0 sm:rounded-2xl md:-mx-8 md:-mt-8">
-          <Image src={backdrop} alt="" fill className="object-cover" />
+    <div className="flex flex-col gap-8">
+      <BackdropHero path={movie?.backdrop_path ?? null} contentClassName="max-w-3xl md:min-h-[24rem]">
+        <div className="flex items-end gap-5">
+          <Link href={`/films/${item.tmdb_movie_id}`} className="group shrink-0">
+            <Poster path={item.movie_poster} title={item.movie_title} size="lg" priority hover className="w-28 sm:w-36" />
+          </Link>
+          <div className="flex min-w-0 flex-col gap-2">
+            <h1 className="font-display text-2xl font-semibold leading-tight tracking-tight text-balance md:text-4xl">
+              {item.movie_title}
+            </h1>
+            <div className="flex flex-wrap gap-1.5">
+              <Badge variant="default">{item.type}</Badge>
+              <Badge variant="secondary">{item.editie}</Badge>
+              {item.watched && <Badge variant="success">{t("watched_label")}</Badge>}
+              {item.box_name && <Badge variant="outline">{t("collection_item_box_caption", item.box_name)}</Badge>}
+            </div>
+            <p className="font-mono text-xs text-muted-foreground">{item.barcode}</p>
+          </div>
         </div>
-      )}
+      </BackdropHero>
 
-      <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold">{item.movie_title}</h1>
-        <p className="text-sm text-muted-foreground">
-          {t("barcode_type_editie_line", item.barcode, item.type, item.editie)}
-        </p>
-        {item.box_name && <p className="text-sm text-muted-foreground">{t("collection_item_box_caption", item.box_name)}</p>}
-      </div>
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
 
       {movie?.overview && (
         <div>
-          <h2 className="mb-1 text-base font-semibold">{t("collection_item_detail_synopsis_title")}</h2>
-          <p className="text-sm leading-relaxed text-muted-foreground">{movie.overview}</p>
+          <h2 className="mb-2 font-display text-xl font-semibold tracking-tight">{t("collection_item_detail_synopsis_title")}</h2>
+          <p className="leading-relaxed text-foreground/90">{movie.overview}</p>
         </div>
       )}
 
@@ -335,6 +343,7 @@ export function CollectionItemEditor({ item: initial, movie }: { item: Collectio
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 }

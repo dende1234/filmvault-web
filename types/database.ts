@@ -210,6 +210,8 @@ export interface CuratedListSubscription {
 
 export interface CuratedListUiItem {
   list: CuratedList;
+  /** First few films' posters, for the card collage. */
+  previewPosters: { path: string | null; title: string }[];
   totalCount: number;
   ownedCount: number;
   isMine: boolean;

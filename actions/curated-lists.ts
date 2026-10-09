@@ -122,6 +122,7 @@ export async function getAllListsWithMeta(): Promise<CuratedListUiItem[]> {
       const listItems = await getListItems(list.id);
       return {
         list,
+        previewPosters: listItems.slice(0, 4).map((i) => ({ path: i.movie_poster, title: i.movie_title })),
         totalCount: listItems.length,
         ownedCount: listItems.filter((i) => ownedTmdbIds.has(i.tmdb_movie_id)).length,
         isMine: list.owner_id === userId,

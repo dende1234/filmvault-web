@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { getLocale, getThemePreference } from "@/lib/preferences";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -16,9 +16,24 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Display serif for film titles and page headings — the "film poster /
+// Criterion catalogue" voice next to Geist's neutral UI text.
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
+  subsets: ["latin"],
+  axes: ["opsz", "SOFT"],
+});
+
 export const metadata: Metadata = {
-  title: "FilmVault",
-  description: "Houd je fysieke filmcollectie bij",
+  title: { default: "FilmVault", template: "%s · FilmVault" },
+  description: "Houd je fysieke filmcollectie bij: scan, verzamel en ontdek je films.",
+  applicationName: "FilmVault",
+  openGraph: {
+    title: "FilmVault",
+    description: "Houd je fysieke filmcollectie bij: scan, verzamel en ontdek je films.",
+    siteName: "FilmVault",
+    type: "website",
+  },
 };
 
 export default async function RootLayout({
@@ -29,14 +44,14 @@ export default async function RootLayout({
   const [theme, locale] = await Promise.all([getThemePreference(), getLocale()]);
   const dict = getDictionary(locale);
   // "system" leaves no class on <html> — globals.css falls back to the
-  // prefers-color-scheme media query in that case, same tri-state as
-  // Android's FilmVaultTheme(darkTheme = isSystemInDarkTheme()).
+  // prefers-color-scheme media query in that case (dark unless the OS asks
+  // for light), same tri-state as Android's FilmVaultTheme.
   const themeClass = theme === "system" ? "" : theme;
 
   return (
     <html
       lang={locale}
-      className={`${geistSans.variable} ${geistMono.variable} ${themeClass} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${themeClass} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <LocaleProvider dict={dict} locale={locale}>

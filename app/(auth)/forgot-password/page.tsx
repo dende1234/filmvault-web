@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-center text-lg font-semibold">{t("forgot_password_title")}</h2>
+      <h2 className="font-display text-2xl font-semibold tracking-tight">{t("forgot_password_title")}</h2>
 
       {sent ? (
         <p className="text-sm text-muted-foreground">{t("forgot_password_email_sent")}</p>
@@ -53,7 +53,7 @@ export default function ForgotPasswordPage() {
       )}
 
       <div className="flex justify-center text-sm">
-        <Link href="/login" className="text-primary hover:underline">
+        <Link href="/login" className="font-medium text-primary hover:underline">
           {t("forgot_password_back_to_login")}
         </Link>
       </div>

@@ -17,8 +17,6 @@ export default async function CollectionItemDetailPage({
   const movie = await getMovieDetail(item.tmdb_movie_id, locale).catch(() => null);
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <CollectionItemEditor item={item} movie={movie} />
-    </div>
+    <CollectionItemEditor item={item} movie={movie} />
   );
 }

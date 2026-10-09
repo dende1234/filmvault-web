@@ -2,6 +2,7 @@
 
 import { Star, StarHalf } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useT } from "@/lib/i18n/locale-provider";
 
 /** 0.5-step star rating, 0–5, matching the Android app's rating control. */
 export function StarRating({
@@ -15,6 +16,7 @@ export function StarRating({
   disabled?: boolean;
   max?: number;
 }) {
+  const { t } = useT();
   const current = value ?? 0;
 
   function handleClick(starIndex: number, half: boolean) {
@@ -32,14 +34,14 @@ export function StarRating({
           <span key={i} className="relative inline-flex">
             <button
               type="button"
-              aria-label={`${i + 0.5} sterren`}
+              aria-label={t("rating_stars_aria", i + 0.5)}
               disabled={disabled}
               onClick={() => handleClick(i, true)}
               className="absolute left-0 h-6 w-3 overflow-hidden"
             />
             <button
               type="button"
-              aria-label={`${i + 1} sterren`}
+              aria-label={t("rating_stars_aria", i + 1)}
               disabled={disabled}
               onClick={() => handleClick(i, false)}
               className="h-6 w-6"
@@ -47,15 +49,18 @@ export function StarRating({
               {filled ? (
                 <Star className="h-6 w-6 fill-primary text-primary" />
               ) : halfFilled ? (
-                <StarHalf className="h-6 w-6 fill-primary text-primary" />
+                <span className="relative block h-6 w-6">
+                  <Star className="absolute inset-0 h-6 w-6 text-muted-foreground/50" />
+                  <StarHalf className="absolute inset-0 h-6 w-6 fill-primary text-primary" />
+                </span>
               ) : (
-                <Star className="h-6 w-6 text-muted-foreground" />
+                <Star className="h-6 w-6 text-muted-foreground/50 transition-colors hover:text-primary/70" />
               )}
             </button>
           </span>
         );
       })}
-      {value != null && <span className="ml-1 text-sm text-muted-foreground">{value.toFixed(1)}</span>}
+      {value != null && <span className="ml-1.5 text-sm font-medium tabular-nums text-primary">{value.toFixed(1)}</span>}
     </div>
   );
 }

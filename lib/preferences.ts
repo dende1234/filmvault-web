@@ -8,11 +8,13 @@ export type ThemePreference = "light" | "dark" | "system";
 
 /** Server-side read of the stored theme preference — cookie first (works
  * pre-login too), same tri-state (system/light/dark) as Android's
- * `profiles.theme_preference`. */
+ * `profiles.theme_preference`. No cookie yet = dark: the web app is
+ * dark-first ("bioscoop-donker"); an explicit "system" choice is kept. */
 export async function getThemePreference(): Promise<ThemePreference> {
   const store = await cookies();
   const value = store.get(THEME_COOKIE)?.value;
-  return value === "light" || value === "dark" ? value : "system";
+  if (value === "light" || value === "dark" || value === "system") return value;
+  return "dark";
 }
 
 export async function getLocale(): Promise<Locale> {

@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import { Bookmark, X } from "lucide-react";
 import { useT } from "@/lib/i18n/locale-provider";
 import { removeFromWishlist } from "@/actions/wishlist";
 import type { WishlistItem } from "@/types/database";
-import { posterUrl } from "@/types/tmdb";
-import { Card, CardContent } from "@/components/ui/card";
+import { Poster, PosterCorner } from "@/components/movie/poster";
+import { PosterGrid } from "@/components/movie/poster-grid";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 
 export function WishlistClient({ items: initialItems }: { items: WishlistItem[] }) {
@@ -30,37 +32,44 @@ export function WishlistClient({ items: initialItems }: { items: WishlistItem[] 
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">{t("nav_wishlist")}</h1>
+    <div className="flex flex-col gap-6">
+      <PageHeader title={t("nav_wishlist")} description={items.length > 0 ? t("wishlist_count", items.length) : undefined} />
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("wishlist_empty")}</p>
+        <EmptyState
+          icon={Bookmark}
+          title={t("wishlist_empty")}
+          description={t("wishlist_empty_description")}
+          action={
+            <Button asChild>
+              <Link href="/films">{t("action_discover_films")}</Link>
+            </Button>
+          }
+        />
       ) : (
-        <div className="flex flex-col gap-2">
-          {items.map((item) => {
-            const poster = posterUrl(item.movie_poster, "w200");
-            return (
-              <Card key={item.id}>
-                <CardContent className="flex items-center gap-3 pt-5">
-                  <Link href={`/films/${item.tmdb_movie_id}`} className="flex flex-1 items-center gap-3 min-w-0">
-                    <div className="relative h-16 w-11 flex-none overflow-hidden rounded-md bg-muted">
-                      {poster && <Image src={poster} alt="" fill className="object-cover" />}
-                    </div>
-                    <p className="truncate font-medium">{item.movie_title}</p>
-                  </Link>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={removingIds.has(item.id)}
-                    onClick={() => remove(item)}
-                  >
-                    {t("action_delete")}
-                  </Button>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+        <PosterGrid>
+          {items.map((item) => (
+            <div key={item.id} className="group relative flex flex-col gap-2">
+              <Link href={`/films/${item.tmdb_movie_id}`} className="flex flex-col gap-2 focus-visible:outline-none">
+                <Poster path={item.movie_poster} title={item.movie_title} hover />
+                <p className="line-clamp-2 text-sm font-medium leading-snug transition-colors group-hover:text-primary">
+                  {item.movie_title}
+                </p>
+              </Link>
+              <PosterCorner position="tr">
+                <button
+                  type="button"
+                  onClick={() => remove(item)}
+                  disabled={removingIds.has(item.id)}
+                  aria-label={t("action_delete")}
+                  className="rounded-full bg-black/70 p-1.5 text-white backdrop-blur-sm transition-opacity hover:bg-destructive focus-visible:opacity-100 disabled:opacity-50 md:opacity-0 md:group-hover:opacity-100"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </PosterCorner>
+            </div>
+          ))}
+        </PosterGrid>
       )}
     </div>
   );

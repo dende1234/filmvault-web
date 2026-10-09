@@ -18,8 +18,6 @@ export default async function RecapPage() {
   const badges = await getEarnedBadges();
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <YearlyRecapClient collections={collections} items={items} badges={badges} />
-    </div>
+    <YearlyRecapClient collections={collections} items={items} badges={badges} />
   );
 }

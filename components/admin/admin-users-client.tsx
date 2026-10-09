@@ -37,7 +37,7 @@ export function AdminUsersClient({ profiles, currentUserId }: { profiles: AdminP
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">{t("admin_users_label")}</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight">{t("admin_users_label")}</h1>
 
       {profiles.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("admin_users_empty")}</p>

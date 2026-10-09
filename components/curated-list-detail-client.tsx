@@ -1,8 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import {
@@ -14,7 +14,13 @@ import {
 } from "@/actions/curated-lists";
 import type { CuratedList, CuratedListItem } from "@/types/database";
 import type { MovieSummaryDto } from "@/types/tmdb";
-import { posterUrl } from "@/types/tmdb";
+import { Check, Flag, ListChecks, Plus, Trash2, X } from "lucide-react";
+import { Poster, PosterCorner } from "@/components/movie/poster";
+import { PosterGrid } from "@/components/movie/poster-grid";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { MovieSearchPickerDialog } from "@/components/movie-search-picker-dialog";
 import { ReportDialog } from "@/components/report-dialog";
@@ -100,62 +106,93 @@ export function CuratedListDetailClient({
     }
   }
 
+  const ownedCount = items.filter((i) => owned.has(i.tmdb_movie_id)).length;
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">{list.name}</h1>
-          {list.description && <p className="text-sm text-muted-foreground">{list.description}</p>}
+      <PageHeader
+        title={list.name}
+        description={list.description ?? undefined}
+        actions={
+          <>
+            {isMine && (
+              <Button onClick={() => setPickerOpen(true)}>
+                <Plus />
+                {t("list_detail_add_movie")}
+              </Button>
+            )}
+            {!isMine && (
+              <Button variant={isSubscribed ? "secondary" : "default"} disabled={isSubProcessing} onClick={toggleSubscription}>
+                {isSubscribed ? t("lists_unsubscribe_button") : t("lists_subscribe_button")}
+              </Button>
+            )}
+            {!isMine && (
+              <Button variant="ghost" onClick={() => setShowReportDialog(true)}>
+                <Flag />
+                {t("action_report")}
+              </Button>
+            )}
+            {canDelete && (
+              <Button variant="ghost" className="text-destructive" onClick={() => setShowDeleteDialog(true)}>
+                <Trash2 />
+                {t("list_detail_delete_list")}
+              </Button>
+            )}
+          </>
+        }
+      />
+
+      {items.length > 0 && (
+        <div className="flex max-w-md flex-col gap-1.5">
+          <Progress value={ownedCount} max={items.length} label={t("lists_progress_format", ownedCount, items.length)} />
+          <p className="text-xs text-muted-foreground">{t("lists_progress_format", ownedCount, items.length)}</p>
         </div>
-        <div className="flex gap-2">
-          {isMine && <Button onClick={() => setPickerOpen(true)}>{t("list_detail_add_movie")}</Button>}
-          {!isMine && (
-            <Button variant={isSubscribed ? "outline" : "default"} disabled={isSubProcessing} onClick={toggleSubscription}>
-              {isSubscribed ? t("lists_unsubscribe_button") : t("lists_subscribe_button")}
-            </Button>
-          )}
-          {!isMine && (
-            <Button variant="outline" onClick={() => setShowReportDialog(true)}>
-              {t("action_report")}
-            </Button>
-          )}
-          {canDelete && (
-            <Button variant="destructive" onClick={() => setShowDeleteDialog(true)}>
-              {t("list_detail_delete_list")}
-            </Button>
-          )}
-        </div>
-      </div>
+      )}
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("list_detail_empty")}</p>
+        <EmptyState icon={ListChecks} title={t("list_detail_empty")} />
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        <PosterGrid>
           {items.map((item) => {
             const isOwned = owned.has(item.tmdb_movie_id);
-            const poster = posterUrl(item.movie_poster, "w200");
             return (
-              <div key={item.id} className={`group relative flex flex-col gap-2 ${isOwned ? "" : "opacity-40"}`}>
-                <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-muted">
-                  {poster && <Image src={poster} alt={item.movie_title} fill className="object-cover" />}
-                </div>
-                <p className="line-clamp-2 text-sm font-medium">{item.movie_title}</p>
-                <p className="text-xs text-muted-foreground">
-                  {isOwned ? t("list_detail_owned_label") : t("list_detail_not_owned_label")}
-                </p>
-                {isMine && (
-                  <button
-                    onClick={() => setPendingRemove(item)}
-                    className="absolute right-1 top-1 hidden rounded-full bg-black/60 p-1 text-white group-hover:block"
-                    aria-label={t("list_detail_remove_movie")}
+              <div key={item.id} className="group relative flex flex-col gap-2">
+                <Link href={`/films/${item.tmdb_movie_id}`} className="flex flex-col gap-2 focus-visible:outline-none">
+                  <Poster
+                    path={item.movie_poster}
+                    title={item.movie_title}
+                    hover
+                    className={isOwned ? undefined : "opacity-50 grayscale transition-[filter,opacity] group-hover:opacity-100 group-hover:grayscale-0"}
                   >
-                    ✕
-                  </button>
+                    {isOwned && (
+                      <PosterCorner position="bl">
+                        <Badge variant="overlay">
+                          <Check className="text-success" />
+                          {t("list_detail_owned_label")}
+                        </Badge>
+                      </PosterCorner>
+                    )}
+                  </Poster>
+                  <p className="line-clamp-2 text-sm font-medium leading-snug transition-colors group-hover:text-primary">
+                    {item.movie_title}
+                  </p>
+                </Link>
+                {isMine && (
+                  <PosterCorner position="tr">
+                    <button
+                      type="button"
+                      onClick={() => setPendingRemove(item)}
+                      className="rounded-full bg-black/70 p-1.5 text-white backdrop-blur-sm transition-opacity hover:bg-destructive focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                      aria-label={t("list_detail_remove_movie")}
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </PosterCorner>
                 )}
               </div>
             );
           })}
-        </div>
+        </PosterGrid>
       )}
 
       <MovieSearchPickerDialog open={pickerOpen} onOpenChange={setPickerOpen} onSelect={handleAddMovie} />

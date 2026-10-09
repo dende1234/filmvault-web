@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Plus } from "lucide-react";
 import { useT } from "@/lib/i18n/locale-provider";
 import type { MovieSummaryDto } from "@/types/tmdb";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,10 @@ export function AddFilmFlow() {
 
   return (
     <>
-      <Button onClick={() => setPickerOpen(true)}>{t("dashboard_add_film_button")}</Button>
+      <Button onClick={() => setPickerOpen(true)}>
+        <Plus />
+        {t("dashboard_add_film_button")}
+      </Button>
       <MovieSearchPickerDialog
         open={pickerOpen}
         onOpenChange={setPickerOpen}

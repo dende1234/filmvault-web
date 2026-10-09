@@ -136,7 +136,7 @@ export function AdminManageFilmsClient() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">{t("admin_manage_films_title")}</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight">{t("admin_manage_films_title")}</h1>
       <p className="text-sm text-muted-foreground">{t("admin_manage_films_description")}</p>
 
       <div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { Shuffle } from "lucide-react";
 import { useT } from "@/lib/i18n/locale-provider";
 import type { CollectionItem } from "@/types/database";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,13 @@ import { Button } from "@/components/ui/button";
 /** Picks a random not-yet-watched item and navigates to it — mirrors
  * DashboardViewModel.kt's pickSurprise() exactly, just client-side here since there's no
  * server-round-trip needed for a purely local random pick. */
-export function SurpriseMeButton({ unwatchedItems }: { unwatchedItems: CollectionItem[] }) {
+export function SurpriseMeButton({
+  unwatchedItems,
+  variant = "secondary",
+}: {
+  unwatchedItems: CollectionItem[];
+  variant?: "secondary" | "outline";
+}) {
   const router = useRouter();
   const { t } = useT();
 
@@ -20,7 +27,8 @@ export function SurpriseMeButton({ unwatchedItems }: { unwatchedItems: Collectio
   }
 
   return (
-    <Button variant="outline" onClick={pickSurprise}>
+    <Button variant={variant} onClick={pickSurprise}>
+      <Shuffle />
       {t("dashboard_surprise_me_button")}
     </Button>
   );

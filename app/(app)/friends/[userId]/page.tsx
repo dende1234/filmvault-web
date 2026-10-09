@@ -1,9 +1,11 @@
-import Link from "next/link";
+import { LibraryBig } from "lucide-react";
 import { getPublicProfiles } from "@/actions/friends";
-import { getCollectionsForUser } from "@/actions/collections";
+import { getCollectionItemsForCollections, getCollectionsForUser } from "@/actions/collections";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
+import { CollectionCard, buildCollectionPreviews } from "@/components/collection-card";
 
 export default async function FriendCollectionsPage({ params }: { params: Promise<{ userId: string }> }) {
   const { userId } = await params;
@@ -11,29 +13,29 @@ export default async function FriendCollectionsPage({ params }: { params: Promis
 
   const [profiles, collections] = await Promise.all([getPublicProfiles([userId]), getCollectionsForUser(userId)]);
   const friendName = profiles[0]?.name || dict.friend_collections_default_name;
+  const items = await getCollectionItemsForCollections(collections.map((c) => c.id)).catch(() => []);
+  const previews = buildCollectionPreviews(items);
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="mb-6 text-2xl font-semibold">{format(dict.friend_collections_title, friendName)}</h1>
+    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+      <PageHeader title={format(dict.friend_collections_title, friendName)} />
 
       {collections.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{dict.friend_collections_empty}</p>
+        <EmptyState icon={LibraryBig} title={dict.friend_collections_empty} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-          {collections.map((c) => (
-            <Link key={c.id} href={`/friends/${userId}/${c.id}`}>
-              <Card className="h-full hover:bg-muted">
-                <CardHeader>
-                  <CardTitle>{c.name}</CardTitle>
-                </CardHeader>
-                {c.description && (
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">{c.description}</p>
-                  </CardContent>
-                )}
-              </Card>
-            </Link>
-          ))}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {collections.map((c) => {
+            const preview = previews[c.id] ?? { count: 0, posters: [] };
+            return (
+              <CollectionCard
+                key={c.id}
+                collection={c}
+                preview={preview}
+                href={`/friends/${userId}/${c.id}`}
+                countLabel={format(dict.collections_film_count, preview.count)}
+              />
+            );
+          })}
         </div>
       )}
     </div>

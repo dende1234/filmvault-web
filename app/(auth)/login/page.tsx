@@ -37,7 +37,10 @@ export default function LoginPage() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <p className="text-center text-sm text-muted-foreground">{t("login_subtitle")}</p>
+      <div className="flex flex-col gap-1">
+        <h2 className="font-display text-2xl font-semibold tracking-tight">{t("login_title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("login_subtitle")}</p>
+      </div>
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="email">{t("email_label")}</Label>
@@ -62,10 +65,10 @@ export default function LoginPage() {
       </Button>
 
       <div className="flex flex-col items-center gap-2 text-sm">
-        <Link href="/forgot-password" className="text-primary hover:underline">
+        <Link href="/forgot-password" className="font-medium text-primary hover:underline">
           {t("login_forgot_password")}
         </Link>
-        <Link href="/register" className="text-primary hover:underline">
+        <Link href="/register" className="font-medium text-primary hover:underline">
           {t("login_register_link")}
         </Link>
       </div>

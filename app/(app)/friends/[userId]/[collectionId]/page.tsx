@@ -1,9 +1,14 @@
-import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Eye, Film } from "lucide-react";
 import { getCollection, getCollectionItems } from "@/actions/collections";
-import { getDictionary } from "@/lib/i18n/dictionary";
+import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
-import { posterUrl } from "@/types/tmdb";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
+import { Poster, PosterCorner } from "@/components/movie/poster";
+import { PosterGrid } from "@/components/movie/poster-grid";
+import { Badge } from "@/components/ui/badge";
 
 export default async function FriendCollectionDetailPage({
   params,
@@ -16,31 +21,39 @@ export default async function FriendCollectionDetailPage({
   if (!collection) notFound();
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <h1 className="mb-1 text-2xl font-semibold">{collection.name}</h1>
-      {collection.description && <p className="mb-6 text-sm text-muted-foreground">{collection.description}</p>}
+    <div className="mx-auto flex max-w-6xl flex-col gap-6">
+      <PageHeader
+        title={collection.name}
+        description={
+          <>
+            {format(dict.collections_film_count, items.length)}
+            {collection.description && <> · {collection.description}</>}
+          </>
+        }
+      />
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{dict.collection_detail_empty}</p>
+        <EmptyState icon={Film} title={dict.collection_detail_empty} />
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-          {items.map((item) => {
-            const poster = posterUrl(item.movie_poster, "w200");
-            return (
-              <div key={item.id} className="flex flex-col gap-2">
-                <div className="relative aspect-[2/3] overflow-hidden rounded-xl bg-muted">
-                  {poster && <Image src={poster} alt={item.movie_title} fill className="object-cover" />}
+        <PosterGrid>
+          {items.map((item) => (
+            <Link key={item.id} href={`/films/${item.tmdb_movie_id}`} className="group flex flex-col gap-2 focus-visible:outline-none">
+              <Poster path={item.movie_poster} title={item.movie_title} hover>
+                <PosterCorner position="bl">
+                  <Badge variant="overlay">{item.type}</Badge>
                   {item.watched && (
-                    <span className="absolute right-1.5 top-1.5 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-                      {dict.watched_label}
-                    </span>
+                    <Badge variant="overlay" className="px-1.5" title={dict.watched_label}>
+                      <Eye className="text-success" />
+                    </Badge>
                   )}
-                </div>
-                <p className="line-clamp-2 text-sm font-medium">{item.movie_title}</p>
-              </div>
-            );
-          })}
-        </div>
+                </PosterCorner>
+              </Poster>
+              <p className="line-clamp-2 text-sm font-medium leading-snug transition-colors group-hover:text-primary">
+                {item.movie_title}
+              </p>
+            </Link>
+          ))}
+        </PosterGrid>
       )}
     </div>
   );

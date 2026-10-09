@@ -3,8 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { UserPlus } from "lucide-react";
+import { UserPlus, Users } from "lucide-react";
 import { useT } from "@/lib/i18n/locale-provider";
+import { Avatar } from "@/components/avatar";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
 import {
   acceptFriendRequest,
   cancelFriendRequest,
@@ -28,14 +31,9 @@ function conflictMessage(t: (key: "friends_already_friends" | "friends_request_a
 function PersonRow({ profile }: { profile: ProfileSearchResult }) {
   const { t } = useT();
   return (
-    <Card className="hover:bg-muted">
+    <Card className="transition-colors hover:border-primary/40 hover:bg-elevated/50">
       <div className="flex items-center gap-3 p-3">
-        {profile.avatar_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={profile.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover" />
-        ) : (
-          <div className="h-10 w-10 rounded-full bg-muted" />
-        )}
+        <Avatar src={profile.avatar_url} name={profile.name} className="size-10" />
         <span className="font-medium">{profile.name || t("friends_unnamed_user")}</span>
       </div>
     </Card>
@@ -133,27 +131,24 @@ export function FriendsPageClient({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("nav_friends")}</h1>
-        <Button onClick={() => setShowAddDialog(true)}>
-          <UserPlus className="h-4 w-4" />
-          {t("friends_add_title")}
-        </Button>
-      </div>
+      <PageHeader
+        title={t("nav_friends")}
+        actions={
+          <Button onClick={() => setShowAddDialog(true)}>
+            <UserPlus />
+            {t("friends_add_title")}
+          </Button>
+        }
+      />
 
       {incoming.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-bold">{t("friends_incoming_title")}</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("friends_incoming_title")}</h2>
           {incoming.map((item) => (
             <Card key={item.request.id}>
               <CardContent className="flex items-center justify-between gap-3 pt-5">
                 <div className="flex items-center gap-3">
-                  {item.otherProfile.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.otherProfile.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover" />
-                  ) : (
-                    <div className="h-10 w-10 rounded-full bg-muted" />
-                  )}
+                  <Avatar src={item.otherProfile.avatar_url} name={item.otherProfile.name} className="size-10" />
                   <span className="font-medium">{item.otherProfile.name || t("friends_unnamed_user")}</span>
                 </div>
                 <div className="flex gap-2">
@@ -181,17 +176,12 @@ export function FriendsPageClient({
 
       {outgoing.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-bold">{t("friends_outgoing_title")}</h2>
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("friends_outgoing_title")}</h2>
           {outgoing.map((item) => (
             <Card key={item.request.id}>
               <CardContent className="flex items-center justify-between gap-3 pt-5">
                 <div className="flex items-center gap-3">
-                  {item.otherProfile.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={item.otherProfile.avatar_url} alt="" className="h-10 w-10 rounded-full object-cover" />
-                  ) : (
-                    <div className="h-10 w-10 rounded-full bg-muted" />
-                  )}
+                  <Avatar src={item.otherProfile.avatar_url} name={item.otherProfile.name} className="size-10" />
                   <span className="font-medium">{item.otherProfile.name || t("friends_unnamed_user")}</span>
                 </div>
                 <Button
@@ -209,9 +199,18 @@ export function FriendsPageClient({
       )}
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-bold">{t("friends_my_friends_title")}</h2>
+        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("friends_my_friends_title")}</h2>
         {friends.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t("friends_empty")}</p>
+          <EmptyState
+            icon={Users}
+            title={t("friends_empty")}
+            action={
+              <Button onClick={() => setShowAddDialog(true)}>
+                <UserPlus />
+                {t("friends_add_title")}
+              </Button>
+            }
+          />
         ) : (
           friends.map((friend) => (
             <Link key={friend.id} href={`/friends/${friend.id}`}>
@@ -237,12 +236,7 @@ export function FriendsPageClient({
             {results.map((profile) => (
               <div key={profile.id} className="flex items-center justify-between gap-3 p-2">
                 <div className="flex items-center gap-3">
-                  {profile.avatar_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={profile.avatar_url} alt="" className="h-9 w-9 rounded-full object-cover" />
-                  ) : (
-                    <div className="h-9 w-9 rounded-full bg-muted" />
-                  )}
+                  <Avatar src={profile.avatar_url} name={profile.name} className="size-9" />
                   <span className="text-sm font-medium">{profile.name || t("friends_unnamed_user")}</span>
                 </div>
                 <div className="flex gap-2">

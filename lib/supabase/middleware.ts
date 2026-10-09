@@ -37,7 +37,9 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isPublicPath = PUBLIC_PATHS.some((p) => path.startsWith(p));
+  // "/" is the public landing page — exact match only, since every path
+  // starts with "/" (a prefix match would make the whole app public).
+  const isPublicPath = path === "/" || PUBLIC_PATHS.some((p) => path.startsWith(p));
   const isAlwaysAccessible = ALWAYS_ACCESSIBLE_PATHS.some((p) => path.startsWith(p));
 
   if (isAlwaysAccessible) return supabaseResponse;

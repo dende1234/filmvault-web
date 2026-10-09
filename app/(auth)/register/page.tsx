@@ -42,7 +42,7 @@ export default function RegisterPage() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <h2 className="text-center text-lg font-semibold">{t("register_title")}</h2>
+      <h2 className="font-display text-2xl font-semibold tracking-tight">{t("register_title")}</h2>
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="email">{t("email_label")}</Label>
@@ -78,7 +78,7 @@ export default function RegisterPage() {
       </Button>
 
       <div className="flex justify-center text-sm">
-        <Link href="/login" className="text-primary hover:underline">
+        <Link href="/login" className="font-medium text-primary hover:underline">
           {t("register_login_link")}
         </Link>
       </div>

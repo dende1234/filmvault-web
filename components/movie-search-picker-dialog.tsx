@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { useT } from "@/lib/i18n/locale-provider";
-import { posterUrl } from "@/types/tmdb";
+import { Poster } from "@/components/movie/poster";
 import type { MovieSummaryDto } from "@/types/tmdb";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SearchInput } from "@/components/ui/search-input";
@@ -19,17 +18,14 @@ function MovieRow({
   onClick: () => void;
   selected?: boolean;
 }) {
-  const poster = posterUrl(movie.poster_path, "w200");
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-lg p-2 text-left hover:bg-muted"
+      className="flex w-full items-center gap-3 rounded-lg p-2 text-left transition-colors hover:bg-muted focus-visible:bg-muted focus-visible:outline-none"
     >
       {selected !== undefined && <Checkbox checked={selected} className="pointer-events-none" />}
-      <div className="relative h-16 w-11 flex-none overflow-hidden rounded-md bg-muted">
-        {poster && <Image src={poster} alt="" fill className="object-cover" />}
-      </div>
+      <Poster path={movie.poster_path} title={movie.title} size="xs" className="w-11 shrink-0 rounded-md shadow-none" />
       <div className="min-w-0">
         <p className="truncate text-sm font-medium">{movie.title}</p>
         {movie.release_date && <p className="text-xs text-muted-foreground">{movie.release_date.slice(0, 4)}</p>}

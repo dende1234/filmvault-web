@@ -8,7 +8,7 @@ export default async function CollectionDetailPage({ params }: { params: Promise
   if (!collection) notFound();
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-6xl">
       <CollectionDetailClient collection={collection} items={items} />
     </div>
   );

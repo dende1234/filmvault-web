@@ -2,9 +2,9 @@
 
 import { cloneElement, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { User } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
+import { Avatar } from "@/components/avatar";
 import { updateProfile, setThemePreference, setLocale, deleteAccount } from "@/actions/profile";
 import { signOut } from "@/actions/auth";
 import type { Profile, ThemePreference } from "@/types/database";
@@ -82,15 +82,8 @@ export function ProfileForm({ profile }: { profile: Profile }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col items-center gap-2 text-center">
-        {form.avatar_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={form.avatar_url} alt={form.name} className="h-22 w-22 rounded-full object-cover" />
-        ) : (
-          <div className="flex h-22 w-22 items-center justify-center rounded-full bg-muted">
-            <User className="h-10 w-10 text-muted-foreground" />
-          </div>
-        )}
-        <h1 className="text-xl font-semibold">{form.name || t("app_name")}</h1>
+        <Avatar src={form.avatar_url} name={form.name} className="size-22 text-2xl ring-2 ring-primary/40" />
+        <h1 className="font-display text-3xl font-semibold tracking-tight">{form.name || t("app_name")}</h1>
         <p className="text-sm text-muted-foreground">{profile.email}</p>
       </div>
 

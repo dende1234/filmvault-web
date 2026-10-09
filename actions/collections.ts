@@ -8,6 +8,7 @@ import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { BarcodeAlreadyRegisteredError } from "@/lib/errors";
+import { requireAdmin } from "@/lib/require-admin";
 import type {
   Barcode,
   BoxFilmInput,
@@ -431,28 +432,50 @@ export async function adminRegisterBarcode(
   barcode: string,
   type: string,
   editie: string,
-): Promise<void> {
+): Promise<string> {
+  await requireAdmin();
   const existing = await findBarcodesByCode(barcode);
   if (existing.length > 0) throw new BarcodeAlreadyRegisteredError(existing[0].tmdb_movie_id);
 
   const supabase = await createClient();
-  const { error } = await supabase.from("barcodes").insert({ tmdb_movie_id: tmdbMovieId, barcode, type, editie });
-  if (error) throw error;
+  const { data, error } = await supabase
+    .from("barcodes")
+    .insert({ tmdb_movie_id: tmdbMovieId, barcode, type, editie })
+    .select("id")
+    .single();
+  if (error) {
+    // 23505 = unique_violation (barcodes_unique.sql): another insert won the
+    // race between the findBarcodesByCode check above and this insert.
+    if (error.code === "23505") {
+      const winner = await findBarcodesByCode(barcode);
+      throw new BarcodeAlreadyRegisteredError(winner[0]?.tmdb_movie_id ?? tmdbMovieId);
+    }
+    throw error;
+  }
+  return data.id as string;
 }
 
 /** Admin-only: corrects an existing master film-list entry (e.g. a wrongly
  * registered type/editie), or removes it entirely. Relies on the
  * admin-only barcodes UPDATE/DELETE RLS policies in admin_tools.sql. */
 export async function updateBarcodeDetails(barcodeId: string, type: string, editie: string): Promise<void> {
+  await requireAdmin();
   const supabase = await createClient();
   const { error } = await supabase.from("barcodes").update({ type, editie }).eq("id", barcodeId);
   if (error) throw error;
 }
 
 export async function deleteBarcode(barcodeId: string): Promise<void> {
+  await requireAdmin();
   const supabase = await createClient();
   const { error } = await supabase.from("barcodes").delete().eq("id", barcodeId);
   if (error) throw error;
+}
+
+async function getPendingBarcodeById(supabase: Awaited<ReturnType<typeof createClient>>, id: string): Promise<PendingBarcode> {
+  const { data, error } = await supabase.from("pending_barcodes").select("*").eq("id", id).eq("status", "pending").single();
+  if (error) throw error;
+  return data as PendingBarcode;
 }
 
 async function barcodeAlreadyExists(supabase: Awaited<ReturnType<typeof createClient>>, tmdbMovieId: number, barcode: string) {
@@ -465,8 +488,11 @@ async function barcodeAlreadyExists(supabase: Awaited<ReturnType<typeof createCl
  * Postgres RPC). Guards against duplicating a barcode that another
  * (near-simultaneous) approval already registered for this film.
  */
-export async function approvePendingBarcode(pending: PendingBarcode): Promise<void> {
+export async function approvePendingBarcode(pendingFromClient: PendingBarcode): Promise<void> {
+  await requireAdmin();
   const supabase = await createClient();
+  // Only the id is trusted from the client — the row's contents are re-read.
+  const pending = await getPendingBarcodeById(supabase, pendingFromClient.id);
   const { error: statusError } = await supabase
     .from("pending_barcodes")
     .update({ status: "approved" })
@@ -505,13 +531,16 @@ export async function approvePendingBarcode(pending: PendingBarcode): Promise<vo
     if (error) throw error;
   }
   revalidatePath("/admin/pending-barcodes");
+  revalidatePath("/admin/add-film");
 }
 
 export async function rejectPendingBarcode(id: string): Promise<void> {
+  await requireAdmin();
   const supabase = await createClient();
   const { error } = await supabase.from("pending_barcodes").update({ status: "rejected" }).eq("id", id);
   if (error) throw error;
   revalidatePath("/admin/pending-barcodes");
+  revalidatePath("/admin/add-film");
 }
 
 /** Box variant of approvePendingBarcode — pendingRows must all share the
@@ -520,8 +549,11 @@ export async function rejectPendingBarcode(id: string): Promise<void> {
  * inserts one collection_items row per (film x eligible collection); a
  * collection is skipped if it already contains ANY film from this box.
  * Sequential, not atomic — same tradeoff as approvePendingBarcode. */
-export async function approvePendingBox(pendingRows: PendingBarcode[]): Promise<void> {
+export async function approvePendingBox(pendingRowsFromClient: PendingBarcode[]): Promise<void> {
+  await requireAdmin();
   const supabase = await createClient();
+  // Only the ids are trusted from the client — the rows' contents are re-read.
+  const pendingRows = await Promise.all(pendingRowsFromClient.map((row) => getPendingBarcodeById(supabase, row.id)));
   const first = pendingRows[0];
   const boxGroupId = first.box_group_id;
   if (!boxGroupId) throw new Error("approvePendingBox requires rows with a box_group_id");
@@ -576,4 +608,5 @@ export async function approvePendingBox(pendingRows: PendingBarcode[]): Promise<
     if (error) throw error;
   }
   revalidatePath("/admin/pending-barcodes");
+  revalidatePath("/admin/add-film");
 }

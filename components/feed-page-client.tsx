@@ -3,7 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { PenLine, Rss } from "lucide-react";
 import { useT } from "@/lib/i18n/locale-provider";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
 import { createPost } from "@/actions/posts";
 import type { FeedPostUiItem } from "@/types/database";
 import type { MovieSummaryDto } from "@/types/tmdb";
@@ -63,15 +66,29 @@ export function FeedPageClient({ items }: { items: FeedPostUiItem[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("nav_feed")}</h1>
-        <Button onClick={() => setShowNewPost(true)}>{t("feed_new_post_title")}</Button>
-      </div>
+      <PageHeader
+        title={t("nav_feed")}
+        actions={
+          <Button onClick={() => setShowNewPost(true)}>
+            <PenLine />
+            {t("feed_new_post_title")}
+          </Button>
+        }
+      />
 
       {items.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("feed_empty")}</p>
+        <EmptyState
+          icon={Rss}
+          title={t("feed_empty_title")}
+          description={t("feed_empty")}
+          action={
+            <Button asChild variant="secondary">
+              <Link href="/friends">{t("nav_friends")}</Link>
+            </Button>
+          }
+        />
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-3">
           {newItems.map((item) => (
             <FeedPostItem key={item.post.id} item={item} />
           ))}

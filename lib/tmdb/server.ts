@@ -1,5 +1,5 @@
 import "server-only";
-import type { GenreDto, MovieDetailDto, MoviePageDto } from "@/types/tmdb";
+import type { GenreDto, MovieDetailDto, MovieDetailFullDto, MoviePageDto } from "@/types/tmdb";
 
 // Server-only TMDB client — mirrors movies/MovieRepository.kt's calls exactly,
 // except the API key stays server-side (TMDB_API_KEY, no NEXT_PUBLIC_ prefix)
@@ -52,4 +52,20 @@ export async function getGenres(language = "nl"): Promise<GenreDto[]> {
 
 export async function getMovieDetail(movieId: number, language = "nl"): Promise<MovieDetailDto> {
   return tmdbGet(`/movie/${movieId}`, { language: tmdbLocale(language) });
+}
+
+/** Everything the film detail page shows, in one request: credits, videos
+ * (localized + English + language-neutral, since Dutch trailers are rare),
+ * recommendations and per-country release dates (for the Kijkwijzer age). */
+export async function getMovieDetailFull(movieId: number, language = "nl"): Promise<MovieDetailFullDto> {
+  return tmdbGet(`/movie/${movieId}`, {
+    language: tmdbLocale(language),
+    append_to_response: "credits,videos,recommendations,release_dates",
+    include_video_language: `${language},en,null`,
+  });
+}
+
+/** Weekly trending films — the poster wall on the public landing page. */
+export async function getTrendingMovies(language = "nl"): Promise<MoviePageDto> {
+  return tmdbGet("/trending/movie/week", { language: tmdbLocale(language) });
 }

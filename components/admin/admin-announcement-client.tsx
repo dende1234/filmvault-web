@@ -35,7 +35,7 @@ export function AdminAnnouncementClient() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-semibold">{t("admin_announcement_title")}</h1>
+      <h1 className="font-display text-3xl font-semibold tracking-tight">{t("admin_announcement_title")}</h1>
       <p className="text-sm text-muted-foreground">{t("admin_announcement_description")}</p>
 
       <Input placeholder={t("admin_announcement_title_label")} value={title} onChange={(e) => setTitle(e.target.value)} />

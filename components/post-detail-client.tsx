@@ -1,13 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { addComment, deleteComment, deletePost } from "@/actions/posts";
 import type { Post, PostComment } from "@/types/database";
-import { posterUrl } from "@/types/tmdb";
+import { Poster } from "@/components/movie/poster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -43,7 +43,6 @@ export function PostDetailClient({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showReportPostDialog, setShowReportPostDialog] = useState(false);
   const [commentPendingReport, setCommentPendingReport] = useState<string | null>(null);
-  const poster = posterUrl(post.movie_poster, "w200");
 
   async function handleAddComment() {
     const trimmed = commentText.trim();
@@ -84,21 +83,22 @@ export function PostDetailClient({
   return (
     <div className="flex flex-col gap-6">
       <Card className="p-5">
-        {authorName && <p className="text-sm font-semibold">{authorName}</p>}
-        {post.title && <p className="mt-1 text-lg font-medium">{post.title}</p>}
-        <p className="mt-1 whitespace-pre-line">{post.body}</p>
+        {authorName && <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{authorName}</p>}
+        {post.title && <h1 className="mt-1 font-display text-2xl font-semibold tracking-tight">{post.title}</h1>}
+        <p className="mt-2 whitespace-pre-line leading-relaxed text-foreground/90">{post.body}</p>
         {post.tmdb_movie_id && (
-          <div className="mt-4 flex items-center gap-3">
-            <div className="relative h-[90px] w-[60px] flex-none overflow-hidden rounded-md bg-muted">
-              {poster && <Image src={poster} alt={post.movie_title ?? ""} fill className="object-cover" />}
-            </div>
+          <Link
+            href={`/films/${post.tmdb_movie_id}`}
+            className="group mt-5 flex items-center gap-4 rounded-lg border border-border/70 bg-elevated/50 p-3 transition-colors hover:border-primary/40"
+          >
+            <Poster path={post.movie_poster} title={post.movie_title ?? ""} size="xs" hover className="w-16 shrink-0" />
             <div>
-              {post.movie_title && <p className="text-sm font-medium">{post.movie_title}</p>}
+              {post.movie_title && <p className="font-medium transition-colors group-hover:text-primary">{post.movie_title}</p>}
               {post.rating != null && (
-                <p className="text-xs text-muted-foreground">{t("rating_star_prefix", post.rating)}</p>
+                <p className="text-sm font-medium text-primary">{t("rating_star_prefix", post.rating)}</p>
               )}
             </div>
-          </div>
+          </Link>
         )}
         <div className="mt-4 flex gap-2">
           {(isOwnPost || isAdmin) && (

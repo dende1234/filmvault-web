@@ -1,12 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { LibraryBig, Plus } from "lucide-react";
 import { useT } from "@/lib/i18n/locale-provider";
 import { createCollection } from "@/actions/collections";
 import type { Collection } from "@/types/database";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CollectionCard, type CollectionPreview } from "@/components/collection-card";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import {
@@ -18,7 +20,13 @@ import {
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export function CollectionsList({ collections }: { collections: Collection[] }) {
+export function CollectionsList({
+  collections,
+  previews,
+}: {
+  collections: Collection[];
+  previews: Record<string, CollectionPreview>;
+}) {
   const { t } = useT();
   const router = useRouter();
   const [sort, setSort] = useState<"name" | "newest">("name");
@@ -57,40 +65,52 @@ export function CollectionsList({ collections }: { collections: Collection[] }) 
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{t("collections_label")}</h1>
-        <div className="flex items-center gap-3">
-          <Select value={sort} onValueChange={(v) => setSort(v as "name" | "newest")}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name">{t("label_name")}</SelectItem>
-              <SelectItem value="newest">{t("collections_sort_newest")}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button onClick={() => setShowCreate(true)}>{t("action_add")}</Button>
-        </div>
-      </div>
+      <PageHeader
+        title={t("collections_label")}
+        actions={
+          <>
+            <Select value={sort} onValueChange={(v) => setSort(v as "name" | "newest")}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">{t("label_name")}</SelectItem>
+                <SelectItem value="newest">{t("collections_sort_newest")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button onClick={() => setShowCreate(true)}>
+              <Plus />
+              {t("action_add")}
+            </Button>
+          </>
+        }
+      />
 
       {sorted.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("collections_empty")}</p>
+        <EmptyState
+          icon={LibraryBig}
+          title={t("collections_empty")}
+          description={t("collections_empty_description")}
+          action={
+            <Button onClick={() => setShowCreate(true)}>
+              <Plus />
+              {t("collections_new_title")}
+            </Button>
+          }
+        />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
-          {sorted.map((c) => (
-            <Link key={c.id} href={`/collections/${c.id}`}>
-              <Card className="h-full transition-colors hover:bg-muted">
-                <CardHeader>
-                  <CardTitle>{c.name}</CardTitle>
-                </CardHeader>
-                {c.description && (
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">{c.description}</p>
-                  </CardContent>
-                )}
-              </Card>
-            </Link>
-          ))}
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {sorted.map((c) => {
+            const preview = previews[c.id] ?? { count: 0, posters: [] };
+            return (
+              <CollectionCard
+                key={c.id}
+                collection={c}
+                preview={preview}
+                href={`/collections/${c.id}`}
+                countLabel={t("collections_film_count", preview.count)}
+              />            );
+          })}
         </div>
       )}
 

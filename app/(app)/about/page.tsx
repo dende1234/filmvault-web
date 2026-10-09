@@ -2,12 +2,16 @@ import Link from "next/link";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
 import packageJson from "@/package.json";
+import { LogoMark } from "@/components/brand/logo";
 
 export default async function AboutPage() {
   const dict = getDictionary(await getLocale());
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-2 text-center">
-      <h1 className="text-xl font-semibold">{dict.app_name}</h1>
+    <div className="mx-auto flex max-w-md flex-col items-center gap-2 py-8 text-center">
+      <LogoMark className="mb-2 size-16" />
+      <h1 className="font-display text-3xl font-semibold tracking-tight">
+        Film<span className="text-primary">Vault</span>
+      </h1>
       <p className="text-sm text-muted-foreground">{format(dict.about_version, packageJson.version)}</p>
       <p className="mt-4 text-sm font-medium">{dict.about_powered_by_tmdb}</p>
       <p className="text-sm text-muted-foreground">{dict.about_tmdb_usage_note}</p>
