@@ -6,7 +6,20 @@ const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/privacy"];
 // Unlike login/register, these stay reachable regardless of auth state —
 // no redirect either way (a logged-in user must still be able to read the
 // privacy policy from their account, not get bounced back to /dashboard).
-const ALWAYS_ACCESSIBLE_PATHS = ["/privacy"];
+const ALWAYS_ACCESSIBLE_PATHS = ["/privacy", "/gids", "/c/"];
+
+// First-party acquisition source, kept 30 days and recorded once on signup
+// (actions/profile.ts). Not a tracking cookie: it holds only a campaign
+// label such as "invite-1a2b3c4d" or "facebook", never an identifier.
+const SOURCE_COOKIE = "fv_src";
+const SOURCE_MAX_AGE = 60 * 60 * 24 * 30;
+
+function sourceFrom(request: NextRequest): string | null {
+  const raw = request.nextUrl.searchParams.get("ref") ?? request.nextUrl.searchParams.get("utm_source");
+  if (!raw) return null;
+  const clean = raw.toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 64);
+  return clean || null;
+}
 
 /** Refreshes the Supabase session on every request and gates authenticated
  * routes — the web equivalent of `FilmVaultApp.kt`'s sessionStatus switch
@@ -42,12 +55,21 @@ export async function updateSession(request: NextRequest) {
   const isPublicPath = path === "/" || PUBLIC_PATHS.some((p) => path.startsWith(p));
   const isAlwaysAccessible = ALWAYS_ACCESSIBLE_PATHS.some((p) => path.startsWith(p));
 
-  if (isAlwaysAccessible) return supabaseResponse;
+  // Remember where an anonymous visitor came from (first touch wins).
+  const source = !user && !request.cookies.get(SOURCE_COOKIE) ? sourceFrom(request) : null;
+  const withSource = (response: NextResponse) => {
+    if (source) {
+      response.cookies.set(SOURCE_COOKIE, source, { maxAge: SOURCE_MAX_AGE, httpOnly: true, sameSite: "lax", path: "/" });
+    }
+    return response;
+  };
+
+  if (isAlwaysAccessible) return withSource(supabaseResponse);
 
   if (!user && !isPublicPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return withSource(NextResponse.redirect(url));
   }
 
   if (user && isPublicPath) {
@@ -56,5 +78,5 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  return supabaseResponse;
+  return withSource(supabaseResponse);
 }

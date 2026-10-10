@@ -15,11 +15,11 @@ export const metadata = {
 function Dutch() {
   return (
     <>
-      <h1>Privacybeleid FilmVault</h1>
-      <p className="text-sm text-muted-foreground">Laatst bijgewerkt: 28-07-2026</p>
+      <h1>Privacybeleid Filmory</h1>
+      <p className="text-sm text-muted-foreground">Laatst bijgewerkt: 10-10-2026</p>
 
       <p>
-        Dit privacybeleid is van toepassing op zowel de FilmVault-app als deze website, bereikbaar via{" "}
+        Dit privacybeleid is van toepassing op zowel de Filmory-app als deze website, bereikbaar via{" "}
         <mark>filmvault2026@hotmail.com</mark>. App en website delen hetzelfde account en dezelfde gegevens.
       </p>
 
@@ -30,6 +30,12 @@ function Dutch() {
         <li>Collectiegegevens: films die je toevoegt, persoonlijke notities, tags, uitleenstatus, favorieten, beoordelingen.</li>
         <li>Sociale gegevens: wie je volgt, vriendschapsverzoeken, berichten/reviews en reacties die je plaatst, curated filmlijsten.</li>
         <li>Op de app: een pushmeldingstoken van je toestel, om je meldingen te kunnen sturen.</li>
+        <li>
+          Gebruiksgegevens: welke kernacties je uitvoert (bijvoorbeeld een film toevoegen, een review plaatsen of
+          iemand volgen) met het tijdstip, en via welke link je je aanmeldde (bijvoorbeeld een uitnodiging). Hiervoor
+          gebruiken we geen cookies of diensten van derden. <mark>[CONTROLEER]</mark>
+        </li>
+        <li>Of je de nieuwsbrief wilt ontvangen, en wanneer je daarvoor toestemming gaf.</li>
       </ul>
 
       <h2>Waarvoor gebruiken we deze gegevens</h2>
@@ -37,6 +43,11 @@ function Dutch() {
         Uitsluitend om de functionaliteit van de app en website te leveren: je collectie bijhouden, sociale functies
         (volgen, vrienden, reviews, reacties, lijsten), en pushmeldingen. We verkopen geen gegevens en gebruiken ze
         niet voor advertentiedoeleinden.
+      </p>
+      <p>
+        Gebruiksgegevens bekijken we alleen als totalen, om te zien hoe nieuwe leden de app gebruiken en wat beter
+        kan (bijvoorbeeld hoeveel nieuwe leden hun eerste film toevoegen). De nieuwsbrief sturen we alleen als je
+        daar zelf voor kiest; je kunt je op elk moment afmelden in je profiel.
       </p>
 
       <h2>Met wie delen we gegevens</h2>
@@ -61,6 +72,12 @@ function Dutch() {
         collectie zelf is alleen zichtbaar voor geaccepteerde vrienden. Persoonlijke notities/tags/uitleeninfo bij
         collectie-items zijn altijd privé.
       </p>
+      <p>
+        Zet je een collectie zelf op &quot;openbaar via link&quot;, dan kan iedereen met die link de naam en
+        beschrijving van de collectie zien, de films met formaat en editie, en je naam en avatar. Notities,
+        beoordelingen, uitleenstatus en barcodes blijven privé. Je kunt het delen altijd weer uitzetten; openbare
+        collecties worden niet door zoekmachines geïndexeerd.
+      </p>
 
       <h2>Jouw rechten</h2>
       <p>
@@ -82,11 +99,11 @@ function Dutch() {
 function English() {
   return (
     <>
-      <h1>FilmVault Privacy Policy</h1>
-      <p className="text-sm text-muted-foreground">Last updated: 28-07-2026</p>
+      <h1>Filmory Privacy Policy</h1>
+      <p className="text-sm text-muted-foreground">Last updated: 10-10-2026</p>
 
       <p>
-        This privacy policy applies to both the FilmVault app and this website, reachable at{" "}
+        This privacy policy applies to both the Filmory app and this website, reachable at{" "}
         <mark>filmvault2026@hotmail.com</mark>. The app and website share the same account and data.
       </p>
 
@@ -97,6 +114,12 @@ function English() {
         <li>Collection data: movies you add, personal notes, tags, loan status, favorites, ratings.</li>
         <li>Social data: who you follow, friend requests, posts/reviews and comments you write, curated movie lists.</li>
         <li>On the app: a push notification token for your device, to deliver notifications.</li>
+        <li>
+          Usage data: which core actions you take (for example adding a film, posting a review or following someone)
+          with their time, and which link you signed up through (for example an invite). We use no cookies or
+          third-party services for this. <mark>[CHECK]</mark>
+        </li>
+        <li>Whether you want to receive the newsletter, and when you gave that consent.</li>
       </ul>
 
       <h2>What we use this data for</h2>
@@ -104,6 +127,11 @@ function English() {
         Solely to provide the app and website&apos;s functionality: keeping track of your collection, social
         features (following, friends, reviews, comments, lists), and push notifications. We do not sell data or use
         it for advertising purposes.
+      </p>
+      <p>
+        We only look at usage data as totals, to understand how new members use the app and what can be improved
+        (for example how many new members add their first film). We only send the newsletter if you choose to
+        receive it; you can unsubscribe at any time in your profile.
       </p>
 
       <h2>Who we share data with</h2>
@@ -126,6 +154,12 @@ function English() {
         Reviews/posts and comments are visible to your followers; curated movie lists are publicly visible. Your
         collection itself is only visible to accepted friends. Personal notes/tags/loan info on collection items
         are always private.
+      </p>
+      <p>
+        If you set a collection to &quot;public via link&quot; yourself, anyone with that link can see the
+        collection&apos;s name and description, the films with format and edition, and your name and avatar. Notes,
+        ratings, loan status and barcodes stay private. You can switch sharing off at any time; public collections
+        are not indexed by search engines.
       </p>
 
       <h2>Your rights</h2>

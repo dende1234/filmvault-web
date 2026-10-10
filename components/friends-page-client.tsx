@@ -8,6 +8,7 @@ import { useT } from "@/lib/i18n/locale-provider";
 import { Avatar } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
+import { InviteButton } from "@/components/invite-button";
 import {
   acceptFriendRequest,
   cancelFriendRequest,
@@ -45,11 +46,13 @@ export function FriendsPageClient({
   incoming,
   outgoing,
   followingIds,
+  inviteUrl,
 }: {
   friends: ProfileSearchResult[];
   incoming: FriendRequestWithProfile[];
   outgoing: FriendRequestWithProfile[];
   followingIds: string[];
+  inviteUrl: string;
 }) {
   const { t } = useT();
   const router = useRouter();
@@ -134,10 +137,13 @@ export function FriendsPageClient({
       <PageHeader
         title={t("nav_friends")}
         actions={
-          <Button onClick={() => setShowAddDialog(true)}>
-            <UserPlus />
-            {t("friends_add_title")}
-          </Button>
+          <>
+            <InviteButton url={inviteUrl} />
+            <Button onClick={() => setShowAddDialog(true)}>
+              <UserPlus />
+              {t("friends_add_title")}
+            </Button>
+          </>
         }
       />
 

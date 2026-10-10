@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-/** Renders the FilmVault mark (same geometry as components/brand/logo.tsx)
+/** Renders the Filmory mark (same geometry as components/brand/logo.tsx)
  * on the dark cinema background, for app/icon.tsx and app/apple-icon.tsx. */
 export function renderAppIcon(size: number) {
   const windows = Array.from({ length: 6 }, (_, i) => {

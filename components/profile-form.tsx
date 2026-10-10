@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { Avatar } from "@/components/avatar";
+import { NewsletterToggle } from "@/components/newsletter-toggle";
 import { updateProfile, setThemePreference, setLocale, deleteAccount } from "@/actions/profile";
 import { signOut } from "@/actions/auth";
 import type { Profile, ThemePreference } from "@/types/database";
@@ -139,6 +140,10 @@ export function ProfileForm({ profile }: { profile: Profile }) {
                 { value: "en", label: t("language_english") },
               ]}
             />
+          </div>
+          <div className="border-t border-border/60 pt-4">
+            <p className="mb-2 text-sm font-medium">{t("newsletter_label")}</p>
+            <NewsletterToggle initial={profile.newsletter_opt_in === true} />
           </div>
         </CardContent>
       </Card>

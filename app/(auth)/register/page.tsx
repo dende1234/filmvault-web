@@ -8,6 +8,7 @@ import { useT } from "@/lib/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function RegisterPage() {
   const { t } = useT();
@@ -15,6 +16,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  // GDPR: consent must be an active choice, so this starts unchecked.
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -30,7 +33,7 @@ export default function RegisterPage() {
     }
     setError(null);
     startTransition(async () => {
-      const result = await signUp(email, password);
+      const result = await signUp(email, password, newsletterOptIn);
       if (result.error) {
         setError(result.error);
       } else {
@@ -69,6 +72,18 @@ export default function RegisterPage() {
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
+      </div>
+
+      <div className="flex items-start gap-3">
+        <Checkbox
+          id="newsletter"
+          checked={newsletterOptIn}
+          onCheckedChange={(v) => setNewsletterOptIn(v === true)}
+          className="mt-0.5"
+        />
+        <Label htmlFor="newsletter" className="text-sm font-normal leading-snug text-muted-foreground">
+          {t("newsletter_opt_in_label")}
+        </Label>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}

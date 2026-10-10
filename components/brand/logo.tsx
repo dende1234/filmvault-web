@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-/** The FilmVault mark: a film reel that doubles as a vault door — outer
+/** The Filmory mark: a film reel that doubles as a vault door — outer
  * ring, six reel windows, a hub, and a handle bar across the hub. Drawn in
  * the amber primary so it reads on both themes. */
 export function LogoMark({ className }: { className?: string }) {
@@ -19,13 +19,13 @@ export function LogoMark({ className }: { className?: string }) {
   );
 }
 
-/** Mark + "FilmVault" wordmark (display serif, "Vault" in amber). */
+/** Mark + "Filmory" wordmark (display serif, "ory" in amber). */
 export function Logo({ className, markClassName }: { className?: string; markClassName?: string }) {
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)}>
       <LogoMark className={markClassName} />
       <span className="font-display text-xl font-semibold tracking-tight">
-        Film<span className="text-primary">Vault</span>
+        Film<span className="text-primary">ory</span>
       </span>
     </span>
   );

@@ -3,7 +3,7 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { THEME_COOKIE, LOCALE_COOKIE, type ThemePreference } from "@/lib/preferences";
+import { THEME_COOKIE, LOCALE_COOKIE, SOURCE_COOKIE, type ThemePreference } from "@/lib/preferences";
 import type { Locale } from "@/lib/i18n/dictionary";
 import type { Profile, PublicProfile } from "@/types/database";
 
@@ -32,15 +32,51 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
   // `name` is NOT NULL with no column default on the live schema — must be
   // supplied explicitly (found via this round's smoke testing: omitting it
   // failed every fresh registration with a 23502 not-null-violation).
-  const { data: created, error } = await supabase
-    .from("profiles")
-    .insert({ id: user.id, email: user.email, name: "" })
-    .select("*")
-    .single();
-  if (!error) return created as Profile;
+  const base = { id: user.id, email: user.email, name: "" };
+  const optedIn = user.user_metadata?.newsletter_opt_in === true;
+  const consent = optedIn ? { newsletter_opt_in: true, newsletter_opt_in_at: new Date().toISOString() } : {};
+  let { data: created, error } = await supabase.from("profiles").insert({ ...base, ...consent }).select("*").single();
+  // PGRST204 = unknown column: growth_tracking.sql hasn't run yet. Never let
+  // that block a registration — create the profile without the consent.
+  if (error?.code === "PGRST204" && optedIn) {
+    ({ data: created, error } = await supabase.from("profiles").insert(base).select("*").single());
+  }
+  if (!error) {
+    await logSignupEvent(user.id);
+    return created as Profile;
+  }
 
   const { data: afterRace } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
   return (afterRace as Profile) ?? null;
+}
+
+/** Best-effort "signup" growth event with the first-party source cookie set
+ * by the middleware (?ref= / ?utm_source=). Failures are swallowed: metrics
+ * must never break sign-up (e.g. before growth_tracking.sql has run). */
+async function logSignupEvent(userId: string) {
+  try {
+    const store = await cookies();
+    const source = store.get(SOURCE_COOKIE)?.value || "direct";
+    const supabase = await createClient();
+    await supabase.from("app_events").insert({ user_id: userId, event: "signup", source });
+  } catch {
+    // ignore
+  }
+}
+
+/** Explicit e-mail consent toggle (profile page). Stores when it was given. */
+export async function setNewsletterOptIn(optIn: boolean): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "not authenticated" };
+  const { error } = await supabase
+    .from("profiles")
+    .update({ newsletter_opt_in: optIn, newsletter_opt_in_at: optIn ? new Date().toISOString() : null })
+    .eq("id", user.id);
+  revalidatePath("/profile");
+  return { error: error?.message ?? null };
 }
 
 export async function updateProfile(update: {

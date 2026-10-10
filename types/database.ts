@@ -23,6 +23,9 @@ export interface Profile {
   is_admin: boolean;
   theme_preference: ThemePreference | null;
   language: Language | null;
+  /** E-mail consent (growth_tracking.sql). Absent until that migration runs. */
+  newsletter_opt_in?: boolean;
+  newsletter_opt_in_at?: string | null;
 }
 
 export interface Collection {
@@ -31,6 +34,27 @@ export interface Collection {
   name: string;
   description: string | null;
   created_at: string | null;
+  /** "Openbaar via link" (public_collections.sql). Absent until that migration runs. */
+  is_public?: boolean;
+}
+
+/** Safe, read-only projection returned by the get_public_collection RPC —
+ * no personal fields (notes, loans, ratings, condition, barcode). */
+export interface PublicCollection {
+  id: string;
+  name: string;
+  description: string | null;
+  owner_name: string | null;
+  owner_avatar_url: string | null;
+  items: {
+    tmdb_movie_id: number;
+    movie_title: string;
+    movie_poster: string | null;
+    type: string;
+    editie: string;
+    is_box: boolean;
+    box_name: string | null;
+  }[];
 }
 
 export interface CollectionItem {

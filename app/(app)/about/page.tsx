@@ -10,7 +10,7 @@ export default async function AboutPage() {
     <div className="mx-auto flex max-w-md flex-col items-center gap-2 py-8 text-center">
       <LogoMark className="mb-2 size-16" />
       <h1 className="font-display text-3xl font-semibold tracking-tight">
-        Film<span className="text-primary">Vault</span>
+        Film<span className="text-primary">ory</span>
       </h1>
       <p className="text-sm text-muted-foreground">{format(dict.about_version, packageJson.version)}</p>
       <p className="mt-4 text-sm font-medium">{dict.about_powered_by_tmdb}</p>

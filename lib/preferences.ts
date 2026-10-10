@@ -3,6 +3,9 @@ import type { Locale } from "@/lib/i18n/dictionary";
 
 export const THEME_COOKIE = "fv_theme";
 export const LOCALE_COOKIE = "fv_locale";
+/** First-party acquisition source (?ref= / ?utm_source=), set by the
+ * middleware and recorded once on signup. */
+export const SOURCE_COOKIE = "fv_src";
 
 export type ThemePreference = "light" | "dark" | "system";
 

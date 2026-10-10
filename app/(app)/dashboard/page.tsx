@@ -2,6 +2,9 @@ import Link from "next/link";
 import { Eye, EyeOff, Film, LibraryBig, Play } from "lucide-react";
 import { getUserCollections, getCollectionItemsForCollections } from "@/actions/collections";
 import { getOrCreateProfile } from "@/actions/profile";
+import { getFollowingCount } from "@/actions/follows";
+import { getAcceptedFriendIds } from "@/actions/friends";
+import { SITE_URL } from "@/lib/site";
 import { getMovieDetail } from "@/lib/tmdb/server";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
@@ -14,6 +17,8 @@ import { Poster, PosterCorner } from "@/components/movie/poster";
 import { PosterRail, RailItem } from "@/components/movie/poster-rail";
 import { StatTile } from "@/components/stat-tile";
 import { EmptyState } from "@/components/empty-state";
+import { OnboardingChecklist } from "@/components/onboarding-checklist";
+import { InviteButton } from "@/components/invite-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -73,6 +78,11 @@ export default async function DashboardPage() {
 
   const featured = pickOfTheDay(unwatched, new Date()) ?? byNewest[0] ?? null;
   const featuredMovie = featured ? await getMovieDetail(featured.tmdb_movie_id, locale).catch(() => null) : null;
+  const [followingCount, friendIds] = profile
+    ? await Promise.all([getFollowingCount(profile.id).catch(() => 0), getAcceptedFriendIds(profile.id).catch(() => [])])
+    : [0, [] as string[]];
+  const inviteUrl = `${SITE_URL}/?ref=invite-${(profile?.id ?? "").slice(0, 8)}`;
+
   const firstName = profile?.name?.trim().split(/\s+/)[0];
   const welcome = firstName ? format(dict.dashboard_welcome, firstName) : dict.dashboard_welcome_anonymous;
 
@@ -114,6 +124,14 @@ export default async function DashboardPage() {
       </BackdropHero>
 
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
+        <OnboardingChecklist
+          hasCollection={collections.length > 0}
+          hasFilm={items.length > 0}
+          hasConnection={followingCount > 0 || friendIds.length > 0}
+          hasName={!!profile?.name?.trim()}
+          inviteUrl={inviteUrl}
+        />
+
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatTile icon={LibraryBig} label={dict.collections_label} value={collections.length} />
           <StatTile icon={Film} label={dict.films_label} value={items.length} />
@@ -136,6 +154,7 @@ export default async function DashboardPage() {
         <div className="flex flex-wrap gap-2">
           <AddFilmFlow />
           <AddBoxFlow />
+          <InviteButton url={inviteUrl} variant="ghost" />
         </div>
 
         {items.length === 0 ? (

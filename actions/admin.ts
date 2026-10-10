@@ -223,3 +223,26 @@ export async function adminApprovePendingWithChanges(
 
   await approvePendingBarcode({ ...pending, ...changes });
 }
+
+export type GrowthStats = {
+  tracking_since: string | null;
+  total_members: number;
+  tracked_signups: number;
+  signups_last_30d: number;
+  active_last_30d: number;
+  activated: number;
+  returned_30d: number;
+  return_cohort: number;
+  newsletter_opt_ins: number;
+  by_source: { source: string; signups: number; activated: number }[];
+};
+
+/** KPI's for /admin/growth (admin_growth_stats RPC, growth_tracking.sql).
+ * Returns null when that migration hasn't been run yet. */
+export async function getGrowthStats(): Promise<GrowthStats | null> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_growth_stats");
+  if (error) return null;
+  return data as GrowthStats;
+}

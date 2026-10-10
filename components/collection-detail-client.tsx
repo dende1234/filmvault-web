@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
 import { AddFilmFlow } from "@/components/add-film-flow";
 import { AddBoxFlow } from "@/components/add-box-flow";
+import { ShareCollectionButton } from "@/components/share-collection-button";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,17 @@ import {
 
 const ALL = "all";
 
-export function CollectionDetailClient({ collection, items }: { collection: Collection; items: CollectionItem[] }) {
+export function CollectionDetailClient({
+  collection,
+  items,
+  isOwner,
+  shareUrl,
+}: {
+  collection: Collection;
+  items: CollectionItem[];
+  isOwner: boolean;
+  shareUrl: string;
+}) {
   const { t } = useT();
   const router = useRouter();
   const [typeFilter, setTypeFilter] = useState<string>(ALL);
@@ -87,6 +98,9 @@ export function CollectionDetailClient({ collection, items }: { collection: Coll
           <>
             <AddFilmFlow />
             <AddBoxFlow />
+            {isOwner && (
+              <ShareCollectionButton collectionId={collection.id} initialPublic={collection.is_public === true} shareUrl={shareUrl} />
+            )}
           </>
         }
       />

@@ -29,6 +29,7 @@ import {
   Tags,
   ChevronDown,
   MoreHorizontal,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/locale-provider";
@@ -145,6 +146,7 @@ export function NavShell({ profile, children }: { profile: Profile | null; child
               <NavLink href="/admin/users" icon={ShieldCheck} label={t("admin_users_label")} onNavigate={close} />
               <NavLink href="/admin/reports" icon={Flag} label={t("admin_reports_label")} onNavigate={close} />
               <NavLink href="/admin/stats" icon={BarChart3} label={t("admin_stats_label")} onNavigate={close} />
+              <NavLink href="/admin/growth" icon={TrendingUp} label={t("admin_growth_label")} onNavigate={close} />
               <NavLink href="/admin/announcement" icon={Megaphone} label={t("admin_announcement_label")} onNavigate={close} />
             </>
           )}

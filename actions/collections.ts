@@ -18,6 +18,7 @@ import type {
   NewBarcodeInput,
   PendingBarcode,
   PendingBarcodeCollectionRow,
+  PublicCollection,
 } from "@/types/database";
 
 async function requireUserId() {
@@ -52,6 +53,33 @@ export async function getCollection(collectionId: string): Promise<Collection | 
   const supabase = await createClient();
   const { data } = await supabase.from("collections").select("*").eq("id", collectionId).maybeSingle();
   return data as Collection | null;
+}
+
+/** Owner-only toggle for "openbaar via link". The user_id filter makes it a
+ * no-op on someone else's collection, on top of the table's own RLS. */
+export async function setCollectionPublic(collectionId: string, isPublic: boolean): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const userId = await requireUserId();
+  const { data, error } = await supabase
+    .from("collections")
+    .update({ is_public: isPublic })
+    .eq("id", collectionId)
+    .eq("user_id", userId)
+    .select("id");
+  if (error) return { error: error.message };
+  if (!data || data.length === 0) return { error: "not_found" };
+  revalidatePath(`/collections/${collectionId}`);
+  revalidatePath(`/c/${collectionId}`);
+  return { error: null };
+}
+
+/** Public, logged-out-safe read of a shared collection (null = not shared). */
+export async function getPublicCollection(collectionId: string): Promise<PublicCollection | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(collectionId)) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_public_collection", { p_collection_id: collectionId });
+  if (error || !data) return null;
+  return data as PublicCollection;
 }
 
 export async function createCollection(name: string, description: string | null): Promise<Collection> {

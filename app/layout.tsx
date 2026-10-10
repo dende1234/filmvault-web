@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import { getLocale, getThemePreference } from "@/lib/preferences";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { LocaleProvider } from "@/lib/i18n/locale-provider";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,15 +26,21 @@ const fraunces = Fraunces({
 });
 
 export const metadata: Metadata = {
-  title: { default: "FilmVault", template: "%s · FilmVault" },
-  description: "Houd je fysieke filmcollectie bij: scan, verzamel en ontdek je films.",
-  applicationName: "FilmVault",
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${SITE_NAME}: jouw fysieke filmcollectie, eindelijk overzichtelijk`, template: `%s · ${SITE_NAME}` },
+  description:
+    "Houd je dvd's, Blu-rays en 4K UHD's op één plek bij. Organiseer je collectie en verlanglijst, deel je mooiste edities en ontdek andere verzamelaars.",
+  applicationName: SITE_NAME,
   openGraph: {
-    title: "FilmVault",
-    description: "Houd je fysieke filmcollectie bij: scan, verzamel en ontdek je films.",
-    siteName: "FilmVault",
+    title: SITE_NAME,
+    description: "Jouw fysieke filmcollectie. Eindelijk overzichtelijk.",
+    siteName: SITE_NAME,
+    locale: "nl_NL",
     type: "website",
   },
+  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
+    : {}),
 };
 
 export default async function RootLayout({

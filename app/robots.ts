@@ -1,18 +1,17 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/site";
 
-// FilmVault is a private collection tracker, not a marketing site — almost
-// everything requires a session (lib/supabase/middleware.ts redirects
-// unauthenticated visitors to /login for anything except /login, /register,
-// /forgot-password, /privacy), so there's nothing meaningful for a search
-// engine to index. Blocking crawl entirely (except /privacy, which is
-// genuinely public) is a more appropriate default than a sitemap aimed at
-// getting indexed.
+// Only the public marketing pages are meant for search engines: the landing
+// page, the guides, registration and privacy. Everything else needs a
+// session anyway. Shared collections (/c/…) are reachable by link but kept
+// out of search results on purpose (privacy), also via their noindex meta.
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
+      allow: ["/$", "/gids", "/register", "/privacy"],
       disallow: "/",
-      allow: "/privacy",
     },
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

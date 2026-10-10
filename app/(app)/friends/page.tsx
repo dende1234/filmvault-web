@@ -2,6 +2,7 @@ import { getFriends, getIncomingRequests, getOutgoingRequests } from "@/actions/
 import { getFollowingIds } from "@/actions/follows";
 import { createClient } from "@/lib/supabase/server";
 import { FriendsPageClient } from "@/components/friends-page-client";
+import { SITE_URL } from "@/lib/site";
 
 export default async function FriendsPage() {
   const supabase = await createClient();
@@ -18,7 +19,13 @@ export default async function FriendsPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <FriendsPageClient friends={friends} incoming={incoming} outgoing={outgoing} followingIds={followingIds} />
+      <FriendsPageClient
+        friends={friends}
+        incoming={incoming}
+        outgoing={outgoing}
+        followingIds={followingIds}
+        inviteUrl={`${SITE_URL}/?ref=invite-${(user?.id ?? "").slice(0, 8)}`}
+      />
     </div>
   );
 }
