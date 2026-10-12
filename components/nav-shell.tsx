@@ -30,6 +30,7 @@ import {
   ChevronDown,
   MoreHorizontal,
   TrendingUp,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/locale-provider";
@@ -115,6 +116,7 @@ export function NavShell({ profile, children }: { profile: Profile | null; child
 
       <SectionLabel>{t("nav_section_films")}</SectionLabel>
       <NavLink href="/films" icon={Film} label={t("films_label")} onNavigate={close} />
+      <NavLink href="/watched" icon={Eye} label={t("nav_watched")} onNavigate={close} />
       <NavLink href="/collections" icon={LibraryBig} label={t("collections_label")} onNavigate={close} />
       <NavLink href="/lists" icon={ListChecks} label={t("nav_lists")} onNavigate={close} />
       <NavLink href="/recap" icon={CalendarDays} label={t("nav_yearly_recap")} onNavigate={close} />

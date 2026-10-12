@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { X } from "lucide-react";
+import { Check, Eye, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import {
@@ -16,7 +16,11 @@ import {
   updateCollectionItemTags,
   updateCollectionItemWatched,
 } from "@/actions/collections";
-import { isLoanOverdue, type CollectionItem, type Condition } from "@/types/database";
+import { isLoanOverdue, type CollectionItem, type Condition, type FilmLog, type FilmViewing } from "@/types/database";
+import { setFilmRating, setFilmReview, setFilmWatched } from "@/actions/watched";
+import { LogFilmDialog } from "@/components/watched/log-film-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import type { MovieDetailDto } from "@/types/tmdb";
 import { BackdropHero } from "@/components/movie/backdrop-hero";
 import { Poster } from "@/components/movie/poster";
@@ -37,7 +41,15 @@ import {
 
 const CONDITIONS: Condition[] = ["Nieuw", "Gebruikt", "Beschadigd"];
 
-export function CollectionItemEditor({ item: initial, movie }: { item: CollectionItem; movie: MovieDetailDto | null }) {
+export function CollectionItemEditor({
+  item: initial,
+  movie,
+  filmLog,
+}: {
+  item: CollectionItem;
+  movie: MovieDetailDto | null;
+  filmLog: { log: FilmLog | null; viewings: FilmViewing[] };
+}) {
   const { t } = useT();
   const router = useRouter();
   const [item, setItem] = useState(initial);
@@ -47,12 +59,34 @@ export function CollectionItemEditor({ item: initial, movie }: { item: Collectio
   const [showLoanDialog, setShowLoanDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [review, setReview] = useState(filmLog.log?.review ?? "");
+  const [shareReview, setShareReview] = useState(false);
+  const [isSavingReview, setIsSavingReview] = useState(false);
+  const [showLogDialog, setShowLogDialog] = useState(false);
+  const filmMeta = { tmdbMovieId: initial.tmdb_movie_id, title: initial.movie_title, poster: initial.movie_poster };
+
+  // After router.refresh() the server sends the synced watched/rating (and
+  // review) — adopt them during render instead of in an effect.
+  const [prevInitial, setPrevInitial] = useState(initial);
+  if (initial !== prevInitial) {
+    setPrevInitial(initial);
+    setItem((prev) => ({ ...prev, watched: initial.watched, rating: initial.rating }));
+  }
+  const [prevReview, setPrevReview] = useState(filmLog.log?.review ?? "");
+  if ((filmLog.log?.review ?? "") !== prevReview) {
+    setPrevReview(filmLog.log?.review ?? "");
+    setReview(filmLog.log?.review ?? "");
+  }
 
   async function setRating(rating: number) {
     const previous = item.rating;
     setItem((prev) => ({ ...prev, rating }));
     try {
-      await updateCollectionItemRating(item.item_group_id, rating);
+      // Rating belongs to the film (all copies); before watched_films.sql has
+      // run, fall back to the old per-copy update.
+      const result = await setFilmRating(filmMeta, rating);
+      if (result.error) await updateCollectionItemRating(item.item_group_id, rating);
+      router.refresh();
     } catch {
       setItem((prev) => ({ ...prev, rating: previous }));
       toast.error(t("collection_item_detail_error_save_rating"));
@@ -63,10 +97,27 @@ export function CollectionItemEditor({ item: initial, movie }: { item: Collectio
     const next = !item.watched;
     setItem((prev) => ({ ...prev, watched: next }));
     try {
-      await updateCollectionItemWatched(item.item_group_id, next);
+      const result = await setFilmWatched(filmMeta, next);
+      if (result.error) await updateCollectionItemWatched(item.item_group_id, next);
+      router.refresh();
     } catch {
       setItem((prev) => ({ ...prev, watched: !next }));
       toast.error(t("collection_item_detail_error_save_watched"));
+    }
+  }
+
+  async function saveReview() {
+    setIsSavingReview(true);
+    try {
+      const result = await setFilmReview(filmMeta, review, shareReview && !filmLog.log?.review_post_id);
+      if (result.error) toast.error(t("watched_error"));
+      else {
+        toast.success(t("watched_saved"));
+        setShareReview(false);
+        router.refresh();
+      }
+    } finally {
+      setIsSavingReview(false);
     }
   }
 
@@ -236,6 +287,71 @@ export function CollectionItemEditor({ item: initial, movie }: { item: Collectio
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("watched_review_card_title")}</CardTitle>
+          <p className="text-xs text-muted-foreground">{t("watched_scope_hint")}</p>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="item-review">{t("watched_dialog_review")}</Label>
+            <Textarea
+              id="item-review"
+              rows={4}
+              value={review}
+              maxLength={10000}
+              onChange={(e) => setReview(e.target.value)}
+              placeholder={t("watched_dialog_review_placeholder")}
+            />
+            {filmLog.log?.review_post_id ? (
+              <p className="flex items-center gap-1.5 text-xs text-success">
+                <Check className="size-3.5" />
+                {t("watched_dialog_shared")}
+                <Link href={`/feed/${filmLog.log.review_post_id}`} className="font-medium text-primary hover:underline">
+                  {t("watched_dialog_view_post")}
+                </Link>
+              </p>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="item-share"
+                  checked={shareReview}
+                  disabled={review.trim().length === 0}
+                  onCheckedChange={(v) => setShareReview(v === true)}
+                />
+                <Label htmlFor="item-share" className="font-normal">
+                  {t("watched_dialog_share")}
+                </Label>
+              </div>
+            )}
+            <Button
+              size="sm"
+              className="w-fit"
+              onClick={saveReview}
+              disabled={isSavingReview || review.trim() === (filmLog.log?.review ?? "").trim()}
+            >
+              {t("action_save")}
+            </Button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 border-t border-border/60 pt-4">
+            <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+              <Eye className="size-4 text-primary" />
+              {t("watched_viewings_count", filmLog.viewings.length)}
+            </span>
+            <Button variant="secondary" size="sm" onClick={() => setShowLogDialog(true)}>
+              <Plus />
+              {t("watched_add_viewing")}
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/watched">{t("watched_view_all")}</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <LogFilmDialog open={showLogDialog} onOpenChange={setShowLogDialog} meta={filmMeta} log={filmLog.log} mode="log" />
 
       <Card>
         <CardHeader>

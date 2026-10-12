@@ -350,3 +350,46 @@ export interface PendingBarcodeUiItem {
 export type PendingBarcodeCardItem =
   | { kind: "single"; id: string; pendingIds: string[]; item: PendingBarcodeUiItem }
   | { kind: "box"; id: string; pendingIds: string[]; boxName: string; items: PendingBarcodeUiItem[] };
+
+// --- "Bekeken" module (watched_films.sql) ---
+
+/** One per user per film — the source of truth for watched, rating and the
+ * (private) review. collection_items.watched/rating mirror it via triggers. */
+export interface FilmLog {
+  id: string;
+  user_id: string;
+  tmdb_movie_id: number;
+  movie_title: string;
+  movie_poster: string | null;
+  watched: boolean;
+  rating: number | null;
+  review: string | null;
+  review_post_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** One diary entry. watched_on null = date unknown. */
+export interface FilmViewing {
+  id: string;
+  user_id: string;
+  tmdb_movie_id: number;
+  watched_on: string | null;
+  created_at: string;
+}
+
+export interface WatchedFilmItem extends FilmLog {
+  viewingCount: number;
+  lastWatchedOn: string | null;
+  inCollection: boolean;
+}
+
+export interface DiaryEntry extends FilmViewing {
+  movie_title: string;
+  movie_poster: string | null;
+  rating: number | null;
+  /** True when this isn't the earliest viewing of the film (a rewatch). */
+  isRewatch: boolean;
+}
+
+export type FilmMeta = { tmdbMovieId: number; title: string; poster: string | null };

@@ -8,6 +8,9 @@ import { isReleased, profileUrl, type MovieDetailFullDto } from "@/types/tmdb";
 import { AddToCollectionButton } from "@/components/add-to-collection-button";
 import { WishlistToggleButton } from "@/components/wishlist-toggle-button";
 import { isOnWishlist } from "@/actions/wishlist";
+import { getFilmLog } from "@/actions/watched";
+import { WatchedButton } from "@/components/watched/watched-button";
+import { FilmLogCard } from "@/components/watched/film-log-card";
 import { getCollectionItemsForCollections, getUserCollections } from "@/actions/collections";
 import { BackdropHero } from "@/components/movie/backdrop-hero";
 import { Poster } from "@/components/movie/poster";
@@ -51,7 +54,12 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
     notFound();
   }
 
-  const [onWishlist, collections] = await Promise.all([isOnWishlist(movie.id), getUserCollections()]);
+  const [onWishlist, collections, filmLog] = await Promise.all([
+    isOnWishlist(movie.id),
+    getUserCollections(),
+    getFilmLog(movie.id),
+  ]);
+  const filmMeta = { tmdbMovieId: movie.id, title: movie.title, poster: movie.poster_path };
   const items = await getCollectionItemsForCollections(collections.map((c) => c.id));
   // One physical copy may sit in several collections (shared item_group_id).
   const ownedCopies = items
@@ -123,6 +131,7 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
               {isReleased(movie.status) && (
                 <AddToCollectionButton tmdbMovieId={movie.id} movieTitle={movie.title} moviePoster={movie.poster_path} />
               )}
+              <WatchedButton meta={filmMeta} log={filmLog.log} viewingCount={filmLog.viewings.length} />
               <WishlistToggleButton
                 tmdbMovieId={movie.id}
                 movieTitle={movie.title}
@@ -178,6 +187,7 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
         </div>
 
         <aside className="flex flex-col gap-4">
+          <FilmLogCard meta={filmMeta} log={filmLog.log} viewings={filmLog.viewings} />
           {ownedCopies.length > 0 && (
             <Card className="border-primary/30 bg-primary/5">
               <CardHeader className="pb-3">
