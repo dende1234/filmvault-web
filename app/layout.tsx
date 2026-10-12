@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 import { getLocale, getThemePreference } from "@/lib/preferences";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { LocaleProvider } from "@/lib/i18n/locale-provider";
@@ -64,6 +65,9 @@ export default async function RootLayout({
         <LocaleProvider dict={dict} locale={locale}>
           {children}
           <Toaster richColors position="top-center" />
+          {/* Cookieless page-view stats (Vercel Web Analytics); only sends
+              data when deployed on Vercel with Analytics enabled. */}
+          <Analytics />
         </LocaleProvider>
       </body>
     </html>

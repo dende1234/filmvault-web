@@ -45,6 +45,11 @@ function Dutch() {
         niet voor advertentiedoeleinden.
       </p>
       <p>
+        Daarnaast meten we websitebezoek met Vercel Web Analytics: welke pagina&apos;s bezocht worden, via welke
+        website je binnenkwam, en je land en type apparaat. Dit gebeurt zonder cookies en zonder dat je als persoon
+        herkenbaar bent. Vercel treedt hierbij op als verwerker. <mark>[CONTROLEER]</mark>
+      </p>
+      <p>
         Gebruiksgegevens bekijken we alleen als totalen, om te zien hoe nieuwe leden de app gebruiken en wat beter
         kan (bijvoorbeeld hoeveel nieuwe leden hun eerste film toevoegen). De nieuwsbrief sturen we alleen als je
         daar zelf voor kiest; je kunt je op elk moment afmelden in je profiel.
@@ -127,6 +132,11 @@ function English() {
         Solely to provide the app and website&apos;s functionality: keeping track of your collection, social
         features (following, friends, reviews, comments, lists), and push notifications. We do not sell data or use
         it for advertising purposes.
+      </p>
+      <p>
+        We also measure website visits with Vercel Web Analytics: which pages are visited, which website you came
+        from, and your country and device type. This happens without cookies and without identifying you as a
+        person. Vercel acts as a processor for this. <mark>[CHECK]</mark>
       </p>
       <p>
         We only look at usage data as totals, to understand how new members use the app and what can be improved
