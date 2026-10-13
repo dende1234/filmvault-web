@@ -3,6 +3,7 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 /** Public page frame for the /gids SEO pages: logo header with one CTA,
  * content, and the TMDB/privacy footer. */
@@ -15,9 +16,12 @@ export async function GuideShell({ children }: { children: React.ReactNode }) {
           <Link href="/" aria-label="Filmory">
             <Logo markClassName="size-7" />
           </Link>
-          <Button asChild size="sm">
-            <Link href="/register">{dict.landing_cta_register}</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <Button asChild size="sm">
+              <Link href="/register">{dict.landing_cta_register}</Link>
+            </Button>
+          </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 md:px-8 md:py-14">{children}</main>

@@ -4,6 +4,7 @@ import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
 import { getTrendingMovies } from "@/lib/tmdb/server";
 import { Logo } from "@/components/brand/logo";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { PosterWall } from "@/components/movie/poster-wall";
 import { Poster, PosterCorner } from "@/components/movie/poster";
 import { StatTile } from "@/components/stat-tile";
@@ -43,9 +44,12 @@ export default async function LandingPage() {
       <header className="absolute inset-x-0 top-0 z-20">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 md:px-8">
           <Logo markClassName="size-8" />
-          <Button asChild variant="ghost">
-            <Link href="/login">{dict.landing_cta_login}</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <Button asChild variant="ghost">
+              <Link href="/login">{dict.landing_cta_login}</Link>
+            </Button>
+          </div>
         </div>
       </header>
 

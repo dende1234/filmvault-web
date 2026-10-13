@@ -1,5 +1,6 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { Locale } from "@/lib/i18n/dictionary";
+import { detectLocale } from "@/lib/locale-detect";
 
 export const THEME_COOKIE = "fv_theme";
 export const LOCALE_COOKIE = "fv_locale";
@@ -20,7 +21,19 @@ export async function getThemePreference(): Promise<ThemePreference> {
   return "dark";
 }
 
+/** UI language: an explicit choice (fv_locale — set by the language switcher,
+ * the profile, or on login from profiles.language) always wins. Otherwise
+ * it's detected per request from the visitor's country (Vercel's
+ * x-vercel-ip-country) and browser language — deliberately NOT persisted,
+ * so a guess never masquerades as a choice. */
 export async function getLocale(): Promise<Locale> {
   const store = await cookies();
-  return store.get(LOCALE_COOKIE)?.value === "en" ? "en" : "nl";
+  const chosen = store.get(LOCALE_COOKIE)?.value;
+  if (chosen === "nl" || chosen === "en") return chosen;
+  const h = await headers();
+  return detectLocale({
+    country: h.get("x-vercel-ip-country"),
+    acceptLanguage: h.get("accept-language"),
+    userAgent: h.get("user-agent"),
+  });
 }

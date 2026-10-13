@@ -4,6 +4,7 @@ import { getLocale } from "@/lib/preferences";
 import { getTrendingMovies } from "@/lib/tmdb/server";
 import { Logo } from "@/components/brand/logo";
 import { PosterWall } from "@/components/movie/poster-wall";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export default async function AuthLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
@@ -35,9 +36,12 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
             {children}
           </div>
         </div>
-        <Link href="/privacy" className="mt-8 text-xs text-muted-foreground hover:text-foreground hover:underline">
-          {dict.privacy_policy_link}
-        </Link>
+        <div className="mt-8 flex items-center gap-4">
+          <LanguageSwitcher />
+          <Link href="/privacy" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
+            {dict.privacy_policy_link}
+          </Link>
+        </div>
       </div>
     </div>
   );

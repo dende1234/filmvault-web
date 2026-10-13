@@ -13,6 +13,7 @@ import { Poster, PosterCorner } from "@/components/movie/poster";
 import { PosterGrid } from "@/components/movie/poster-grid";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -51,9 +52,12 @@ export default async function PublicCollectionPage({ params }: Props) {
           <Link href="/" aria-label="Filmory">
             <Logo markClassName="size-7" />
           </Link>
-          <Button asChild size="sm">
-            <Link href="/register?ref=share">{dict.landing_cta_register}</Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <Button asChild size="sm">
+              <Link href="/register?ref=share">{dict.landing_cta_register}</Link>
+            </Button>
+          </div>
         </div>
       </header>
 

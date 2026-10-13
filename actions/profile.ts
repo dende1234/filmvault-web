@@ -32,7 +32,13 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
   // `name` is NOT NULL with no column default on the live schema — must be
   // supplied explicitly (found via this round's smoke testing: omitting it
   // failed every fresh registration with a 23502 not-null-violation).
-  const base = { id: user.id, email: user.email, name: "" };
+  const chosenLanguage = user.user_metadata?.language;
+  const base = {
+    id: user.id,
+    email: user.email,
+    name: "",
+    ...(chosenLanguage === "nl" || chosenLanguage === "en" ? { language: chosenLanguage } : {}),
+  };
   const optedIn = user.user_metadata?.newsletter_opt_in === true;
   const consent = optedIn ? { newsletter_opt_in: true, newsletter_opt_in_at: new Date().toISOString() } : {};
   let { data: created, error } = await supabase.from("profiles").insert({ ...base, ...consent }).select("*").single();

@@ -12,6 +12,10 @@ const ALWAYS_ACCESSIBLE_PATHS = ["/privacy", "/gids", "/c/"];
 // (actions/profile.ts). Not a tracking cookie: it holds only a campaign
 // label such as "invite-1a2b3c4d" or "facebook", never an identifier.
 const SOURCE_COOKIE = "fv_src";
+// Same names as lib/preferences.ts (not imported: that module pulls in
+// next/headers, which doesn't belong in middleware).
+const LOCALE_COOKIE = "fv_locale";
+const LOCALE_CHECKED_COOKIE = "fv_lc";
 const SOURCE_MAX_AGE = 60 * 60 * 24 * 30;
 
 function sourceFrom(request: NextRequest): string | null {
@@ -57,10 +61,25 @@ export async function updateSession(request: NextRequest) {
 
   // Remember where an anonymous visitor came from (first touch wins).
   const source = !user && !request.cookies.get(SOURCE_COOKIE) ? sourceFrom(request) : null;
+
+  // Signed in on this device without a language cookie (e.g. an existing
+  // session from before login applied it): adopt profiles.language once.
+  // fv_lc marks "checked this session" so this costs one query, not one
+  // per request, for users who never set a language.
+  let profileLocale: "nl" | "en" | null = null;
+  let markLocaleChecked = false;
+  if (user && !request.cookies.get(LOCALE_COOKIE) && !request.cookies.get(LOCALE_CHECKED_COOKIE)) {
+    const { data: profile } = await supabase.from("profiles").select("language").eq("id", user.id).maybeSingle();
+    profileLocale = profile?.language === "nl" || profile?.language === "en" ? profile.language : null;
+    markLocaleChecked = true;
+  }
+
   const withSource = (response: NextResponse) => {
     if (source) {
       response.cookies.set(SOURCE_COOKIE, source, { maxAge: SOURCE_MAX_AGE, httpOnly: true, sameSite: "lax", path: "/" });
     }
+    if (profileLocale) response.cookies.set(LOCALE_COOKIE, profileLocale, { maxAge: 60 * 60 * 24 * 365, path: "/" });
+    if (markLocaleChecked) response.cookies.set(LOCALE_CHECKED_COOKIE, "1", { httpOnly: true, sameSite: "lax", path: "/" });
     return response;
   };
 
@@ -75,7 +94,7 @@ export async function updateSession(request: NextRequest) {
   if (user && isPublicPath) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+    return withSource(NextResponse.redirect(url));
   }
 
   return withSource(supabaseResponse);

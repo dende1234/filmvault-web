@@ -26,23 +26,26 @@ const fraunces = Fraunces({
   axes: ["opsz", "SOFT"],
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: { default: `${SITE_NAME}: jouw fysieke filmcollectie, eindelijk overzichtelijk`, template: `%s · ${SITE_NAME}` },
-  description:
-    "Houd je dvd's, Blu-rays en 4K UHD's op één plek bij. Organiseer je collectie en verlanglijst, deel je mooiste edities en ontdek andere verzamelaars.",
-  applicationName: SITE_NAME,
-  openGraph: {
-    title: SITE_NAME,
-    description: "Jouw fysieke filmcollectie. Eindelijk overzichtelijk.",
-    siteName: SITE_NAME,
-    locale: "nl_NL",
-    type: "website",
-  },
-  ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
-    ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
-    : {}),
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  return {
+    metadataBase: new URL(SITE_URL),
+    title: { default: dict.meta_title, template: `%s · ${SITE_NAME}` },
+    description: dict.meta_description,
+    applicationName: SITE_NAME,
+    openGraph: {
+      title: SITE_NAME,
+      description: dict.meta_og_description,
+      siteName: SITE_NAME,
+      locale: locale === "en" ? "en_US" : "nl_NL",
+      type: "website",
+    },
+    ...(process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+      ? { verification: { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION } }
+      : {}),
+  };
+}
 
 export default async function RootLayout({
   children,

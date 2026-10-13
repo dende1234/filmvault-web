@@ -45,6 +45,11 @@ function Dutch() {
         niet voor advertentiedoeleinden.
       </p>
       <p>
+        De taal van de website kiezen we automatisch op basis van je land (afgeleid van je IP-adres, via Vercel) en
+        de taalinstelling van je browser. Die gegevens slaan we niet op; alleen een taal die je zelf kiest, onthouden
+        we in een cookie en, als je een account hebt, in je profiel. <mark>[CONTROLEER]</mark>
+      </p>
+      <p>
         Daarnaast meten we websitebezoek met Vercel Web Analytics: welke pagina&apos;s bezocht worden, via welke
         website je binnenkwam, en je land en type apparaat. Dit gebeurt zonder cookies en zonder dat je als persoon
         herkenbaar bent. Vercel treedt hierbij op als verwerker. <mark>[CONTROLEER]</mark>
@@ -132,6 +137,11 @@ function English() {
         Solely to provide the app and website&apos;s functionality: keeping track of your collection, social
         features (following, friends, reviews, comments, lists), and push notifications. We do not sell data or use
         it for advertising purposes.
+      </p>
+      <p>
+        We choose the website&apos;s language automatically based on your country (derived from your IP address, via
+        Vercel) and your browser&apos;s language setting. We don&apos;t store that data; only a language you choose
+        yourself is remembered in a cookie and, if you have an account, in your profile. <mark>[CHECK]</mark>
       </p>
       <p>
         We also measure website visits with Vercel Web Analytics: which pages are visited, which website you came
