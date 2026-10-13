@@ -40,7 +40,19 @@ export function OnboardingChecklist({
         </Button>
       ),
     },
-    { done: hasFilm, title: t("onboarding_step_film"), hint: t("onboarding_step_film_hint"), action: <AddFilmFlow /> },
+    {
+      done: hasFilm,
+      title: t("onboarding_step_film"),
+      hint: t("onboarding_step_film_hint"),
+      action: (
+        <div className="flex flex-wrap items-center gap-2">
+          <AddFilmFlow />
+          <Button asChild size="sm" variant="ghost">
+            <Link href="/collections/import">{t("import_onboarding_hint")}</Link>
+          </Button>
+        </div>
+      ),
+    },
     {
       done: hasConnection,
       title: t("onboarding_step_connect"),

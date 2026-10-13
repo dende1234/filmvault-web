@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { LibraryBig, Plus } from "lucide-react";
+import { FileUp, LibraryBig, Plus } from "lucide-react";
+import Link from "next/link";
 import { useT } from "@/lib/i18n/locale-provider";
 import { createCollection } from "@/actions/collections";
 import type { Collection } from "@/types/database";
@@ -78,6 +79,12 @@ export function CollectionsList({
                 <SelectItem value="newest">{t("collections_sort_newest")}</SelectItem>
               </SelectContent>
             </Select>
+            <Button asChild variant="secondary">
+              <Link href="/collections/import">
+                <FileUp />
+                {t("import_button")}
+              </Link>
+            </Button>
             <Button onClick={() => setShowCreate(true)}>
               <Plus />
               {t("action_add")}
