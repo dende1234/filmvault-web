@@ -24,6 +24,8 @@ import {
   normalizeRating,
   normalizeWatched,
   normalizeYear,
+  primaryTitle,
+  splitBoxTitle,
 } from "@/lib/import-mapping";
 import { importBatch, matchImportRows, type ImportFilm, type ImportItem, type ImportResult, type ImportRowMatch, type ImportStatus } from "@/actions/import";
 import { createCollection } from "@/actions/collections";
@@ -181,21 +183,34 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
       return;
     }
     const scale = detectRatingScale(source.map((r) => cell(r, "rating")));
-    const parsed: ParsedRow[] = source.map((r, i) => ({
-      ref: `r${i}`,
-      line: i + 1 + (hasHeader ? 1 : 0),
-      title: cell(r, "title"),
-      year: normalizeYear(cell(r, "year")),
-      barcode: normalizeBarcode(cell(r, "barcode")) || null,
-      format: cell(r, "format"),
-      edition: cell(r, "edition"),
-      watched: normalizeWatched(cell(r, "watched")) || !!normalizeDate(cell(r, "watchedOn")),
-      rating: normalizeRating(cell(r, "rating"), scale),
-      watchedOn: normalizeDate(cell(r, "watchedOn")),
-      box: cell(r, "box") || null,
-      kind: normalizeKind(cell(r, "kind")) ?? (cell(r, "seasons") ? "tv" : null),
-      seasonsText: cell(r, "seasons"),
-    }));
+    // One spreadsheet row can hold a whole box ("Box • Film 1 • Film 2"):
+    // it expands to one row per film sharing the barcode, which the review
+    // step groups into a single box (same as rows sharing a barcode).
+    const parsed: ParsedRow[] = source.flatMap((r, i) => {
+      const titleCell = cell(r, "title");
+      const box = splitBoxTitle(titleCell);
+      const base = {
+        line: i + 1 + (hasHeader ? 1 : 0),
+        year: normalizeYear(cell(r, "year")),
+        barcode: normalizeBarcode(cell(r, "barcode")) || null,
+        format: cell(r, "format"),
+        edition: cell(r, "edition"),
+        watched: normalizeWatched(cell(r, "watched")) || !!normalizeDate(cell(r, "watchedOn")),
+        rating: normalizeRating(cell(r, "rating"), scale),
+        watchedOn: normalizeDate(cell(r, "watchedOn")),
+        kind: normalizeKind(cell(r, "kind")) ?? (cell(r, "seasons") ? ("tv" as const) : null),
+        seasonsText: cell(r, "seasons"),
+      };
+      if (box) {
+        return box.titles.map((title, j) => ({ ...base, ref: `r${i}_${j}`, title, box: cell(r, "box") || box.boxName }));
+      }
+      return [{ ...base, ref: `r${i}`, title: primaryTitle(titleCell), box: cell(r, "box") || null }];
+    });
+    if (parsed.length > MAX_ROWS) {
+      toast.error(t("import_too_many", MAX_ROWS));
+      setStep("columns");
+      return;
+    }
 
     setStep("review");
     const matches: ImportRowMatch[] = [];

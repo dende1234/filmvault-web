@@ -2,10 +2,12 @@
  * components and the server actions that re-validate their input. */
 
 /** Strips the separators people tend to type or paste along with a code
- * (spaces, dashes, dots). Letters are kept — not every registered barcode
- * is a pure EAN/UPC, so this must never reject, only tidy up. */
+ * (spaces, dashes, dots), plus spreadsheet artefacts: a leading "#" or "'"
+ * that keeps leading zeros (UPC codes like #043396304468). Letters are kept —
+ * not every registered barcode is a pure EAN/UPC, so this must never reject,
+ * only tidy up. */
 export function normalizeBarcode(raw: string): string {
-  return raw.trim().replace(/[\s.\-]/g, "");
+  return raw.trim().replace(/[\s.\-#'’]/g, "");
 }
 
 /** GS1 check-digit validation for EAN-8, UPC-A (12) and EAN-13. Anything

@@ -147,3 +147,27 @@ export function normalizeYear(value: string): string | null {
   const match = value.match(/\b(19\d{2}|20\d{2})\b/);
   return match ? match[1] : null;
 }
+
+/** A box written in ONE cell, films separated by bullets:
+ *   "Der Herr der Ringe - Kinoversion • Die Gefährten • Die zwei Türme"
+ * → { boxName: "Der Herr der Ringe - Kinoversion", titles: ["Die Gefährten", "Die zwei Türme"] }.
+ * With three or more parts the first is the box name; with two, both are
+ * films and the box is named after them. Returns null for a single title.
+ * Only a proper bullet (•, ·, ●) splits — never "/" or "-", which occur in
+ * ordinary titles. */
+export function splitBoxTitle(cell: string): { boxName: string; titles: string[] } | null {
+  const parts = cell
+    .replace(/\r?\n/g, " ")
+    .split(/\s*[•·●]\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (parts.length < 2) return null;
+  if (parts.length === 2) return { boxName: parts.join(" + "), titles: parts };
+  return { boxName: parts[0], titles: parts.slice(1) };
+}
+
+/** First line of a title cell: a second line is usually an alternative or
+ * original-language title ("Seven Pounds\nSept Vies"). */
+export function primaryTitle(cell: string): string {
+  return (cell.split(/\r?\n/).map((l) => l.trim()).find(Boolean) ?? "").trim();
+}
