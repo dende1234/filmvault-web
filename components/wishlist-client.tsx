@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { titleHref } from "@/lib/titles";
 import Link from "next/link";
 import { Bookmark, X } from "lucide-react";
 import { useT } from "@/lib/i18n/locale-provider";
@@ -11,11 +12,14 @@ import { PosterGrid } from "@/components/movie/poster-grid";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
+import { isSeries } from "@/lib/titles";
+import { useSeasonsLabel } from "@/components/seasons-picker";
 
 export function WishlistClient({ items: initialItems }: { items: WishlistItem[] }) {
   const { t } = useT();
   const [items, setItems] = useState(initialItems);
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
+  const seasonsLabel = useSeasonsLabel();
 
   async function remove(item: WishlistItem) {
     setRemovingIds((prev) => new Set(prev).add(item.id));
@@ -50,11 +54,16 @@ export function WishlistClient({ items: initialItems }: { items: WishlistItem[] 
         <PosterGrid>
           {items.map((item) => (
             <div key={item.id} className="group relative flex flex-col gap-2">
-              <Link href={`/films/${item.tmdb_movie_id}`} className="flex flex-col gap-2 focus-visible:outline-none">
+              <Link href={titleHref(item.tmdb_movie_id)} className="flex flex-col gap-2 focus-visible:outline-none">
                 <Poster path={item.movie_poster} title={item.movie_title} hover />
                 <p className="line-clamp-2 text-sm font-medium leading-snug transition-colors group-hover:text-primary">
                   {item.movie_title}
                 </p>
+                {isSeries(item.tmdb_movie_id) && (
+                  <p className="-mt-1 text-xs text-muted-foreground">
+                    {item.seasons?.length ? seasonsLabel(item.seasons) : t("series_complete")}
+                  </p>
+                )}
               </Link>
               <PosterCorner position="tr">
                 <button

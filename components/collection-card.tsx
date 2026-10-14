@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Collection } from "@/types/database";
 import { Poster } from "@/components/movie/poster";
 
-export type CollectionPreview = { count: number; posters: { path: string | null; title: string }[] };
+export type CollectionPreview = { count: number; posters: { path: string | null; title: string; customCover?: string | null }[] };
 
 /** Collection tile: four-poster collage fading into the card, name, film
  * count and description. Used for your own and friends' collections. */
@@ -26,7 +26,7 @@ export function CollectionCard({
         {Array.from({ length: 4 }, (_, i) => {
           const poster = preview.posters[i];
           return poster ? (
-            <Poster key={i} path={poster.path} title={poster.title} size="xs" className="rounded-md shadow-none ring-0" />
+            <Poster key={i} path={poster.path} customCover={poster.customCover} title={poster.title} size="xs" className="rounded-md shadow-none ring-0" />
           ) : (
             <div key={i} className="rounded-md bg-muted/60" />
           );
@@ -44,14 +44,14 @@ export function CollectionCard({
 
 /** Builds per-collection previews (count + four newest posters). */
 export function buildCollectionPreviews(
-  items: { collection_id: string; added_at: string | null; movie_poster: string | null; movie_title: string }[],
+  items: { collection_id: string; added_at: string | null; movie_poster: string | null; movie_title: string; custom_cover_path?: string | null }[],
 ): Record<string, CollectionPreview> {
   const previews: Record<string, CollectionPreview> = {};
   const newestFirst = [...items].sort((a, b) => (b.added_at ?? "").localeCompare(a.added_at ?? ""));
   for (const item of newestFirst) {
     const preview = (previews[item.collection_id] ??= { count: 0, posters: [] });
     preview.count++;
-    if (preview.posters.length < 4) preview.posters.push({ path: item.movie_poster, title: item.movie_title });
+    if (preview.posters.length < 4) preview.posters.push({ path: item.movie_poster, title: item.movie_title, customCover: item.custom_cover_path });
   }
   return previews;
 }

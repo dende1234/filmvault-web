@@ -8,6 +8,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+import type { TitleKind } from "@/lib/titles";
 
 function MovieRow({
   movie,
@@ -34,7 +36,31 @@ function MovieRow({
   );
 }
 
-/** Single-select movie picker — mirrors movies/MovieSearchPickerDialog.kt. */
+/** "Films | Series" switch shared by both pickers. */
+function KindToggle({ kind, onChange }: { kind: TitleKind; onChange: (k: TitleKind) => void }) {
+  const { t } = useT();
+  return (
+    <div role="group" aria-label={t("picker_kind_label")} className="inline-flex w-fit rounded-full border border-border bg-card p-0.5 text-sm">
+      {(["movie", "tv"] as const).map((k) => (
+        <button
+          key={k}
+          type="button"
+          aria-pressed={kind === k}
+          onClick={() => onChange(k)}
+          className={cn(
+            "rounded-full px-3 py-1 font-medium transition-colors",
+            kind === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {t(k === "movie" ? "picker_kind_movies" : "picker_kind_series")}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Single-select movie/series picker — mirrors movies/MovieSearchPickerDialog.kt.
+ * A series comes back film-shaped with a negative id (lib/titles.ts). */
 export function MovieSearchPickerDialog({
   open,
   onOpenChange,
@@ -46,6 +72,7 @@ export function MovieSearchPickerDialog({
 }) {
   const { t, locale } = useT();
   const [query, setQuery] = useState("");
+  const [kind, setKind] = useState<TitleKind>("movie");
   const [movies, setMovies] = useState<MovieSummaryDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -55,7 +82,7 @@ export function MovieSearchPickerDialog({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setIsLoading(true);
-      const params = new URLSearchParams({ query, language: locale });
+      const params = new URLSearchParams({ query, language: locale, type: kind });
       fetch(`/api/tmdb/search?${params.toString()}`)
         .then((r) => r.json())
         .then((data) => setMovies(data.results ?? []))
@@ -64,7 +91,7 @@ export function MovieSearchPickerDialog({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, open, locale]);
+  }, [query, open, locale, kind]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -72,6 +99,7 @@ export function MovieSearchPickerDialog({
         <DialogHeader>
           <DialogTitle>{t("movie_picker_title")}</DialogTitle>
         </DialogHeader>
+        <KindToggle kind={kind} onChange={setKind} />
         <SearchInput placeholder={t("movies_search_label")} value={query} onValueChange={setQuery} />
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
@@ -102,6 +130,7 @@ export function MovieMultiSelectPickerDialog({
 }) {
   const { t, locale } = useT();
   const [query, setQuery] = useState("");
+  const [kind, setKind] = useState<TitleKind>("movie");
   const [movies, setMovies] = useState<MovieSummaryDto[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selected, setSelected] = useState<Map<number, MovieSummaryDto>>(new Map());
@@ -112,7 +141,7 @@ export function MovieMultiSelectPickerDialog({
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setIsLoading(true);
-      const params = new URLSearchParams({ query, language: locale });
+      const params = new URLSearchParams({ query, language: locale, type: kind });
       fetch(`/api/tmdb/search?${params.toString()}`)
         .then((r) => r.json())
         .then((data) => setMovies(data.results ?? []))
@@ -121,7 +150,7 @@ export function MovieMultiSelectPickerDialog({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query, open, locale]);
+  }, [query, open, locale, kind]);
 
   function toggle(movie: MovieSummaryDto) {
     setSelected((prev) => {
@@ -138,6 +167,7 @@ export function MovieMultiSelectPickerDialog({
         <DialogHeader>
           <DialogTitle>{t("box_movie_picker_title")}</DialogTitle>
         </DialogHeader>
+        <KindToggle kind={kind} onChange={setKind} />
         <SearchInput placeholder={t("movies_search_label")} value={query} onValueChange={setQuery} />
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (

@@ -115,7 +115,7 @@ export function NavShell({ profile, children }: { profile: Profile | null; child
       <NavLink href="/dashboard" icon={LayoutDashboard} label={t("dashboard_title")} onNavigate={close} />
 
       <SectionLabel>{t("nav_section_films")}</SectionLabel>
-      <NavLink href="/films" icon={Film} label={t("films_label")} onNavigate={close} />
+      <NavLink href="/films" icon={Film} label={t("nav_films_series")} onNavigate={close} />
       <NavLink href="/watched" icon={Eye} label={t("nav_watched")} onNavigate={close} />
       <NavLink href="/collections" icon={LibraryBig} label={t("collections_label")} onNavigate={close} />
       <NavLink href="/lists" icon={ListChecks} label={t("nav_lists")} onNavigate={close} />

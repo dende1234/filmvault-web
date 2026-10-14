@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { isSeries, titleHref } from "@/lib/titles";
 import Link from "next/link";
 import { CalendarDays, Eye, LibraryBig, MessageSquare, Plus, SearchX, Star } from "lucide-react";
 import { useT } from "@/lib/i18n/locale-provider";
@@ -19,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type Filter = "all" | "in" | "out";
+type Filter = "all" | "in" | "out" | "movie" | "tv";
 type Sort = "recent" | "rating" | "title";
 
 /** Month heading key for the diary: "2026-10", or "unknown" for undated. */
@@ -43,6 +44,8 @@ export function WatchedPageClient({ available, films, diary }: { available: bool
     let list = films;
     if (filter === "in") list = list.filter((f) => f.inCollection);
     if (filter === "out") list = list.filter((f) => !f.inCollection);
+    if (filter === "movie") list = list.filter((f) => !isSeries(f.tmdb_movie_id));
+    if (filter === "tv") list = list.filter((f) => isSeries(f.tmdb_movie_id));
     const copy = [...list];
     if (sort === "title") copy.sort((a, b) => a.movie_title.localeCompare(b.movie_title));
     else if (sort === "rating") copy.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
@@ -113,6 +116,8 @@ export function WatchedPageClient({ available, films, diary }: { available: bool
                     <SelectItem value="all">{t("filter_all_films")}</SelectItem>
                     <SelectItem value="in">{t("watched_filter_in_collection")}</SelectItem>
                     <SelectItem value="out">{t("watched_filter_not_in_collection")}</SelectItem>
+                    <SelectItem value="movie">{t("picker_kind_movies")}</SelectItem>
+                    <SelectItem value="tv">{t("picker_kind_series")}</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
@@ -132,7 +137,7 @@ export function WatchedPageClient({ available, films, diary }: { available: bool
               ) : (
                 <PosterGrid>
                   {visibleFilms.map((film) => (
-                    <Link key={film.id} href={`/films/${film.tmdb_movie_id}`} className="group flex flex-col gap-2 focus-visible:outline-none">
+                    <Link key={film.id} href={titleHref(film.tmdb_movie_id)} className="group flex flex-col gap-2 focus-visible:outline-none">
                       <Poster path={film.movie_poster} title={film.movie_title} hover>
                         {film.rating != null && (
                           <PosterCorner position="tl">
@@ -184,7 +189,7 @@ export function WatchedPageClient({ available, films, diary }: { available: bool
                         {entries.map((entry) => (
                           <li key={entry.id}>
                             <Link
-                              href={`/films/${entry.tmdb_movie_id}`}
+                              href={titleHref(entry.tmdb_movie_id)}
                               className="group flex items-center gap-4 p-3 transition-colors hover:bg-elevated/60"
                             >
                               <span className="w-12 shrink-0 text-center">
@@ -199,7 +204,13 @@ export function WatchedPageClient({ available, films, diary }: { available: bool
                               <Poster path={entry.movie_poster} title={entry.movie_title} size="xs" className="w-10 shrink-0 rounded-md shadow-none" />
                               <div className="min-w-0 flex-1">
                                 <p className="truncate font-medium transition-colors group-hover:text-primary">{entry.movie_title}</p>
-                                {entry.isRewatch && <p className="text-xs text-muted-foreground">{t("watched_diary_rewatch")}</p>}
+                                {(entry.isRewatch || entry.season_number != null) && (
+                                  <p className="text-xs text-muted-foreground">
+                                    {entry.season_number != null && (entry.season_number === 0 ? t("series_specials") : `S${entry.season_number}`)}
+                                    {entry.season_number != null && entry.isRewatch && " · "}
+                                    {entry.isRewatch && t("watched_diary_rewatch")}
+                                  </p>
+                                )}
                               </div>
                               {entry.rating != null && (
                                 <span className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-primary">

@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { titleHref } from "@/lib/titles";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check, Eye, Plus, X } from "lucide-react";
@@ -12,6 +13,7 @@ import {
   updateCollectionItemFavorite,
   updateCollectionItemLoan,
   updateCollectionItemNote,
+  updateCollectionItemSeasons,
   updateCollectionItemRating,
   updateCollectionItemTags,
   updateCollectionItemWatched,
@@ -19,6 +21,10 @@ import {
 import { isLoanOverdue, type CollectionItem, type Condition, type FilmLog, type FilmViewing } from "@/types/database";
 import { setFilmRating, setFilmReview, setFilmWatched } from "@/actions/watched";
 import { LogFilmDialog } from "@/components/watched/log-film-dialog";
+import { getSeriesSeasons, type SeasonOption } from "@/actions/series";
+import { isSeries } from "@/lib/titles";
+import { SeasonsPicker, useSeasonsLabel } from "@/components/seasons-picker";
+import { CoverUpload } from "@/components/cover-upload";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import type { MovieDetailDto } from "@/types/tmdb";
@@ -64,6 +70,31 @@ export function CollectionItemEditor({
   const [isSavingReview, setIsSavingReview] = useState(false);
   const [showLogDialog, setShowLogDialog] = useState(false);
   const filmMeta = { tmdbMovieId: initial.tmdb_movie_id, title: initial.movie_title, poster: initial.movie_poster };
+  const series = isSeries(initial.tmdb_movie_id);
+  const seasonsLabel = useSeasonsLabel();
+  const [seasonOptions, setSeasonOptions] = useState<SeasonOption[]>([]);
+  const [seasons, setSeasons] = useState<number[]>(initial.seasons ?? []);
+  const [isSavingSeasons, setIsSavingSeasons] = useState(false);
+  const regularTotal = seasonOptions.filter((o) => o.seasonNumber > 0).length;
+
+  useEffect(() => {
+    if (!series) return;
+    getSeriesSeasons(initial.tmdb_movie_id).then(setSeasonOptions).catch(() => {});
+  }, [series, initial.tmdb_movie_id]);
+
+  async function saveSeasons() {
+    setIsSavingSeasons(true);
+    try {
+      await updateCollectionItemSeasons(item.item_group_id, seasons);
+      setItem((prev) => ({ ...prev, seasons }));
+      toast.success(t("watched_saved"));
+      router.refresh();
+    } catch {
+      toast.error(t("watched_error"));
+    } finally {
+      setIsSavingSeasons(false);
+    }
+  }
 
   // After router.refresh() the server sends the synced watched/rating (and
   // review) — adopt them during render instead of in an effect.
@@ -226,8 +257,8 @@ export function CollectionItemEditor({
     <div className="flex flex-col gap-8">
       <BackdropHero path={movie?.backdrop_path ?? null} contentClassName="max-w-3xl md:min-h-[24rem]">
         <div className="flex items-end gap-5">
-          <Link href={`/films/${item.tmdb_movie_id}`} className="group shrink-0">
-            <Poster path={item.movie_poster} title={item.movie_title} size="lg" priority hover className="w-28 sm:w-36" />
+          <Link href={titleHref(item.tmdb_movie_id)} className="group shrink-0">
+            <Poster path={item.movie_poster} customCover={item.custom_cover_path} title={item.movie_title} size="lg" priority hover className="w-28 sm:w-36" />
           </Link>
           <div className="flex min-w-0 flex-col gap-2">
             <h1 className="font-display text-2xl font-semibold leading-tight tracking-tight text-balance md:text-4xl">
@@ -236,6 +267,7 @@ export function CollectionItemEditor({
             <div className="flex flex-wrap gap-1.5">
               <Badge variant="default">{item.type}</Badge>
               <Badge variant="secondary">{item.editie}</Badge>
+              {series && <Badge variant="secondary">{seasonsLabel(item.seasons, regularTotal)}</Badge>}
               {item.watched && <Badge variant="success">{t("watched_label")}</Badge>}
               {item.box_name && <Badge variant="outline">{t("collection_item_box_caption", item.box_name)}</Badge>}
             </div>
@@ -251,6 +283,36 @@ export function CollectionItemEditor({
           <h2 className="mb-2 font-display text-xl font-semibold tracking-tight">{t("collection_item_detail_synopsis_title")}</h2>
           <p className="leading-relaxed text-foreground/90">{movie.overview}</p>
         </div>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("cover_title")}</CardTitle>
+          <p className="text-xs text-muted-foreground">{t("cover_hint")}</p>
+        </CardHeader>
+        <CardContent>
+          <CoverUpload itemGroupId={item.item_group_id} hasCustomCover={!!initial.custom_cover_path} />
+        </CardContent>
+      </Card>
+
+      {series && (
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("series_copy_seasons_title")}</CardTitle>
+            <p className="text-xs text-muted-foreground">{t("series_pick_seasons")}</p>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <SeasonsPicker seasons={seasonOptions} value={seasons} onChange={setSeasons} />
+            <Button
+              size="sm"
+              className="w-fit"
+              onClick={saveSeasons}
+              disabled={isSavingSeasons || JSON.stringify(seasons) === JSON.stringify(item.seasons ?? [])}
+            >
+              {t("action_save")}
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       <Card>

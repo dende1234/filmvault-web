@@ -157,7 +157,7 @@ export function YearlyRecapClient({
             {recap.itemsThatYear.map((item) => (
               <RailItem key={item.id}>
                 <Link href={`/collections/${item.collection_id}/items/${item.id}`} className="group block focus-visible:outline-none">
-                  <Poster path={item.movie_poster} title={item.movie_title} size="sm" hover />
+                  <Poster path={item.movie_poster} customCover={item.custom_cover_path} title={item.movie_title} size="sm" hover />
                 </Link>
               </RailItem>
             ))}

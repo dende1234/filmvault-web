@@ -105,6 +105,9 @@ export function FilmLogCard({ meta, log, viewings }: { meta: FilmMeta; log: Film
                   <span className="inline-flex items-center gap-2">
                     <Eye className="size-3.5 text-primary" />
                     {formatViewingDate(v.watched_on, locale, t("watched_diary_unknown_date"))}
+                    {v.season_number != null && (
+                      <span className="text-muted-foreground">· {v.season_number === 0 ? t("series_specials") : `S${v.season_number}`}</span>
+                    )}
                   </span>
                   <button
                     type="button"

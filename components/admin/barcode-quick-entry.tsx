@@ -19,6 +19,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MediaTypeEditieSelects } from "@/components/admin/media-type-editie-selects";
 import { cn } from "@/lib/utils";
+import { isSeries } from "@/lib/titles";
+import { getSeriesSeasons, type SeasonOption } from "@/actions/series";
+import { SeasonsPicker } from "@/components/seasons-picker";
+import { BarcodeScanButton } from "@/components/barcode-scanner";
 
 const TYPE_STORAGE_KEY = "filmvault.admin.station.type";
 const EDITIE_STORAGE_KEY = "filmvault.admin.station.editie";
@@ -74,6 +78,7 @@ export function BarcodeQuickEntry({ mediaTypes, edities }: { mediaTypes: string[
   const [isLookingUp, setIsLookingUp] = useState(false);
 
   const [query, setQuery] = useState("");
+  const [searchKind, setSearchKind] = useState<"movie" | "tv">("movie");
   const [results, setResults] = useState<MovieSummaryDto[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [existingState, setExistingState] = useState<{ movieId: number; entries: KnownBarcodeEntry[] } | null>(null);
@@ -103,7 +108,7 @@ export function BarcodeQuickEntry({ mediaTypes, edities }: { mediaTypes: string[
     if (!trimmed) return;
     let cancelled = false;
     const timer = setTimeout(() => {
-      const params = new URLSearchParams({ query: trimmed, language: locale });
+      const params = new URLSearchParams({ query: trimmed, language: locale, type: searchKind });
       fetch(`/api/tmdb/search?${params.toString()}`)
         .then((r) => r.json())
         .then((data) => {
@@ -117,10 +122,28 @@ export function BarcodeQuickEntry({ mediaTypes, edities }: { mediaTypes: string[
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [query, phase, locale]);
+  }, [query, phase, locale, searchKind]);
 
   // Which editions of the highlighted film are already registered.
   const activeMovieId = activeMovie?.id ?? null;
+
+  // Series: optional seasons for the barcode being registered.
+  const [seasonState, setSeasonState] = useState<{ titleId: number; options: SeasonOption[] } | null>(null);
+  const [quickSeasons, setQuickSeasons] = useState<number[]>([]);
+  useEffect(() => {
+    if (activeMovieId === null || !isSeries(activeMovieId)) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      getSeriesSeasons(activeMovieId)
+        .then((options) => !cancelled && setSeasonState({ titleId: activeMovieId, options }))
+        .catch(() => {});
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [activeMovieId]);
+  const seasonOptions = seasonState && seasonState.titleId === activeMovieId ? seasonState.options : [];
   useEffect(() => {
     if (activeMovieId === null) return;
     let cancelled = false;
@@ -147,11 +170,12 @@ export function BarcodeQuickEntry({ mediaTypes, edities }: { mediaTypes: string[
     barcodeRef.current?.focus();
   }
 
-  async function handleBarcodeEnter() {
-    if (!code || isLookingUp) return;
+  async function handleBarcodeEnter(override?: string) {
+    const lookup = override ? normalizeBarcode(override) : code;
+    if (!lookup || isLookingUp) return;
     setIsLookingUp(true);
     try {
-      const entries = await adminLookupBarcode(code);
+      const entries = await adminLookupBarcode(lookup);
       if (entries.length > 0) {
         setKnown(entries);
         barcodeRef.current?.select();
@@ -170,7 +194,7 @@ export function BarcodeQuickEntry({ mediaTypes, edities }: { mediaTypes: string[
     if (!code || isRegistering) return;
     setIsRegistering(true);
     try {
-      const result = await adminRegisterBarcodeWithConflictTitle(movie.id, code, type, editie);
+      const result = await adminRegisterBarcodeWithConflictTitle(movie.id, code, type, editie, isSeries(movie.id) ? quickSeasons : null);
       if (result.error === "duplicate") {
         toast.error(t("admin_add_film_error_duplicate", result.conflictTitle));
         return;
@@ -181,6 +205,7 @@ export function BarcodeQuickEntry({ mediaTypes, edities }: { mediaTypes: string[
       }
       toast.success(t("admin_station_registered", code, movie.title));
       setRecent((prev) => [{ id: result.id, barcode: code, title: movie.title, type, editie }, ...prev].slice(0, 20));
+      setQuickSeasons([]);
       resetForNext();
     } finally {
       setIsRegistering(false);
@@ -236,26 +261,37 @@ export function BarcodeQuickEntry({ mediaTypes, edities }: { mediaTypes: string[
       />
 
       <div className="flex flex-col gap-1">
-        <Input
-          ref={barcodeRef}
-          inputMode="numeric"
-          autoComplete="off"
-          placeholder={t("label_barcode")}
-          value={barcode}
-          disabled={isLookingUp}
-          onChange={(e) => {
-            setBarcode(e.target.value);
-            setKnown(null);
-            if (phase === "search") setPhase("barcode");
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              handleBarcodeEnter();
-            }
-          }}
-          className="h-12 font-mono text-lg tracking-wider"
-        />
+        <div className="flex gap-2">
+          <Input
+            ref={barcodeRef}
+            inputMode="numeric"
+            autoComplete="off"
+            placeholder={t("label_barcode")}
+            value={barcode}
+            disabled={isLookingUp}
+            onChange={(e) => {
+              setBarcode(e.target.value);
+              setKnown(null);
+              if (phase === "search") setPhase("barcode");
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleBarcodeEnter();
+              }
+            }}
+            className="h-12 font-mono text-lg tracking-wider"
+          />
+          <BarcodeScanButton
+            iconOnly
+            className="size-12"
+            onDetected={(scannedCode) => {
+              setBarcode(scannedCode);
+              setKnown(null);
+              handleBarcodeEnter(scannedCode);
+            }}
+          />
+        </div>
         <p className="text-xs text-muted-foreground">{t("admin_station_barcode_hint")}</p>
         {showChecksumWarning && (
           <p className="flex items-center gap-1 text-xs text-warning">
@@ -284,6 +320,13 @@ export function BarcodeQuickEntry({ mediaTypes, edities }: { mediaTypes: string[
 
       {phase === "search" && (
         <div className="flex flex-col gap-2">
+          <div className="flex gap-1" role="group" aria-label={t("picker_kind_label")}>
+            {(["movie", "tv"] as const).map((k) => (
+              <Button key={k} type="button" size="sm" variant={searchKind === k ? "default" : "secondary"} onClick={() => setSearchKind(k)}>
+                {t(k === "movie" ? "picker_kind_movies" : "picker_kind_series")}
+              </Button>
+            ))}
+          </div>
           <Input
             ref={searchRef}
             autoComplete="off"
@@ -320,6 +363,13 @@ export function BarcodeQuickEntry({ mediaTypes, edities }: { mediaTypes: string[
                   </button>
                 );
               })}
+            </div>
+          )}
+
+          {activeMovie && isSeries(activeMovie.id) && (
+            <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
+              <p className="text-xs text-muted-foreground">{t("series_pick_seasons")}</p>
+              <SeasonsPicker seasons={seasonOptions} value={quickSeasons} onChange={setQuickSeasons} />
             </div>
           )}
 

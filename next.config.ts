@@ -10,12 +10,29 @@ const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  // camera=(self): the barcode scanner (components/barcode-scanner.tsx) needs it
+  // on our own origin; everything else stays blocked.
+  { key: "Permissions-Policy", value: "camera=(self), microphone=(), geolocation=()" },
 ];
+
+// Custom covers are served from the project's Supabase Storage (public
+// "covers" bucket, custom_covers.sql).
+const supabaseHost = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").hostname;
+  } catch {
+    return null;
+  }
+})();
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "image.tmdb.org" }],
+    remotePatterns: [
+      { protocol: "https", hostname: "image.tmdb.org" },
+      ...(supabaseHost
+        ? [{ protocol: "https" as const, hostname: supabaseHost, pathname: "/storage/v1/object/public/covers/**" }]
+        : []),
+    ],
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

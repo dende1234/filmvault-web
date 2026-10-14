@@ -83,6 +83,13 @@ function Dutch() {
         collectie-items zijn altijd privé.
       </p>
       <p>
+        Een eigen cover die je bij een exemplaar uploadt, wordt opgeslagen bij onze opslagdienst (Supabase) en is
+        zichtbaar voor iedereen die die collectie kan zien. De link naar de afbeelding is niet te raden, maar wie de
+        link heeft, kan de afbeelding openen. Je kunt een cover altijd weer verwijderen. Gebruik je de barcodescanner,
+        dan worden de camerabeelden alleen op je eigen apparaat verwerkt; ze worden niet verstuurd of opgeslagen.
+        <mark>[CONTROLEER]</mark>
+      </p>
+      <p>
         Zet je een collectie zelf op &quot;openbaar via link&quot;, dan kan iedereen met die link de naam en
         beschrijving van de collectie zien, de films met formaat en editie, en je naam en avatar. Notities,
         beoordelingen, uitleenstatus en barcodes blijven privé. Je kunt het delen altijd weer uitzetten; openbare
@@ -174,6 +181,12 @@ function English() {
         Reviews/posts and comments are visible to your followers; curated movie lists are publicly visible. Your
         collection itself is only visible to accepted friends. Personal notes/tags/loan info on collection items
         are always private.
+      </p>
+      <p>
+        A custom cover you upload for a copy is stored with our storage provider (Supabase) and is visible to anyone
+        who can see that collection. The image link can&apos;t be guessed, but anyone who has the link can open the
+        image. You can always remove a cover. When you use the barcode scanner, camera images are processed on your
+        own device only; they are not sent or stored. <mark>[CHECK]</mark>
       </p>
       <p>
         If you set a collection to &quot;public via link&quot; yourself, anyone with that link can see the

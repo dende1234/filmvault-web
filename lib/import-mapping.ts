@@ -3,7 +3,7 @@
  * recognised in Dutch and English, including common exports (CLZ Movies,
  * Cine Case, spreadsheets). */
 
-export const IMPORT_FIELDS = ["title", "year", "barcode", "format", "edition", "watched", "rating", "watchedOn", "box"] as const;
+export const IMPORT_FIELDS = ["title", "kind", "seasons", "year", "barcode", "format", "edition", "watched", "rating", "watchedOn", "box"] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 export type ColumnMapping = Partial<Record<ImportField, number>>;
 
@@ -17,6 +17,8 @@ const HEADER_SYNONYMS: Record<ImportField, string[]> = {
   rating: ["rating", "beoordeling", "cijfer", "score", "my rating", "mijn rating", "sterren", "stars"],
   watchedOn: ["datum bekeken", "bekeken op", "gezien op", "watched on", "date watched", "watched date", "kijkdatum", "last watched"],
   box: ["box", "boxset", "box set", "box naam", "box name", "collectie box", "set"],
+  kind: ["soort", "film of serie", "film/serie", "kind", "categorie", "category", "content type", "titeltype", "title type"],
+  seasons: ["seizoenen", "seizoen", "seasons", "season", "seizoen(en)", "volumes"],
 };
 
 function normHeader(h: string) {
@@ -85,6 +87,15 @@ export function normalizeEdition(value: string, known: string[]): string | null 
   for (const [re, name] of EDITION_SYNONYMS) {
     if (re.test(v)) return known.find((k) => k.toLowerCase() === name.toLowerCase()) ?? null;
   }
+  return null;
+}
+
+/** "Serie", "TV", "Series", "Show" → tv; "Film", "Movie" → movie; else null. */
+export function normalizeKind(value: string): "movie" | "tv" | null {
+  const v = value.trim().toLowerCase();
+  if (!v) return null;
+  if (/serie|series|\btv\b|show|miniserie/.test(v)) return "tv";
+  if (/film|movie|speelfilm/.test(v)) return "movie";
   return null;
 }
 

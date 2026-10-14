@@ -16,6 +16,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MovieSearchPickerDialog } from "@/components/movie-search-picker-dialog";
 import { MediaTypeEditieSelects } from "@/components/admin/media-type-editie-selects";
+import { isSeries } from "@/lib/titles";
+import { useSeasonsLabel } from "@/components/seasons-picker";
 
 function matches(card: PendingBarcodeCardItem, query: string): boolean {
   const q = query.toLowerCase();
@@ -120,6 +122,7 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
   const [query, setQuery] = useState("");
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<PendingBarcode | null>(null);
+  const seasonsLabel = useSeasonsLabel();
 
   // Server re-renders (router.refresh / revalidatePath) hand us fresh cards —
   // adopt them during render rather than in an effect.
@@ -213,6 +216,7 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
                     )}
                     <p className="text-xs text-muted-foreground">
                       {t("barcode_type_editie_line", first.barcode, first.type ?? "DVD", first.editie ?? "Normaal")}
+                      {isSeries(first.tmdb_movie_id) && ` · ${t("picker_kind_series")} · ${seasonsLabel(first.seasons)}`}
                     </p>
                     {card.kind === "box" &&
                       card.items.map((i) => (

@@ -19,7 +19,7 @@ export const GUIDES: Guide[] = [
     title: "Je filmcollectie online bijhouden: zo begin je",
     description:
       "Een praktische aanpak om je dvd's, Blu-rays en 4K UHD's overzichtelijk vast te leggen: van eerste film tot een collectie van honderden titels.",
-    updated: "2026-10-10",
+    updated: "2026-10-14",
     sections: [
       {
         heading: "Waarom een overzicht van je collectie helpt",
@@ -43,6 +43,7 @@ export const GUIDES: Guide[] = [
         heading: "Wat je per film vastlegt",
         paragraphs: [
           "Een titel alleen is voor een verzamelaar te weinig. Dezelfde film kun je bezitten op dvd, als Blu-ray-steelbook en als 4K UHD Collector's Edition. Leg daarom per exemplaar vast welk formaat en welke editie het is.",
+          "Bij series komt daar nog iets bij: welke seizoenen er in de uitgave zitten. Een losse box van seizoen 1 is een ander exemplaar dan een complete serie, en zo zie je meteen welke seizoenen je nog mist.",
           "Handig om daarnaast bij te houden: of je de film al hebt gezien, je eigen beoordeling, de staat van het exemplaar en aan wie je hem hebt uitgeleend.",
         ],
       },
@@ -55,7 +56,7 @@ export const GUIDES: Guide[] = [
       {
         heading: "Zo doe je het in Filmory",
         paragraphs: [
-          "In Filmory maak je gratis een account aan, richt je je eerste collectie in en voeg je films toe op titel of barcode, met formaat en editie. Boxsets houd je bij als één geheel, en films die je nog wilt hebben zet je op je verlanglijst.",
+          "In Filmory maak je een account aan, richt je je eerste collectie in en voeg je films en series toe op titel of barcode, met formaat, editie en bij series de seizoenen. Boxsets houd je bij als één geheel, en wat je nog wilt hebben zet je op je verlanglijst.",
         ],
       },
     ],
@@ -65,7 +66,7 @@ export const GUIDES: Guide[] = [
     title: "Je Blu-ray-collectie registreren zonder gedoe",
     description:
       "Zo registreer je je Blu-rays snel en netjes: barcode of titel, formaat en editie, en een indeling die blijft werken als je collectie groeit.",
-    updated: "2026-10-10",
+    updated: "2026-10-14",
     sections: [
       {
         heading: "Barcode of titel?",
@@ -78,6 +79,7 @@ export const GUIDES: Guide[] = [
         heading: "Blu-ray, 4K UHD en combipacks",
         paragraphs: [
           "Veel 4K UHD-uitgaven bevatten ook een gewone Blu-ray. Kies het formaat waarom je de uitgave kocht, meestal de 4K UHD. Zo blijft je telling per formaat kloppen.",
+          "Series op Blu-ray komen vaak per seizoen of als complete box uit. Registreer de uitgave zoals hij in de kast staat, en leg vast welke seizoenen erin zitten.",
         ],
       },
       {
@@ -102,7 +104,7 @@ export const GUIDES: Guide[] = [
     title: "Je steelbook-collectie organiseren",
     description:
       "Steelbooks verzamelen draait om de editie. Zo houd je overzicht over je steelbooks, limited editions en collector's editions.",
-    updated: "2026-10-10",
+    updated: "2026-10-14",
     sections: [
       {
         heading: "Waarom steelbooks extra aandacht vragen",
@@ -140,12 +142,12 @@ export const GUIDES: Guide[] = [
     title: "Dvd, Blu-ray en 4K UHD: de verschillen voor verzamelaars",
     description:
       "Wat is het verschil tussen dvd, Blu-ray en 4K UHD Blu-ray, en waar let je op als je fysieke films verzamelt?",
-    updated: "2026-10-10",
+    updated: "2026-10-14",
     sections: [
       {
         heading: "Dvd",
         paragraphs: [
-          "De dvd heeft standaardresolutie (576 lijnen in Europa). Het beeld is zichtbaar minder scherp op een groot scherm, maar veel films en series zijn alleen op dvd verschenen. Voor verzamelaars blijft de dvd daarom waardevol, zeker voor titels die nooit in hogere kwaliteit uitkwamen.",
+          "De dvd heeft standaardresolutie (576 lijnen in Europa). Het beeld is zichtbaar minder scherp op een groot scherm, maar veel films en vooral oudere series zijn alleen op dvd verschenen. Voor verzamelaars blijft de dvd daarom waardevol, zeker voor titels die nooit in hogere kwaliteit uitkwamen.",
         ],
       },
       {

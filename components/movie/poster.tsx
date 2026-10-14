@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Film } from "lucide-react";
 import { posterUrl } from "@/types/tmdb";
+import { coverUrl } from "@/lib/covers";
 import { cn } from "@/lib/utils";
 
 const SIZES = {
@@ -15,6 +16,7 @@ const SIZES = {
  * (format / watched / rating badges) in the corners. */
 export function Poster({
   path,
+  customCover,
   title,
   size = "md",
   className,
@@ -24,6 +26,8 @@ export function Poster({
   children,
 }: {
   path: string | null;
+  /** Storage path of the user's own cover for this copy; wins over TMDB. */
+  customCover?: string | null;
   title: string;
   size?: keyof typeof SIZES;
   className?: string;
@@ -34,7 +38,7 @@ export function Poster({
   children?: React.ReactNode;
 }) {
   const config = SIZES[size];
-  const src = posterUrl(path, config.tmdb);
+  const src = coverUrl(customCover) ?? posterUrl(path, config.tmdb);
   return (
     <div
       className={cn(

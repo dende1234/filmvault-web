@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { titleHref } from "@/lib/titles";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -157,7 +158,7 @@ export function CuratedListDetailClient({
             const isOwned = owned.has(item.tmdb_movie_id);
             return (
               <div key={item.id} className="group relative flex flex-col gap-2">
-                <Link href={`/films/${item.tmdb_movie_id}`} className="flex flex-col gap-2 focus-visible:outline-none">
+                <Link href={titleHref(item.tmdb_movie_id)} className="flex flex-col gap-2 focus-visible:outline-none">
                   <Poster
                     path={item.movie_poster}
                     title={item.movie_title}

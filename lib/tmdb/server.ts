@@ -1,5 +1,7 @@
 import "server-only";
-import type { GenreDto, MovieDetailDto, MovieDetailFullDto, MoviePageDto } from "@/types/tmdb";
+import type { GenreDto, MovieDetailDto, MovieDetailFullDto, MoviePageDto, TvDetailDto, TvDetailFullDto, TvSummaryDto } from "@/types/tmdb";
+import { tvToSummary } from "@/types/tmdb";
+import { parseTitleId } from "@/lib/titles";
 
 // Server-only TMDB client — mirrors movies/MovieRepository.kt's calls exactly,
 // except the API key stays server-side (TMDB_API_KEY, no NEXT_PUBLIC_ prefix)
@@ -68,4 +70,73 @@ export async function getMovieDetailFull(movieId: number, language = "nl"): Prom
 /** Weekly trending films — the poster wall on the public landing page. */
 export async function getTrendingMovies(language = "nl"): Promise<MoviePageDto> {
   return tmdbGet("/trending/movie/week", { language: tmdbLocale(language) });
+}
+
+// --- Series (TMDB /tv). Search/discover results come back film-shaped with
+// negative ids (tvToSummary), see lib/titles.ts.
+
+type TvPage = { page: number; results: TvSummaryDto[]; total_pages: number; total_results: number };
+
+function tvPage(data: TvPage): MoviePageDto {
+  return { ...data, results: (data.results ?? []).map(tvToSummary) };
+}
+
+export async function searchTv(query: string, page: number, language = "nl"): Promise<MoviePageDto> {
+  return tvPage(await tmdbGet<TvPage>("/search/tv", { language: tmdbLocale(language), query, page }));
+}
+
+/** Same sort keys as discoverMovies; the movie release-date key maps to the
+ * tv first-air-date key. */
+export async function discoverTv(
+  page: number,
+  genreId: number | undefined,
+  sortBy: string,
+  year: number | undefined,
+  language = "nl",
+): Promise<MoviePageDto> {
+  return tvPage(
+    await tmdbGet<TvPage>("/discover/tv", {
+      language: tmdbLocale(language),
+      page,
+      sort_by: sortBy.replace("primary_release_date", "first_air_date").replace("release_date", "first_air_date"),
+      with_genres: genreId,
+      first_air_date_year: year,
+    }),
+  );
+}
+
+export async function getTvGenres(language = "nl"): Promise<GenreDto[]> {
+  const data = await tmdbGet<{ genres: GenreDto[] }>("/genre/tv/list", { language: tmdbLocale(language) });
+  return data.genres ?? [];
+}
+
+export async function getTvDetail(tvId: number, language = "nl"): Promise<TvDetailDto> {
+  return tmdbGet(`/tv/${tvId}`, { language: tmdbLocale(language) });
+}
+
+/** Everything the series page shows in one request. */
+export async function getTvDetailFull(tvId: number, language = "nl"): Promise<TvDetailFullDto> {
+  return tmdbGet(`/tv/${tvId}`, {
+    language: tmdbLocale(language),
+    append_to_response: "aggregate_credits,videos,recommendations,content_ratings",
+    include_video_language: `${language},en,null`,
+  });
+}
+
+/** Detail for a STORED title id (film or series), film-shaped so existing
+ * callers (collection item, dashboard, admin, import) work for both. For a
+ * series the id stays negative and runtime is the typical episode length. */
+export async function getTitleDetail(titleId: number, language = "nl"): Promise<MovieDetailDto> {
+  const { kind, tmdbId } = parseTitleId(titleId);
+  if (kind === "movie") return getMovieDetail(tmdbId, language);
+  const tv = await getTvDetail(tmdbId, language);
+  return {
+    ...tvToSummary(tv),
+    runtime: tv.episode_run_time?.[0] ?? null,
+    genres: tv.genres ?? [],
+    status: tv.status,
+    budget: 0,
+    revenue: 0,
+    original_language: tv.original_language,
+  };
 }

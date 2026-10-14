@@ -6,6 +6,8 @@ import { getPublicCollection } from "@/actions/collections";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
 import { posterUrl } from "@/types/tmdb";
+import { isSeries } from "@/lib/titles";
+import { seasonsShort } from "@/lib/seasons";
 import { Logo } from "@/components/brand/logo";
 import { Avatar } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
@@ -82,9 +84,12 @@ export default async function PublicCollectionPage({ params }: Props) {
         <PosterGrid>
           {collection.items.map((item, i) => (
             <div key={`${item.tmdb_movie_id}-${item.type}-${item.editie}-${i}`} className="flex flex-col gap-2">
-              <Poster path={item.movie_poster} title={item.movie_title} priority={i < 6}>
+              <Poster path={item.movie_poster} customCover={item.custom_cover_path} title={item.movie_title} priority={i < 6}>
                 <PosterCorner position="bl">
                   <Badge variant="overlay">{item.type}</Badge>
+                  {isSeries(item.tmdb_movie_id) && seasonsShort(item.seasons) && (
+                    <Badge variant="overlay">{seasonsShort(item.seasons)!.label}</Badge>
+                  )}
                 </PosterCorner>
               </Poster>
               <div className="min-w-0">

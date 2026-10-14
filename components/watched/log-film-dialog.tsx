@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
@@ -9,6 +9,9 @@ import { useT } from "@/lib/i18n/locale-provider";
 import { logFilm } from "@/actions/watched";
 import type { FilmLog, FilmMeta } from "@/types/database";
 import { Poster } from "@/components/movie/poster";
+import { getSeriesSeasons, type SeasonOption } from "@/actions/series";
+import { isSeries } from "@/lib/titles";
+import { SeasonsPicker } from "@/components/seasons-picker";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input, Textarea } from "@/components/ui/input";
@@ -73,6 +76,13 @@ function LogFilmForm({ meta, log, mode, onDone }: { meta: FilmMeta; log: FilmLog
   const [rating, setRating] = useState<number | null>(log?.rating ?? null);
   const [review, setReview] = useState(log?.review ?? "");
   const [share, setShare] = useState(false);
+  // Series: which season(s) this viewing covers (none = the series in general).
+  const series = isSeries(meta.tmdbMovieId);
+  const [seasonOptions, setSeasonOptions] = useState<SeasonOption[]>([]);
+  const [seasons, setSeasons] = useState<number[]>([]);
+  useEffect(() => {
+    if (series) getSeriesSeasons(meta.tmdbMovieId).then(setSeasonOptions).catch(() => {});
+  }, [series, meta.tmdbMovieId]);
   const [isPending, startTransition] = useTransition();
   const alreadyShared = !!log?.review_post_id;
 
@@ -82,6 +92,7 @@ function LogFilmForm({ meta, log, mode, onDone }: { meta: FilmMeta; log: FilmLog
         ...meta,
         addViewing,
         watchedOn: dateUnknown ? null : watchedOn,
+        seasons: series ? seasons : null,
         rating,
         review,
         shareToFeed: share && !alreadyShared && review.trim().length > 0,
@@ -125,6 +136,12 @@ function LogFilmForm({ meta, log, mode, onDone }: { meta: FilmMeta; log: FilmLog
                 {t("watched_dialog_date_unknown")}
               </Label>
             </div>
+          </div>
+        )}
+        {addViewing && series && (
+          <div className="flex flex-col gap-1.5 pl-8">
+            <p className="text-xs text-muted-foreground">{t("series_watched_which_seasons")}</p>
+            <SeasonsPicker seasons={seasonOptions} value={seasons} onChange={setSeasons} />
           </div>
         )}
       </div>

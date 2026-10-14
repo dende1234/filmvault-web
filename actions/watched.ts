@@ -35,6 +35,16 @@ function cleanDate(date: string | null) {
   return date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
 }
 
+/** Diary rows for one viewing: one per watched season for a series
+ * (season_number only sent when set, so films work before
+ * series_support.sql), else one row for the whole title. */
+function viewingRows(userId: string, tmdbMovieId: number, watchedOn: string | null, seasons?: number[] | null) {
+  const date = cleanDate(watchedOn);
+  const list = Array.from(new Set((seasons ?? []).filter((s) => Number.isInteger(s) && s >= 0)));
+  if (list.length === 0) return [{ user_id: userId, tmdb_movie_id: tmdbMovieId, watched_on: date }];
+  return list.map((season_number) => ({ user_id: userId, tmdb_movie_id: tmdbMovieId, watched_on: date, season_number }));
+}
+
 function cleanReview(review: string | null) {
   const trimmed = review?.trim() ?? "";
   return trimmed ? trimmed.slice(0, 10000) : null;
@@ -159,6 +169,8 @@ export async function getWatchedOverview(): Promise<{ available: boolean; films:
 export async function logFilm(input: FilmMeta & {
   addViewing: boolean;
   watchedOn: string | null;
+  /** Series only: the seasons watched in this viewing. */
+  seasons?: number[] | null;
   rating: number | null;
   review: string | null;
   shareToFeed: boolean;
@@ -167,9 +179,7 @@ export async function logFilm(input: FilmMeta & {
     const supabase = await createClient();
     const userId = await requireUserId();
     if (input.addViewing) {
-      const { error } = await supabase
-        .from("film_viewings")
-        .insert({ user_id: userId, tmdb_movie_id: input.tmdbMovieId, watched_on: cleanDate(input.watchedOn) });
+      const { error } = await supabase.from("film_viewings").insert(viewingRows(userId, input.tmdbMovieId, input.watchedOn, input.seasons));
       if (error) throw error;
     }
     // Only a logged viewing marks the film as watched; editing rating/review
@@ -220,13 +230,11 @@ export async function setFilmReview(meta: FilmMeta, review: string | null, share
 }
 
 /** Adds a diary entry and marks the film watched. */
-export async function addViewing(meta: FilmMeta, watchedOn: string | null): Promise<{ error: string | null }> {
+export async function addViewing(meta: FilmMeta, watchedOn: string | null, seasons?: number[] | null): Promise<{ error: string | null }> {
   try {
     const supabase = await createClient();
     const userId = await requireUserId();
-    const { error } = await supabase
-      .from("film_viewings")
-      .insert({ user_id: userId, tmdb_movie_id: meta.tmdbMovieId, watched_on: cleanDate(watchedOn) });
+    const { error } = await supabase.from("film_viewings").insert(viewingRows(userId, meta.tmdbMovieId, watchedOn, seasons));
     if (error) throw error;
     await upsertLog(userId, meta, { watched: true });
     revalidateFilm(meta.tmdbMovieId);

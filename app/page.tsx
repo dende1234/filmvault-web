@@ -32,7 +32,7 @@ export default async function LandingPage() {
   const trending = await getTrendingMovies(locale).catch(() => null);
   const movies = (trending?.results ?? []).filter((m) => m.poster_path);
 
-  const formats = ["Dvd", "Blu-ray", "4K UHD", "Steelbook", dict.landing_format_box];
+  const formats = ["Dvd", "Blu-ray", "4K UHD", "Steelbook", dict.landing_format_box, dict.landing_format_series];
   const steps = [
     { icon: UserPlus, title: dict.landing_step_register_title, description: dict.landing_step_register_description },
     { icon: LibraryBig, title: dict.landing_step_organize_title, description: dict.landing_step_organize_description },

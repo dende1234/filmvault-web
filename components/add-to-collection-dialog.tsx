@@ -6,7 +6,11 @@ import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { addBarcodesToCollections, getBarcodesForMovie, getUserCollections } from "@/actions/collections";
 import { getEdities, getMediaTypes } from "@/actions/media-types";
-import { removeFromWishlistByMovie } from "@/actions/wishlist";
+import { removeFromWishlistIfCovered } from "@/actions/wishlist";
+import { getSeriesSeasons, type SeasonOption } from "@/actions/series";
+import { isSeries } from "@/lib/titles";
+import { SeasonsPicker, useSeasonsLabel } from "@/components/seasons-picker";
+import { BarcodeScanButton } from "@/components/barcode-scanner";
 import type { Barcode, Collection, NewBarcodeInput } from "@/types/database";
 import {
   Dialog,
@@ -26,12 +30,15 @@ export function AddToCollectionDialog({
   tmdbMovieId,
   movieTitle,
   moviePoster,
+  initialBarcode,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tmdbMovieId: number;
   movieTitle: string;
   moviePoster: string | null;
+  /** A scanned barcode: pre-ticked when known for this title, else pre-filled as new. */
+  initialBarcode?: string;
 }) {
   const { t } = useT();
   const router = useRouter();
@@ -49,6 +56,12 @@ export function AddToCollectionDialog({
   const [info, setInfo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Series only: the seasons in the release being added.
+  const series = isSeries(tmdbMovieId);
+  const [seasonOptions, setSeasonOptions] = useState<SeasonOption[]>([]);
+  const [newSeasons, setNewSeasons] = useState<number[]>([]);
+  const seasonsLabel = useSeasonsLabel();
+  const regularTotal = seasonOptions.filter((s) => s.seasonNumber > 0).length;
 
   useEffect(() => {
     if (!open) return;
@@ -59,8 +72,15 @@ export function AddToCollectionDialog({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoading(true);
     setError(null);
-    Promise.all([getBarcodesForMovie(tmdbMovieId), getUserCollections(), getMediaTypes(), getEdities()])
-      .then(([barcodes, cols, types, eds]) => {
+    Promise.all([
+      getBarcodesForMovie(tmdbMovieId),
+      getUserCollections(),
+      getMediaTypes(),
+      getEdities(),
+      series ? getSeriesSeasons(tmdbMovieId) : Promise.resolve([] as SeasonOption[]),
+    ])
+      .then(([barcodes, cols, types, eds, seasonList]) => {
+        setSeasonOptions(seasonList);
         setExistingBarcodes(barcodes);
         setCollections(cols);
         setMediaTypes(types);
@@ -68,10 +88,15 @@ export function AddToCollectionDialog({
         if (cols.length === 1) setSelectedCollections(new Set([cols[0].id]));
         setNewBarcodeType(types[0] ?? "DVD");
         setNewBarcodeEditie(eds[0] ?? "Normaal");
+        if (initialBarcode) {
+          const match = barcodes.find((b) => b.barcode.toLowerCase() === initialBarcode.toLowerCase());
+          if (match) setSelectedExisting(new Set([match.id]));
+          else setNewBarcodeText(initialBarcode);
+        }
       })
       .catch(() => setError(t("add_to_collection_error_load")))
       .finally(() => setIsLoading(false));
-  }, [open, tmdbMovieId, t]);
+  }, [open, tmdbMovieId, t, series, initialBarcode]);
 
   function stageNewBarcode() {
     const trimmed = newBarcodeText.trim();
@@ -89,8 +114,16 @@ export function AddToCollectionDialog({
       setInfo(t("add_to_collection_info_barcode_staged"));
       return;
     }
-    setStaged((prev) => [...prev, { barcode: trimmed, type: newBarcodeType, editie: newBarcodeEditie || "Normaal" }]);
+    if (series && newSeasons.length === 0) {
+      setInfo(t("series_pick_seasons"));
+      return;
+    }
+    setStaged((prev) => [
+      ...prev,
+      { barcode: trimmed, type: newBarcodeType, editie: newBarcodeEditie || "Normaal", ...(series ? { seasons: newSeasons } : {}) },
+    ]);
     setNewBarcodeText("");
+    setNewSeasons([]);
     setInfo(null);
   }
 
@@ -118,7 +151,7 @@ export function AddToCollectionDialog({
       // AddToCollectionViewModel.kt's submit() exactly, including the same accepted edge case for
       // mixed existing+new batches.
       if (selectedBarcodes.length > 0 && alreadyContaining.size < targetCollectionIds.length) {
-        removeFromWishlistByMovie(tmdbMovieId).catch(() => {});
+        removeFromWishlistIfCovered(tmdbMovieId).catch(() => {});
       }
       if (alreadyContaining.size === 0) {
         toast.success(t("add_to_collection_submit_button"));
@@ -174,6 +207,7 @@ export function AddToCollectionDialog({
                           }
                         />
                         {t("barcode_type_editie_line", b.barcode, b.type, b.editie)}
+                        {series && <span className="text-muted-foreground"> · {seasonsLabel(b.seasons, regularTotal)}</span>}
                       </label>
                     ))}
                   </div>
@@ -184,11 +218,30 @@ export function AddToCollectionDialog({
             <div>
               <p className="mb-2 text-sm font-medium">{t("add_to_collection_new_barcode_label")}</p>
               <div className="flex flex-col gap-2">
-                <Input
-                  placeholder={t("label_barcode")}
-                  value={newBarcodeText}
-                  onChange={(e) => setNewBarcodeText(e.target.value)}
-                />
+                {series && (
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-xs text-muted-foreground">{t("series_pick_seasons")}</p>
+                    <SeasonsPicker seasons={seasonOptions} value={newSeasons} onChange={setNewSeasons} />
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder={t("label_barcode")}
+                    value={newBarcodeText}
+                    onChange={(e) => setNewBarcodeText(e.target.value)}
+                    inputMode="numeric"
+                  />
+                  <BarcodeScanButton
+                    iconOnly
+                    onDetected={(code) => {
+                      const match = existingBarcodes.find((b) => b.barcode.toLowerCase() === code.toLowerCase());
+                      if (match) {
+                        setSelectedExisting((prev) => new Set(prev).add(match.id));
+                        setInfo(t("add_to_collection_info_barcode_exists"));
+                      } else setNewBarcodeText(code);
+                    }}
+                  />
+                </div>
                 <div className="flex gap-2">
                   <Select value={newBarcodeType} onValueChange={setNewBarcodeType}>
                     <SelectTrigger className="flex-1">
@@ -220,7 +273,10 @@ export function AddToCollectionDialog({
                 </div>
                 {staged.map((s, i) => (
                   <div key={i} className="flex items-center justify-between rounded-md bg-muted px-3 py-1.5 text-sm">
-                    <span>{t("add_to_collection_staged_note", s.barcode, s.type, s.editie)}</span>
+                    <span>
+                      {t("add_to_collection_staged_note", s.barcode, s.type, s.editie)}
+                      {s.seasons && ` · ${seasonsLabel(s.seasons, regularTotal)}`}
+                    </span>
                     <button type="button" onClick={() => setStaged((prev) => prev.filter((_, idx) => idx !== i))}>
                       ✕
                     </button>

@@ -5,7 +5,8 @@ import { getOrCreateProfile } from "@/actions/profile";
 import { getFollowingCount } from "@/actions/follows";
 import { getAcceptedFriendIds } from "@/actions/friends";
 import { SITE_URL } from "@/lib/site";
-import { getMovieDetail } from "@/lib/tmdb/server";
+import { isSeries } from "@/lib/titles";
+import { getTitleDetail } from "@/lib/tmdb/server";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
 import type { CollectionItem } from "@/types/database";
@@ -39,7 +40,7 @@ function itemHref(item: CollectionItem) {
 function ItemPoster({ item }: { item: CollectionItem }) {
   return (
     <Link href={itemHref(item)} className="group flex flex-col gap-2 focus-visible:outline-none">
-      <Poster path={item.movie_poster} title={item.movie_title} size="sm" hover>
+      <Poster path={item.movie_poster} customCover={item.custom_cover_path} title={item.movie_title} size="sm" hover>
         <PosterCorner position="bl">
           <Badge variant="overlay">{item.type}</Badge>
         </PosterCorner>
@@ -74,10 +75,11 @@ export default async function DashboardPage() {
   const byNewest = [...items].sort((a, b) => (b.added_at ?? "").localeCompare(a.added_at ?? ""));
   const unwatched = byNewest.filter((i) => !i.watched);
   const watchedCount = items.length - unwatched.length;
+  const seriesCount = items.filter((i) => isSeries(i.tmdb_movie_id)).length;
   const watchedPct = items.length > 0 ? Math.round((watchedCount / items.length) * 100) : 0;
 
   const featured = pickOfTheDay(unwatched, new Date()) ?? byNewest[0] ?? null;
-  const featuredMovie = featured ? await getMovieDetail(featured.tmdb_movie_id, locale).catch(() => null) : null;
+  const featuredMovie = featured ? await getTitleDetail(featured.tmdb_movie_id, locale).catch(() => null) : null;
   const [followingCount, friendIds] = profile
     ? await Promise.all([getFollowingCount(profile.id).catch(() => 0), getAcceptedFriendIds(profile.id).catch(() => [])])
     : [0, [] as string[]];
@@ -93,7 +95,7 @@ export default async function DashboardPage() {
         {featured ? (
           <div className="flex items-end gap-5">
             <Link href={itemHref(featured)} className="group hidden shrink-0 sm:block">
-              <Poster path={featured.movie_poster} title={featured.movie_title} size="lg" priority hover className="w-36 md:w-44" />
+              <Poster path={featured.movie_poster} customCover={featured.custom_cover_path} title={featured.movie_title} size="lg" priority hover className="w-36 md:w-44" />
             </Link>
             <div className="flex min-w-0 flex-col gap-3">
               <Badge variant="default" className="w-fit uppercase tracking-wider">
@@ -134,7 +136,12 @@ export default async function DashboardPage() {
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatTile icon={LibraryBig} label={dict.collections_label} value={collections.length} />
-          <StatTile icon={Film} label={dict.films_label} value={items.length} />
+          <StatTile
+            icon={Film}
+            label={dict.dashboard_titles_label}
+            value={items.length}
+            hint={seriesCount > 0 ? <p className="text-xs text-muted-foreground">{format(dict.dashboard_titles_series_hint, seriesCount)}</p> : undefined}
+          />
           <StatTile
             icon={Eye}
             label={dict.watched_label}

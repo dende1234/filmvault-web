@@ -14,6 +14,8 @@ import { PosterGrid } from "@/components/movie/poster-grid";
 import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
+import { isSeries } from "@/lib/titles";
+import { useSeasonsLabel } from "@/components/seasons-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { SearchInput } from "@/components/ui/search-input";
@@ -46,6 +48,9 @@ export function CollectionDetailClient({
   const router = useRouter();
   const [typeFilter, setTypeFilter] = useState<string>(ALL);
   const [watchedFilter, setWatchedFilter] = useState<"all" | "watched" | "not_watched">("all");
+  const [kindFilter, setKindFilter] = useState<"all" | "movie" | "tv">("all");
+  const seasonsLabel = useSeasonsLabel();
+  const hasSeries = items.some((i) => isSeries(i.tmdb_movie_id));
   const [sort, setSort] = useState<"name" | "added" | "rating">("name");
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingDelete, setPendingDelete] = useState<CollectionItem | null>(null);
@@ -59,6 +64,8 @@ export function CollectionDetailClient({
   const filtered = useMemo(() => {
     let list = items;
     if (typeFilter !== ALL) list = list.filter((i) => i.type === typeFilter);
+    if (kindFilter === "movie") list = list.filter((i) => !isSeries(i.tmdb_movie_id));
+    if (kindFilter === "tv") list = list.filter((i) => isSeries(i.tmdb_movie_id));
     if (watchedFilter === "watched") list = list.filter((i) => i.watched);
     if (watchedFilter === "not_watched") list = list.filter((i) => !i.watched);
     if (searchQuery.trim()) list = list.filter((i) => i.movie_title.toLowerCase().includes(searchQuery.trim().toLowerCase()));
@@ -68,7 +75,7 @@ export function CollectionDetailClient({
     else if (sort === "added") copy.sort((a, b) => (b.added_at ?? "").localeCompare(a.added_at ?? ""));
     else copy.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     return copy;
-  }, [items, typeFilter, watchedFilter, sort, searchQuery]);
+  }, [items, typeFilter, kindFilter, watchedFilter, sort, searchQuery]);
 
   async function handleDelete() {
     if (!pendingDelete) return;
@@ -114,6 +121,18 @@ export function CollectionDetailClient({
           />
 
           <div className="flex flex-wrap gap-2 lg:flex-nowrap">
+            {hasSeries && (
+              <Select value={kindFilter} onValueChange={(v) => setKindFilter(v as typeof kindFilter)}>
+                <SelectTrigger className="w-36">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("filter_all_titles")}</SelectItem>
+                  <SelectItem value="movie">{t("picker_kind_movies")}</SelectItem>
+                  <SelectItem value="tv">{t("picker_kind_series")}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             <Select value={typeFilter} onValueChange={setTypeFilter}>
               <SelectTrigger className="w-36">
                 <SelectValue placeholder={t("label_type")} />
@@ -167,9 +186,10 @@ export function CollectionDetailClient({
           {filtered.map((item) => (
             <div key={item.id} className="group relative flex flex-col gap-2">
               <Link href={`/collections/${collection.id}/items/${item.id}`} className="flex flex-col gap-2 focus-visible:outline-none">
-                <Poster path={item.movie_poster} title={item.movie_title} hover>
+                <Poster path={item.movie_poster} customCover={item.custom_cover_path} title={item.movie_title} hover>
                   <PosterCorner position="bl">
                     <Badge variant="overlay">{item.type}</Badge>
+                    {isSeries(item.tmdb_movie_id) && <Badge variant="overlay">{seasonsLabel(item.seasons)}</Badge>}
                     {item.watched && (
                       <Badge variant="overlay" className="px-1.5" title={t("watched_label")}>
                         <Eye className="text-success" />

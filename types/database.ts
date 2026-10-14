@@ -52,6 +52,8 @@ export interface PublicCollection {
     movie_poster: string | null;
     type: string;
     editie: string;
+    seasons?: number[] | null;
+    custom_cover_path?: string | null;
     is_box: boolean;
     box_name: string | null;
   }[];
@@ -70,6 +72,10 @@ export interface CollectionItem {
   rating: number | null;
   watched: boolean;
   editie: string;
+  /** Series only: season numbers in this release (series_support.sql). */
+  seasons?: number[] | null;
+  /** Own cover photo for this copy (custom_covers.sql), storage path. */
+  custom_cover_path?: string | null;
   is_box: boolean;
   box_group_id: string | null;
   box_name: string | null;
@@ -102,6 +108,8 @@ export interface Barcode {
   created_at: string | null;
   type: string;
   editie: string;
+  /** Series only: season numbers in this release (series_support.sql). */
+  seasons?: number[] | null;
   is_box: boolean;
   box_group_id: string | null;
   box_name: string | null;
@@ -117,6 +125,8 @@ export interface PendingBarcode {
   barcode: string;
   type: string | null;
   editie: string | null;
+  /** Series only: season numbers in this release (series_support.sql). */
+  seasons?: number[] | null;
   submitted_by: string;
   submitted_at: string | null;
   collection_id: string;
@@ -136,6 +146,8 @@ export interface NewBarcodeInput {
   barcode: string;
   type: string;
   editie: string;
+  /** Series only: season numbers in this release (series_support.sql). */
+  seasons?: number[] | null;
 }
 
 /** One film picked for a new box (client-only, mirrors BoxFilmInput). */
@@ -188,6 +200,8 @@ export interface WishlistItem {
   movie_title: string;
   movie_poster: string | null;
   added_at: string | null;
+  /** Series only: the wanted seasons (null = the whole series). */
+  seasons?: number[] | null;
 }
 
 /** Mirrors badges/BadgeId.kt exactly — id + i18n key pair, same 11 fixed
@@ -375,6 +389,8 @@ export interface FilmViewing {
   user_id: string;
   tmdb_movie_id: number;
   watched_on: string | null;
+  /** Series only: which season this viewing was (null = whole title). */
+  season_number?: number | null;
   created_at: string;
 }
 

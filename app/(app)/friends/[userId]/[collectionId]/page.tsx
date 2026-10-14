@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { titleHref } from "@/lib/titles";
 import { notFound } from "next/navigation";
 import { Eye, Film } from "lucide-react";
 import { getCollection, getCollectionItems } from "@/actions/collections";
@@ -37,8 +38,8 @@ export default async function FriendCollectionDetailPage({
       ) : (
         <PosterGrid>
           {items.map((item) => (
-            <Link key={item.id} href={`/films/${item.tmdb_movie_id}`} className="group flex flex-col gap-2 focus-visible:outline-none">
-              <Poster path={item.movie_poster} title={item.movie_title} hover>
+            <Link key={item.id} href={titleHref(item.tmdb_movie_id)} className="group flex flex-col gap-2 focus-visible:outline-none">
+              <Poster path={item.movie_poster} customCover={item.custom_cover_path} title={item.movie_title} hover>
                 <PosterCorner position="bl">
                   <Badge variant="overlay">{item.type}</Badge>
                   {item.watched && (

@@ -9,7 +9,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/require-admin";
 import { adminRegisterBarcode, approvePendingBarcode, findBarcodesByCode } from "@/actions/collections";
-import { getMovieDetail, searchMovies } from "@/lib/tmdb/server";
+import { getTitleDetail, searchMovies, searchTv } from "@/lib/tmdb/server";
 import { BarcodeAlreadyRegisteredError } from "@/lib/errors";
 import { isValidEanUpc, normalizeBarcode } from "@/lib/barcode";
 import { getLocale } from "@/lib/preferences";
@@ -70,14 +70,15 @@ export async function adminRegisterBarcodeWithConflictTitle(
   barcode: string,
   type: string,
   editie: string,
+  seasons?: number[] | null,
 ): Promise<{ error: "duplicate"; conflictTitle: string } | { error: "other" } | { error: null; id: string }> {
   try {
-    const id = await adminRegisterBarcode(tmdbMovieId, normalizeBarcode(barcode), type, editie);
+    const id = await adminRegisterBarcode(tmdbMovieId, normalizeBarcode(barcode), type, editie, seasons);
     return { error: null, id };
   } catch (e) {
     if (e instanceof BarcodeAlreadyRegisteredError) {
       const locale = await getLocale();
-      const conflictTitle = await getMovieDetail(e.existingTmdbMovieId, locale)
+      const conflictTitle = await getTitleDetail(e.existingTmdbMovieId, locale)
         .then((m) => m.title)
         .catch(() => "");
       return { error: "duplicate", conflictTitle };
@@ -96,7 +97,7 @@ async function withMovieInfo(entries: Barcode[], locale: string): Promise<KnownB
   const ids = Array.from(new Set(entries.map((e) => e.tmdb_movie_id)));
   const details = new Map(
     await Promise.all(
-      ids.map(async (id) => [id, await getMovieDetail(id, locale).catch(() => null)] as const),
+      ids.map(async (id) => [id, await getTitleDetail(id, locale).catch(() => null)] as const),
     ),
   );
   return entries.map((e) => ({
@@ -130,7 +131,7 @@ export async function adminGetBarcodesForMovie(tmdbMovieId: number): Promise<Kno
   return withMovieInfo(data as Barcode[], await getLocale());
 }
 
-export type BulkBarcodeRowInput = { barcode: string; title: string; year: string };
+export type BulkBarcodeRowInput = { barcode: string; title: string; year: string; kind?: "movie" | "tv" | null };
 
 export type BulkBarcodeRowMatch = {
   barcode: string;
@@ -169,9 +170,12 @@ export async function adminMatchBarcodeRows(rows: BulkBarcodeRowInput[]): Promis
       const title = String(rows[i].title ?? "").trim();
       if (!title) continue;
       const year = String(rows[i].year ?? "").trim();
-      const results = await searchMovies(title, 1, locale)
-        .then((page) => page.results ?? [])
-        .catch(() => []);
+      const kind = rows[i].kind ?? null;
+      const search = (fn: typeof searchMovies) => fn(title, 1, locale).then((page) => page.results ?? []).catch(() => []);
+      // Same rule as the user import: known kind → that search; unknown →
+      // films first, series as fallback. Series come back with negative ids.
+      let results = await search(kind === "tv" ? searchTv : searchMovies);
+      if (!kind && results.length === 0) results = await search(searchTv);
       const ranked = year
         ? [...results].sort(
             (a, b) => Number(b.release_date?.startsWith(year) ?? false) - Number(a.release_date?.startsWith(year) ?? false),
@@ -213,7 +217,7 @@ export async function adminApprovePendingWithChanges(
 
   const changes: Partial<PendingBarcode> = { type, editie };
   if (tmdbMovieId !== pending.tmdb_movie_id) {
-    const movie = await getMovieDetail(tmdbMovieId, await getLocale());
+    const movie = await getTitleDetail(tmdbMovieId, await getLocale());
     changes.tmdb_movie_id = movie.id;
     changes.movie_title = movie.title;
     changes.movie_poster = movie.poster_path;

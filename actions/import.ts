@@ -10,7 +10,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/preferences";
-import { getMovieDetail, searchMovies } from "@/lib/tmdb/server";
+import { getTitleDetail, getTvDetail, searchMovies, searchTv } from "@/lib/tmdb/server";
+import { parseTitleId } from "@/lib/titles";
 import { normalizeBarcode } from "@/lib/barcode";
 import {
   addBarcodesToCollections,
@@ -59,7 +60,9 @@ function toFilm(m: Pick<MovieSummaryDto, "id" | "title" | "poster_path" | "relea
 /** Step 1 (per batch of ≤25 rows): resolve known barcodes via the master
  * film list, otherwise search TMDB by title (+ year preference). The client
  * calls this in batches so each server action stays short. */
-export async function matchImportRows(rows: { title: string; year: string | null; barcode: string | null }[]): Promise<ImportRowMatch[]> {
+export async function matchImportRows(
+  rows: { title: string; year: string | null; barcode: string | null; kind?: "movie" | "tv" | null }[],
+): Promise<ImportRowMatch[]> {
   await requireUserId();
   if (rows.length > MAX_BATCH) throw new Error("batch_too_large");
   const supabase = await createClient();
@@ -76,7 +79,7 @@ export async function matchImportRows(rows: { title: string; year: string | null
   const details = new Map<number, ImportFilm>();
   async function film(id: number) {
     if (!details.has(id)) {
-      const d = await getMovieDetail(id, locale).catch(() => null);
+      const d = await getTitleDetail(id, locale).catch(() => null);
       details.set(id, d ? toFilm(d) : { tmdbId: id, title: `TMDB #${id}`, poster: null, year: null });
     }
     return details.get(id)!;
@@ -103,7 +106,11 @@ export async function matchImportRows(rows: { title: string; year: string | null
       let candidates: ImportFilm[] = [];
       if (title) {
         const year = rows[i].year;
-        const found = await searchMovies(title, 1, locale).then((p) => p.results ?? []).catch(() => []);
+        const kind = rows[i].kind ?? null;
+        const search = (fn: typeof searchMovies) => fn(title, 1, locale).then((p) => p.results ?? []).catch(() => []);
+        // Known kind → search that; unknown → films first, series as fallback.
+        let found = await search(kind === "tv" ? searchTv : searchMovies);
+        if (!kind && found.length === 0) found = await search(searchTv);
         const ranked = year
           ? [...found].sort((a, b) => Number(b.release_date?.startsWith(year) ?? false) - Number(a.release_date?.startsWith(year) ?? false))
           : found;
@@ -119,7 +126,17 @@ export async function matchImportRows(rows: { title: string; year: string | null
 type Viewing = { watched: boolean; rating: number | null; watchedOn: string | null };
 
 export type ImportItem =
-  | ({ kind: "single"; ref: string; film: ImportFilm; barcode: string | null; type: string; editie: string } & Viewing)
+  | ({
+      kind: "single";
+      ref: string;
+      film: ImportFilm;
+      barcode: string | null;
+      type: string;
+      editie: string;
+      /** Series only: seasons in this release; completeSeries = all regular seasons. */
+      seasons?: number[] | null;
+      completeSeries?: boolean;
+    } & Viewing)
   | {
       kind: "box";
       ref: string;
@@ -179,12 +196,19 @@ export async function importBatch(collectionId: string, items: ImportItem[]): Pr
           continue;
         }
         const knownForFilm = (await getBarcodesForMovie(item.film.tmdbId)).some((b) => b.barcode.toLowerCase() === barcode.toLowerCase());
+        let seasons = item.seasons ?? null;
+        const { kind: titleKind, tmdbId: tvId } = parseTitleId(item.film.tmdbId);
+        if (titleKind === "tv" && item.completeSeries) {
+          const tv = await getTvDetail(tvId).catch(() => null);
+          if (tv) seasons = tv.seasons.filter((s) => s.season_number > 0).map((s) => s.season_number);
+        }
+        if (titleKind !== "tv") seasons = null;
         let status: ImportStatus;
         if (!knownForFilm && (await alreadyPending(userId, barcode, item.film.tmdbId))) status = "pending";
         else {
           const unchanged = await addBarcodesToCollections(
             [],
-            [{ barcode, type: item.type, editie: item.editie }],
+            [{ barcode, type: item.type, editie: item.editie, ...(seasons?.length ? { seasons } : {}) }],
             item.film.tmdbId,
             item.film.title,
             item.film.poster,

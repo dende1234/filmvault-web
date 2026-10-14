@@ -9,6 +9,9 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { BarcodeAlreadyRegisteredError } from "@/lib/errors";
 import { requireAdmin } from "@/lib/require-admin";
+import { getLocale } from "@/lib/preferences";
+import { getTitleDetail } from "@/lib/tmdb/server";
+import { normalizeBarcode } from "@/lib/barcode";
 import type {
   Barcode,
   BoxFilmInput,
@@ -20,6 +23,12 @@ import type {
   PendingBarcodeCollectionRow,
   PublicCollection,
 } from "@/types/database";
+
+/** `seasons` only for a series with seasons, so film writes never send the
+ * column (keeps films working before series_support.sql has run). */
+function seasonsField(seasons: number[] | null | undefined) {
+  return seasons && seasons.length > 0 ? { seasons } : {};
+}
 
 async function requireUserId() {
   const supabase = await createClient();
@@ -181,6 +190,12 @@ export async function updateCollectionItemCondition(itemGroupId: string, conditi
   await updateItemGroup(itemGroupId, { condition });
 }
 
+/** Series copy: which seasons this release contains (all rows of the copy). */
+export async function updateCollectionItemSeasons(itemGroupId: string, seasons: number[] | null) {
+  const clean = seasons && seasons.length > 0 ? Array.from(new Set(seasons)).sort((a, b) => a - b) : null;
+  await updateItemGroup(itemGroupId, { seasons: clean });
+}
+
 export async function removeCollectionItem(itemId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("collection_items").delete().eq("id", itemId);
@@ -243,6 +258,7 @@ export async function addExistingBarcodesToCollections(
       barcode: barcode.barcode,
       type: barcode.type,
       editie: barcode.editie,
+      ...seasonsField(barcode.seasons),
     }));
   });
   if (inserts.length > 0) {
@@ -373,6 +389,7 @@ export async function addNewBarcodesAsPending(
         barcode: staged.barcode,
         type: staged.type,
         editie: staged.editie,
+        ...seasonsField(staged.seasons),
         submitted_by: submittedBy,
         collection_id: collectionIds[0],
       })
@@ -460,6 +477,7 @@ export async function adminRegisterBarcode(
   barcode: string,
   type: string,
   editie: string,
+  seasons?: number[] | null,
 ): Promise<string> {
   await requireAdmin();
   const existing = await findBarcodesByCode(barcode);
@@ -468,7 +486,7 @@ export async function adminRegisterBarcode(
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("barcodes")
-    .insert({ tmdb_movie_id: tmdbMovieId, barcode, type, editie })
+    .insert({ tmdb_movie_id: tmdbMovieId, barcode, type, editie, ...seasonsField(tmdbMovieId < 0 ? seasons : null) })
     .select("id")
     .single();
   if (error) {
@@ -533,6 +551,7 @@ export async function approvePendingBarcode(pendingFromClient: PendingBarcode): 
       barcode: pending.barcode,
       type: pending.type ?? "DVD",
       editie: pending.editie ?? "Normaal",
+      ...seasonsField(pending.seasons),
     });
     if (error) throw error;
   }
@@ -554,6 +573,7 @@ export async function approvePendingBarcode(pendingFromClient: PendingBarcode): 
         barcode: pending.barcode,
         type: pending.type ?? "DVD",
         editie: pending.editie ?? "Normaal",
+        ...seasonsField(pending.seasons),
       })),
     );
     if (error) throw error;
@@ -637,4 +657,47 @@ export async function approvePendingBox(pendingRowsFromClient: PendingBarcode[])
   }
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
+}
+
+export type ScannedBarcodeResult =
+  | { kind: "none"; barcode: string }
+  | { kind: "title"; barcode: string; title: { id: number; title: string; poster: string | null } }
+  | { kind: "box"; barcode: string; boxName: string | null };
+
+/** What a scanned barcode is on the master film list: one film/series,
+ * a box, or unknown (then the user picks the title and it goes to approval). */
+export async function lookupScannedBarcode(raw: string): Promise<ScannedBarcodeResult> {
+  await requireUserId();
+  const barcode = normalizeBarcode(raw);
+  const known = barcode ? await findBarcodesByCode(barcode) : [];
+  if (known.length === 0) return { kind: "none", barcode };
+  if (known.some((b) => b.is_box) || new Set(known.map((b) => b.tmdb_movie_id)).size > 1) {
+    return { kind: "box", barcode, boxName: known[0].box_name };
+  }
+  const detail = await getTitleDetail(known[0].tmdb_movie_id, await getLocale()).catch(() => null);
+  return {
+    kind: "title",
+    barcode,
+    title: { id: known[0].tmdb_movie_id, title: detail?.title ?? `TMDB #${known[0].tmdb_movie_id}`, poster: detail?.poster_path ?? null },
+  };
+}
+
+/** Sets (or clears, with null) the custom cover of one copy — all rows of
+ * its item_group_id — and removes the previous file from storage. The new
+ * file was uploaded by the browser into the user's own folder. */
+export async function setCollectionItemCover(itemGroupId: string, path: string | null): Promise<{ error: string | null }> {
+  const userId = await requireUserId();
+  if (path && !path.startsWith(`${userId}/`)) return { error: "invalid_path" };
+  const supabase = await createClient();
+  const { data: rows } = await supabase.from("collection_items").select("custom_cover_path").eq("item_group_id", itemGroupId).limit(1);
+  const previous = (rows?.[0] as { custom_cover_path?: string | null } | undefined)?.custom_cover_path ?? null;
+
+  const { error } = await supabase.from("collection_items").update({ custom_cover_path: path }).eq("item_group_id", itemGroupId);
+  if (error) return { error: error.message };
+  if (previous && previous !== path && previous.startsWith(`${userId}/`)) {
+    await supabase.storage.from("covers").remove([previous]).catch(() => {});
+  }
+  revalidatePath("/collections", "layout");
+  revalidatePath("/dashboard");
+  return { error: null };
 }

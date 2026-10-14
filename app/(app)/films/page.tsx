@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, SearchX } from "lucide-react";
-import { discoverMovies, getGenres, searchMovies } from "@/lib/tmdb/server";
+import { discoverMovies, discoverTv, getGenres, getTvGenres, searchMovies, searchTv } from "@/lib/tmdb/server";
 import { getDictionary } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
 import { MovieFilters } from "@/components/movie-filters";
@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 
-export const metadata = { title: "Films" };
+export const metadata = { title: "Films & series" };
 
 export default async function FilmsPage({
   searchParams,
@@ -25,12 +25,13 @@ export default async function FilmsPage({
   const genre = params.genre ? Number(params.genre) : undefined;
   const sort = params.sort ?? "popularity.desc";
   const year = params.year ? Number(params.year) : undefined;
+  const isTv = params.type === "tv";
 
   const [genres, result] = await Promise.all([
-    getGenres(locale),
+    isTv ? getTvGenres(locale) : getGenres(locale),
     query
-      ? searchMovies(query, page, locale)
-      : discoverMovies(page, genre, sort, year, locale),
+      ? (isTv ? searchTv : searchMovies)(query, page, locale)
+      : (isTv ? discoverTv : discoverMovies)(page, genre, sort, year, locale),
   ]);
 
   // TMDB never serves beyond page 500.
@@ -44,7 +45,27 @@ export default async function FilmsPage({
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <PageHeader title={dict.films_label} />
+      <PageHeader title={dict.nav_films_series} />
+      {/* Films | Series. Switching resets filters: genre ids differ per kind. */}
+      <nav className="inline-flex w-fit rounded-full border border-border bg-card p-1 text-sm" aria-label={dict.picker_kind_label}>
+        {[
+          { href: "/films", label: dict.picker_kind_movies, active: !isTv },
+          { href: "/films?type=tv", label: dict.picker_kind_series, active: isTv },
+        ].map((tab) => (
+          <Link
+            key={tab.href}
+            href={tab.href}
+            aria-current={tab.active ? "page" : undefined}
+            className={
+              tab.active
+                ? "rounded-full bg-primary px-4 py-1.5 font-medium text-primary-foreground"
+                : "rounded-full px-4 py-1.5 font-medium text-muted-foreground hover:text-foreground"
+            }
+          >
+            {tab.label}
+          </Link>
+        ))}
+      </nav>
       <MovieFilters genres={genres} />
 
       {result.results.length === 0 ? (

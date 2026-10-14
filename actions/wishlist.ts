@@ -36,12 +36,23 @@ export async function isOnWishlist(tmdbMovieId: number): Promise<boolean> {
   return (data ?? []).length > 0;
 }
 
-export async function addToWishlist(tmdbMovieId: number, movieTitle: string, moviePoster: string | null): Promise<void> {
+/** `seasons` (series only): the wanted seasons; omitted = the whole title.
+ * Only sent when set, so film wishlists work before series_support.sql. */
+export async function addToWishlist(
+  tmdbMovieId: number,
+  movieTitle: string,
+  moviePoster: string | null,
+  seasons?: number[] | null,
+): Promise<void> {
   const supabase = await createClient();
   const userId = await requireUserId();
-  const { error } = await supabase
-    .from("wishlist_items")
-    .insert({ user_id: userId, tmdb_movie_id: tmdbMovieId, movie_title: movieTitle, movie_poster: moviePoster });
+  const { error } = await supabase.from("wishlist_items").insert({
+    user_id: userId,
+    tmdb_movie_id: tmdbMovieId,
+    movie_title: movieTitle,
+    movie_poster: moviePoster,
+    ...(seasons && seasons.length > 0 ? { seasons } : {}),
+  });
   if (error) throw error;
   revalidatePath("/wishlist");
 }
@@ -64,4 +75,27 @@ export async function removeFromWishlistByMovie(tmdbMovieId: number): Promise<vo
   const { error } = await supabase.from("wishlist_items").delete().eq("user_id", userId).eq("tmdb_movie_id", tmdbMovieId);
   if (error) throw error;
   revalidatePath("/wishlist");
+}
+
+/** Like removeFromWishlistByMovie, but for a series wished for specific
+ * seasons it only removes the entry once ALL those seasons are owned
+ * (in any of the user's collections). Films / whole-series wishes behave
+ * exactly like removeFromWishlistByMovie. */
+export async function removeFromWishlistIfCovered(titleId: number): Promise<void> {
+  const supabase = await createClient();
+  const userId = await requireUserId();
+  const { data: rows } = await supabase.from("wishlist_items").select("*").eq("user_id", userId).eq("tmdb_movie_id", titleId);
+  const wish = (rows ?? [])[0] as { seasons?: number[] | null } | undefined;
+  if (!wish) return;
+  const wanted = wish.seasons ?? [];
+  if (wanted.length > 0) {
+    const { data: cols } = await supabase.from("collections").select("id").eq("user_id", userId);
+    const ids = (cols ?? []).map((c) => c.id as string);
+    const { data: items } = ids.length
+      ? await supabase.from("collection_items").select("seasons").in("collection_id", ids).eq("tmdb_movie_id", titleId)
+      : { data: [] };
+    const owned = new Set((items ?? []).flatMap((i) => (i.seasons as number[] | null) ?? []));
+    if (!wanted.every((s) => owned.has(s))) return;
+  }
+  await removeFromWishlistByMovie(titleId);
 }

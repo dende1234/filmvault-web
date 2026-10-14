@@ -17,11 +17,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { MovieSearchPickerDialog } from "@/components/movie-search-picker-dialog";
 import { MediaTypeEditieSelects } from "@/components/admin/media-type-editie-selects";
 import { cn } from "@/lib/utils";
+import { isSeries } from "@/lib/titles";
+import { parseSeasons } from "@/lib/seasons";
+import { normalizeKind } from "@/lib/import-mapping";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 
 const MAX_ROWS = 200;
 const SEARCH_OTHER = "__search_other__";
 
-type ParsedRow = { barcode: string; title: string; year: string; type: string; editie: string };
+type ParsedRow = { barcode: string; title: string; year: string; type: string; editie: string; kind: "movie" | "tv" | null; seasonsText: string };
 
 type ReviewRow = {
   match: BulkBarcodeRowMatch;
@@ -30,6 +35,7 @@ type ReviewRow = {
   movie: MovieSummaryDto | null;
   type: string;
   editie: string;
+  seasonsText: string;
   checked: boolean;
   done: boolean;
   error?: string;
@@ -42,8 +48,16 @@ function parseLines(text: string): ParsedRow[] {
   const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
   const rows = lines.map((line) => {
     const sep = line.includes(";") ? ";" : line.includes("\t") ? "\t" : ",";
-    const [barcode = "", title = "", year = "", type = "", editie = ""] = line.split(sep).map((c) => c.trim());
-    return { barcode, title, year: /^\d{4}$/.test(year) ? year : "", type, editie };
+    const [barcode = "", title = "", year = "", type = "", editie = "", kind = "", seasonsText = ""] = line.split(sep).map((c) => c.trim());
+    return {
+      barcode,
+      title,
+      year: /^\d{4}$/.test(year) ? year : "",
+      type,
+      editie,
+      kind: normalizeKind(kind) ?? (seasonsText ? "tv" : null),
+      seasonsText,
+    };
   });
   if (rows.length > 0 && !/\d/.test(rows[0].barcode)) rows.shift();
   return rows;
@@ -80,7 +94,7 @@ export function BarcodeBulkImport({ mediaTypes, edities }: { mediaTypes: string[
     }
     setIsMatching(true);
     try {
-      const matches = await adminMatchBarcodeRows(parsed.map(({ barcode, title, year }) => ({ barcode, title, year })));
+      const matches = await adminMatchBarcodeRows(parsed.map(({ barcode, title, year, kind }) => ({ barcode, title, year, kind })));
       setRows(
         matches.map((match, i) => {
           const movie = match.candidates[0] ?? null;
@@ -91,6 +105,7 @@ export function BarcodeBulkImport({ mediaTypes, edities }: { mediaTypes: string[
             movie,
             type: pickKnown(parsed[i].type, mediaTypes, defaultType),
             editie: pickKnown(parsed[i].editie, edities, defaultEditie),
+            seasonsText: parsed[i].seasonsText,
             checked: match.known.length === 0 && !!movie && !!match.barcode,
             done: false,
           };
@@ -117,7 +132,13 @@ export function BarcodeBulkImport({ mediaTypes, edities }: { mediaTypes: string[
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
       if (!row.checked || row.done || !row.movie) continue;
-      const result = await adminRegisterBarcodeWithConflictTitle(row.movie.id, row.match.barcode, row.type, row.editie);
+      const result = await adminRegisterBarcodeWithConflictTitle(
+        row.movie.id,
+        row.match.barcode,
+        row.type,
+        row.editie,
+        isSeries(row.movie.id) ? parseSeasons(row.seasonsText) : null,
+      );
       if (result.error === null) {
         success++;
         updateRow(i, { done: true, checked: false, error: undefined });
@@ -144,7 +165,7 @@ export function BarcodeBulkImport({ mediaTypes, edities }: { mediaTypes: string[
           rows={10}
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={"8712609651234;The Matrix;1999;Blu-ray;Normaal\n5051888012345;Inception;2010"}
+          placeholder={"8712609651234;The Matrix;1999;Blu-ray;Normaal\n5051888012345;Inception;2010\n5051888250005;Game of Thrones;2011;Blu-ray;Normaal;serie;1-3"}
           className="font-mono text-xs"
         />
         <input
@@ -197,7 +218,14 @@ export function BarcodeBulkImport({ mediaTypes, edities }: { mediaTypes: string[
                 />
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-sm">{row.match.barcode || "—"}</p>
-                  <p className="truncate text-xs text-muted-foreground">{row.title}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {row.title}
+                    {row.movie && isSeries(row.movie.id) && (
+                      <Badge variant="outline" className="ml-2 align-middle">
+                        {t("picker_kind_series")}
+                      </Badge>
+                    )}
+                  </p>
                   <p className={cn("text-xs", status.tone)}>{status.label}</p>
                   {!row.match.validChecksum && row.match.barcode && (
                     <p className="text-xs text-warning">{t("admin_bulk_status_invalid")}</p>
@@ -231,6 +259,15 @@ export function BarcodeBulkImport({ mediaTypes, edities }: { mediaTypes: string[
                       <SelectItem value={SEARCH_OTHER}>{t("admin_bulk_search_other")}</SelectItem>
                     </SelectContent>
                   </Select>
+                  {row.movie && isSeries(row.movie.id) && (
+                    <Input
+                      value={row.seasonsText}
+                      onChange={(e) => updateRow(index, { seasonsText: e.target.value })}
+                      placeholder={t("import_seasons_placeholder")}
+                      aria-label={t("import_field_seasons")}
+                      className="text-xs"
+                    />
+                  )}
                   <MediaTypeEditieSelects
                     mediaTypes={mediaTypes}
                     edities={edities}

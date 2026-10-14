@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { parseCsv, toCsv } from "@/lib/csv";
 import { normalizeBarcode } from "@/lib/barcode";
+import { isSeries } from "@/lib/titles";
+import { parseSeasons } from "@/lib/seasons";
 import {
   IMPORT_FIELDS,
   type ColumnMapping,
@@ -18,6 +20,7 @@ import {
   normalizeDate,
   normalizeEdition,
   normalizeFormat,
+  normalizeKind,
   normalizeRating,
   normalizeWatched,
   normalizeYear,
@@ -60,7 +63,12 @@ type ParsedRow = {
   rating: number | null;
   watchedOn: string | null;
   box: string | null;
+  kind: "movie" | "tv" | null;
+  seasonsText: string;
 };
+
+/** "Complete serie" etc. needs the series' season count — resolved on import. */
+const COMPLETE_RE = /compleet|complete|volledig|integraal|\balle\b|\ball\b/i;
 
 type ReviewRow = ParsedRow & {
   match: ImportRowMatch | null;
@@ -142,10 +150,11 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
 
   function downloadTemplate() {
     const csv = toCsv([
-      ["Titel", "Jaar", "Barcode", "Formaat", "Editie", "Bekeken", "Rating", "Datum bekeken", "Box"],
-      ["Dune: Part Two", "2024", "5051888270935", "4K UHD", "Steelbook", "ja", "4.5", "2024-03-02", ""],
-      ["The Lord of the Rings: The Fellowship of the Ring", "2001", "8717418556432", "Blu-ray", "", "ja", "5", "", "The Lord of the Rings Trilogy"],
-      ["The Lord of the Rings: The Two Towers", "2002", "8717418556432", "Blu-ray", "", "nee", "", "", "The Lord of the Rings Trilogy"],
+      ["Titel", "Soort", "Seizoenen", "Jaar", "Barcode", "Formaat", "Editie", "Bekeken", "Rating", "Datum bekeken", "Box"],
+      ["Dune: Part Two", "Film", "", "2024", "5051888270935", "4K UHD", "Steelbook", "ja", "4.5", "2024-03-02", ""],
+      ["The Lord of the Rings: The Fellowship of the Ring", "Film", "", "2001", "8717418556432", "Blu-ray", "", "ja", "5", "", "The Lord of the Rings Trilogy"],
+      ["The Lord of the Rings: The Two Towers", "Film", "", "2002", "8717418556432", "Blu-ray", "", "nee", "", "", "The Lord of the Rings Trilogy"],
+      ["Game of Thrones", "Serie", "1-3", "2011", "5051888250005", "Blu-ray", "", "ja", "4", "", ""],
     ]);
     const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -184,6 +193,8 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
       rating: normalizeRating(cell(r, "rating"), scale),
       watchedOn: normalizeDate(cell(r, "watchedOn")),
       box: cell(r, "box") || null,
+      kind: normalizeKind(cell(r, "kind")) ?? (cell(r, "seasons") ? "tv" : null),
+      seasonsText: cell(r, "seasons"),
     }));
 
     setStep("review");
@@ -192,7 +203,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
       for (let i = 0; i < parsed.length; i += BATCH) {
         setProgress({ label: "import_matching", done: i, total: parsed.length });
         const batch = parsed.slice(i, i + BATCH);
-        matches.push(...(await matchImportRows(batch.map((p) => ({ title: p.title, year: p.year, barcode: p.barcode })))));
+        matches.push(...(await matchImportRows(batch.map((p) => ({ title: p.title, year: p.year, barcode: p.barcode, kind: p.kind })))));
       }
     } catch {
       toast.error(t("import_error"));
@@ -305,6 +316,9 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
           barcode: normalizeBarcode(r.barcodeInput) || null,
           type: r.type,
           editie: r.editie,
+          ...(isSeries(r.film!.tmdbId)
+            ? { seasons: parseSeasons(r.seasonsText), completeSeries: COMPLETE_RE.test(r.seasonsText) }
+            : {}),
           watched: r.watched,
           rating: r.rating,
           watchedOn: r.watchedOn,
@@ -589,7 +603,14 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
                     />
                     <Poster path={r.film?.poster ?? null} title={r.film?.title ?? r.title} size="xs" className="w-10 shrink-0 rounded-md shadow-none" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{r.film ? `${r.film.title}${r.film.year ? ` (${r.film.year})` : ""}` : r.title}</p>
+                      <p className="truncate font-medium">
+                        {r.film ? `${r.film.title}${r.film.year ? ` (${r.film.year})` : ""}` : r.title}
+                        {r.film && isSeries(r.film.tmdbId) && (
+                          <Badge variant="outline" className="ml-2 align-middle">
+                            {t("picker_kind_series")}
+                          </Badge>
+                        )}
+                      </p>
                       <p className="truncate text-xs text-muted-foreground">
                         #{r.line} · {r.title}
                         {r.year ? ` (${r.year})` : ""}
@@ -631,6 +652,15 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
                       className="font-mono text-xs"
                     />
                   </div>
+                  {r.film && isSeries(r.film.tmdbId) && !fixedByBarcode && (
+                    <Input
+                      value={r.seasonsText}
+                      onChange={(e) => updateRows([r.ref], { seasonsText: e.target.value })}
+                      placeholder={t("import_seasons_placeholder")}
+                      aria-label={t("import_field_seasons")}
+                      className="text-xs"
+                    />
+                  )}
                   {g.status === "pending" && (
                     <MediaTypeEditieSelects
                       mediaTypes={mediaTypes}

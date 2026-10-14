@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getCollectionItem } from "@/actions/collections";
-import { getMovieDetail } from "@/lib/tmdb/server";
+import { getTitleDetail } from "@/lib/tmdb/server";
 import { getLocale } from "@/lib/preferences";
 import { CollectionItemEditor } from "@/components/collection-item-editor";
 import { getFilmLog } from "@/actions/watched";
@@ -16,7 +16,7 @@ export default async function CollectionItemDetailPage({
 
   const locale = await getLocale();
   const [movie, filmLog] = await Promise.all([
-    getMovieDetail(item.tmdb_movie_id, locale).catch(() => null),
+    getTitleDetail(item.tmdb_movie_id, locale).catch(() => null),
     getFilmLog(item.tmdb_movie_id),
   ]);
 

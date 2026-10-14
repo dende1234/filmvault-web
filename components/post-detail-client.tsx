@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { titleHref } from "@/lib/titles";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -88,7 +89,7 @@ export function PostDetailClient({
         <p className="mt-2 whitespace-pre-line leading-relaxed text-foreground/90">{post.body}</p>
         {post.tmdb_movie_id && (
           <Link
-            href={`/films/${post.tmdb_movie_id}`}
+            href={titleHref(post.tmdb_movie_id)}
             className="group mt-5 flex items-center gap-4 rounded-lg border border-border/70 bg-elevated/50 p-3 transition-colors hover:border-primary/40"
           >
             <Poster path={post.movie_poster} title={post.movie_title ?? ""} size="xs" hover className="w-16 shrink-0" />
