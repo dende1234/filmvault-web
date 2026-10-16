@@ -31,6 +31,8 @@ import {
   MoreHorizontal,
   TrendingUp,
   Eye,
+  MessageSquareText,
+  Inbox,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/locale-provider";
@@ -38,12 +40,34 @@ import { signOut } from "@/actions/auth";
 import type { Profile } from "@/types/database";
 import { Logo } from "@/components/brand/logo";
 import { Avatar } from "@/components/avatar";
+import { FeedbackDialog } from "@/components/feedback-dialog";
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function NavLink({ href, icon: Icon, label, onNavigate }: { href: string; icon: typeof Film; label: string; onNavigate: () => void }) {
+function CountBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="ml-auto min-w-5 rounded-full bg-primary px-1.5 text-center text-[11px] font-semibold leading-5 text-primary-foreground tabular-nums">
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
+function NavLink({
+  href,
+  icon: Icon,
+  label,
+  onNavigate,
+  count = 0,
+}: {
+  href: string;
+  icon: typeof Film;
+  label: string;
+  onNavigate: () => void;
+  count?: number;
+}) {
   const pathname = usePathname();
   const active = isActive(pathname, href);
   return (
@@ -66,6 +90,7 @@ function NavLink({ href, icon: Icon, label, onNavigate }: { href: string; icon: 
       />
       <Icon className={cn("h-4 w-4", active ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
       {label}
+      <CountBadge count={count} />
     </Link>
   );
 }
@@ -93,12 +118,22 @@ function TabLink({ href, icon: Icon, label }: { href: string; icon: typeof Film;
   );
 }
 
-export function NavShell({ profile, children }: { profile: Profile | null; children: React.ReactNode }) {
+export function NavShell({
+  profile,
+  feedbackNewCount = 0,
+  children,
+}: {
+  profile: Profile | null;
+  /** New feedback items, shown on the admin menu (admins only, else 0). */
+  feedbackNewCount?: number;
+  children: React.ReactNode;
+}) {
   const { t } = useT();
   const router = useRouter();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(() => pathname.startsWith("/admin"));
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const close = () => setOpen(false);
 
   const sidebar = (
@@ -137,7 +172,10 @@ export function NavShell({ profile, children }: { profile: Profile | null; child
             className="flex items-center justify-between px-3 pb-1 pt-5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70 hover:text-foreground"
           >
             {t("nav_section_admin")}
-            <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", adminOpen && "rotate-180")} />
+            <span className="flex items-center gap-2">
+              {!adminOpen && <CountBadge count={feedbackNewCount} />}
+              <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", adminOpen && "rotate-180")} />
+            </span>
           </button>
           {adminOpen && (
             <>
@@ -147,6 +185,7 @@ export function NavShell({ profile, children }: { profile: Profile | null; child
               <NavLink href="/admin/manage-types" icon={Tags} label={t("admin_manage_types_label")} onNavigate={close} />
               <NavLink href="/admin/users" icon={ShieldCheck} label={t("admin_users_label")} onNavigate={close} />
               <NavLink href="/admin/reports" icon={Flag} label={t("admin_reports_label")} onNavigate={close} />
+              <NavLink href="/admin/feedback" icon={Inbox} label={t("admin_feedback_title")} onNavigate={close} count={feedbackNewCount} />
               <NavLink href="/admin/stats" icon={BarChart3} label={t("admin_stats_label")} onNavigate={close} />
               <NavLink href="/admin/growth" icon={TrendingUp} label={t("admin_growth_label")} onNavigate={close} />
               <NavLink href="/admin/announcement" icon={Megaphone} label={t("admin_announcement_label")} onNavigate={close} />
@@ -169,6 +208,18 @@ export function NavShell({ profile, children }: { profile: Profile | null; child
             </span>
           </Link>
         )}
+        <button
+          type="button"
+          onClick={() => {
+            close();
+            setFeedbackOpen(true);
+          }}
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-elevated/60 hover:text-foreground"
+        >
+          <MessageSquareText className="h-4 w-4" />
+          {t("feedback_nav")}
+        </button>
+        <NavLink href="/my-feedback" icon={Inbox} label={t("feedback_my_nav")} onNavigate={close} />
         <NavLink href="/privacy" icon={ShieldQuestion} label={t("privacy_policy_link")} onNavigate={close} />
         <NavLink href="/about" icon={Info} label={t("nav_about")} onNavigate={close} />
         <button
@@ -190,6 +241,7 @@ export function NavShell({ profile, children }: { profile: Profile | null; child
 
   return (
     <div className="flex min-h-screen">
+      <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
       <div className="sticky top-0 hidden h-screen md:block">{sidebar}</div>
 
       {open && (

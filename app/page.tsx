@@ -171,6 +171,9 @@ export default async function LandingPage() {
             <Link href="/gids" className="hover:text-foreground hover:underline">
               {dict.landing_guides_link}
             </Link>
+            <Link href="/feedback?from=/" className="hover:text-foreground hover:underline">
+              {dict.feedback_footer_link}
+            </Link>
             <Link href="/privacy" className="hover:text-foreground hover:underline">
               {dict.privacy_policy_link}
             </Link>

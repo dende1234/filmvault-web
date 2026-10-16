@@ -90,6 +90,15 @@ function Dutch() {
         <mark>[CONTROLEER]</mark>
       </p>
       <p>
+        Stuur je feedback (een bug of idee), dan bewaren we je bericht met wat automatisch meegaat: de pagina waar je
+        was, je browser en apparaat, je schermgrootte en taal. Met een account koppelen we de melding aan je account
+        en kun je een screenshot meesturen; die is alleen zichtbaar voor jou en de beheerders. Zonder account kun je
+        optioneel een e-mailadres achterlaten, alleen om je te kunnen antwoorden. Om misbruik te beperken bewaren we
+        bij meldingen zonder account een onherleidbare code (hash) van je IP-adres, niet het IP-adres zelf. We bewaren
+        feedback zolang die nodig is om hem af te handelen, en uiterlijk <mark>[BEWAARTERMIJN]</mark>; met je account
+        verdwijnen ook je meldingen en screenshots. <mark>[CONTROLEER]</mark>
+      </p>
+      <p>
         Zet je een collectie zelf op &quot;openbaar via link&quot;, dan kan iedereen met die link de naam en
         beschrijving van de collectie zien, de films met formaat en editie, en je naam en avatar. Notities,
         beoordelingen, uitleenstatus en barcodes blijven privé. Je kunt het delen altijd weer uitzetten; openbare
@@ -187,6 +196,15 @@ function English() {
         who can see that collection. The image link can&apos;t be guessed, but anyone who has the link can open the
         image. You can always remove a cover. When you use the barcode scanner, camera images are processed on your
         own device only; they are not sent or stored. <mark>[CHECK]</mark>
+      </p>
+      <p>
+        If you send feedback (a bug or an idea), we keep your message with what is included automatically: the page
+        you were on, your browser and device, screen size and language. With an account, the message is linked to
+        your account and you can attach a screenshot, visible only to you and the administrators. Without an account
+        you can optionally leave an email address, used only to reply to you. To limit abuse we store a
+        non-reversible code (hash) of your IP address for messages sent without an account, never the IP address
+        itself. We keep feedback as long as needed to handle it, and at most <mark>[RETENTION PERIOD]</mark>; deleting
+        your account also deletes your messages and screenshots. <mark>[CHECK]</mark>
       </p>
       <p>
         If you set a collection to &quot;public via link&quot; yourself, anyone with that link can see the

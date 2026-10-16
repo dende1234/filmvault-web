@@ -36,7 +36,10 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
             {children}
           </div>
         </div>
-        <div className="mt-8 flex items-center gap-4">
+        <Link href="/feedback?from=/auth" className="mt-6 text-center text-sm text-muted-foreground hover:text-foreground hover:underline">
+          {dict.feedback_visitor_link}
+        </Link>
+        <div className="mt-6 flex items-center gap-4">
           <LanguageSwitcher />
           <Link href="/privacy" className="text-xs text-muted-foreground hover:text-foreground hover:underline">
             {dict.privacy_policy_link}
