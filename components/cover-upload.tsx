@@ -8,26 +8,9 @@ import { useT } from "@/lib/i18n/locale-provider";
 import { useHasCamera } from "@/lib/use-has-camera";
 import { createClient } from "@/lib/supabase/client";
 import { COVERS_BUCKET } from "@/lib/covers";
+import { MAX_IMAGE_INPUT_BYTES, toJpeg } from "@/lib/resize-image";
 import { setCollectionItemCover } from "@/actions/collections";
 import { Button } from "@/components/ui/button";
-
-const MAX_INPUT_BYTES = 25 * 1024 * 1024;
-const MAX_EDGE = 1200;
-
-/** Downscale in the browser (≤1200 px long edge, JPEG 0.85) so a 10 MB phone
- * photo becomes a ~200 kB cover, with EXIF orientation applied. */
-async function toCoverJpeg(file: File): Promise<Blob> {
-  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
-  const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(bitmap.width * scale);
-  canvas.height = Math.round(bitmap.height * scale);
-  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  return new Promise((resolve, reject) =>
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("encode_failed"))), "image/jpeg", 0.85),
-  );
-}
 
 /** "Eigen cover" for one copy: take a photo (only when the device has a
  * camera) or choose a file; removing goes back to the TMDB poster. */
@@ -44,13 +27,13 @@ export function CoverUpload({ itemGroupId, hasCustomCover }: { itemGroupId: stri
       toast.error(t("cover_error_type"));
       return;
     }
-    if (file.size > MAX_INPUT_BYTES) {
+    if (file.size > MAX_IMAGE_INPUT_BYTES) {
       toast.error(t("cover_error_size"));
       return;
     }
     setBusy(true);
     try {
-      const blob = await toCoverJpeg(file).catch(() => {
+      const blob = await toJpeg(file, 1200).catch(() => {
         throw new Error("type");
       });
       const supabase = createClient();

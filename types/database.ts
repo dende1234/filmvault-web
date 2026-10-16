@@ -409,3 +409,26 @@ export interface DiaryEntry extends FilmViewing {
 }
 
 export type FilmMeta = { tmdbMovieId: number; title: string; poster: string | null };
+
+export type FeedbackKind = "bug" | "idea" | "other";
+export type FeedbackStatus = "new" | "in_progress" | "planned" | "done" | "declined";
+
+/** user_feedback (FilmVault/supabase/sql/user_feedback.sql). user_id is null
+ * for visitors without an account; ip_hash is never selected by the app. */
+export interface UserFeedback {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string | null;
+  kind: FeedbackKind;
+  message: string;
+  contact_email: string | null;
+  page: string | null;
+  user_agent: string | null;
+  viewport: string | null;
+  locale: string | null;
+  app_version: string | null;
+  screenshot_path: string | null;
+  status: FeedbackStatus;
+  admin_reply: string | null;
+}
