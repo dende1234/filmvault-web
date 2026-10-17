@@ -6,11 +6,10 @@
 // the server-only parts: a salted IP hash for the visitor limit, the app
 // version, and two cheap bot checks (honeypot + minimum fill time).
 
-import { createHash } from "node:crypto";
-import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/require-admin";
+import { ipHash } from "@/lib/ip-hash";
 import { FEEDBACK_BUCKET, FEEDBACK_KINDS as KINDS, FEEDBACK_STATUSES as STATUSES } from "@/lib/feedback";
 import type { FeedbackKind, FeedbackStatus, UserFeedback } from "@/types/database";
 
@@ -38,14 +37,6 @@ export type FeedbackInput = {
 /** Table/function not created yet (user_feedback.sql not run). */
 function isMissing(error: { code?: string } | null) {
   return !!error && ["PGRST202", "PGRST205", "42P01", "42883"].includes(error.code ?? "");
-}
-
-async function ipHash(): Promise<string | null> {
-  const h = await headers();
-  const ip = (h.get("x-forwarded-for")?.split(",")[0] ?? h.get("x-real-ip") ?? "").trim();
-  if (!ip) return null;
-  const salt = process.env.FEEDBACK_SALT ?? "filmory-feedback";
-  return createHash("sha256").update(`${salt}:${ip}`).digest("hex");
 }
 
 export async function submitFeedback(input: FeedbackInput): Promise<{ ok: true } | { ok: false; error: FeedbackError }> {

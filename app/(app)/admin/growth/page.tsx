@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { NewsletterSyncButton } from "@/components/admin/newsletter-sync-button";
 
 export const metadata = { title: "Groei" };
 
@@ -62,12 +63,15 @@ export default async function AdminGrowthPage() {
         title={dict.admin_growth_title}
         description={format(dict.admin_growth_day, Math.min(day, 90))}
         actions={
-          <Button asChild variant="secondary">
-            <a href="/api/admin/newsletter" download>
-              <Download />
-              {dict.admin_growth_export_newsletter}
-            </a>
-          </Button>
+          <>
+            <NewsletterSyncButton />
+            <Button asChild variant="secondary">
+              <a href="/api/admin/newsletter" download>
+                <Download />
+                {dict.admin_growth_export_newsletter}
+              </a>
+            </Button>
+          </>
         }
       />
 

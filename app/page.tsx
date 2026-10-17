@@ -11,6 +11,7 @@ import { StatTile } from "@/components/stat-tile";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 
 // Formats + editions shown in the demo — all exist in the live media_types /
 // edities lists (FilmVault/supabase/sql/media_types_and_edities.sql), so the
@@ -162,6 +163,11 @@ export default async function LandingPage() {
           </div>
         </section>
       )}
+
+      {/* Signed-in users never see "/" (middleware redirects them), so this is always the visitor form. */}
+      <div className="mx-auto w-full max-w-3xl px-4 pb-16 md:px-8">
+        <NewsletterSignup signedIn={false} />
+      </div>
 
       <footer className="mt-auto border-t border-border/60">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-xs text-muted-foreground md:flex-row md:items-center md:justify-between md:px-8">

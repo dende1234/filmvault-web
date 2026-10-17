@@ -6,7 +6,7 @@ const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/privacy"];
 // Unlike login/register, these stay reachable regardless of auth state —
 // no redirect either way (a logged-in user must still be able to read the
 // privacy policy from their account, not get bounced back to /dashboard).
-const ALWAYS_ACCESSIBLE_PATHS = ["/privacy", "/gids", "/c/", "/feedback"];
+const ALWAYS_ACCESSIBLE_PATHS = ["/privacy", "/gids", "/c/", "/feedback", "/nieuwsbrief"];
 
 // First-party acquisition source, kept 30 days and recorded once on signup
 // (actions/profile.ts). Not a tracking cookie: it holds only a campaign

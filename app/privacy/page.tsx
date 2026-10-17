@@ -57,13 +57,21 @@ function Dutch() {
       <p>
         Gebruiksgegevens bekijken we alleen als totalen, om te zien hoe nieuwe leden de app gebruiken en wat beter
         kan (bijvoorbeeld hoeveel nieuwe leden hun eerste film toevoegen). De nieuwsbrief sturen we alleen als je
-        daar zelf voor kiest; je kunt je op elk moment afmelden in je profiel.
+        daar zelf voor kiest; je kunt je op elk moment afmelden in je profiel of via de link onderaan elke mail.
+      </p>
+      <p>
+        De nieuwsbrief versturen we via Brevo. Heb je een account en zet je de nieuwsbrief aan, dan geven we je
+        e-mailadres (en je naam, als je die invulde) door aan Brevo; zet je hem uit of verwijder je je account, dan
+        halen we je daar weer weg. Zonder account kun je je ook aanmelden: je ontvangt dan eerst een mail om je
+        aanmelding te bevestigen, en je e-mailadres staat alleen bij Brevo, niet in de database van Filmory. Brevo
+        meet of een nieuwsbrief geopend en aangeklikt wordt, alleen om te zien wat lezers interessant vinden.
+        <mark>[CONTROLEER]</mark>
       </p>
 
       <h2>Met wie delen we gegevens</h2>
       <p>
-        We werken met twee dienstverleners die als verwerker optreden: Supabase (hosting van account- en
-        appgegevens) en Firebase/Google (aflevering van pushmeldingen op de app — hiervoor ontvangt Google een
+        We werken met deze dienstverleners die als verwerker optreden: Supabase (hosting van account- en
+        appgegevens), Brevo (versturen van de nieuwsbrief, alleen als je je daarvoor aanmeldt) en Firebase/Google (aflevering van pushmeldingen op de app — hiervoor ontvangt Google een
         apparaat-token, geen accountgegevens). Filminformatie wordt opgehaald bij The Movie Database (TMDB);
         hierbij worden geen persoonsgegevens verstuurd. We geven geen gegevens door aan derden voor hun eigen
         doeleinden.
@@ -167,12 +175,20 @@ function English() {
       <p>
         We only look at usage data as totals, to understand how new members use the app and what can be improved
         (for example how many new members add their first film). We only send the newsletter if you choose to
-        receive it; you can unsubscribe at any time in your profile.
+        receive it; you can unsubscribe at any time in your profile or through the link at the bottom of every email.
+      </p>
+      <p>
+        We send the newsletter through Brevo. If you have an account and turn the newsletter on, we pass your email
+        address (and your name, if you filled it in) to Brevo; if you turn it off or delete your account, we remove
+        you there again. You can also sign up without an account: you first receive an email to confirm, and your
+        address is then stored only at Brevo, not in Filmory&apos;s database. Brevo measures whether a newsletter is
+        opened and clicked, only to see what readers find interesting. <mark>[CHECK]</mark>
       </p>
 
       <h2>Who we share data with</h2>
       <p>
-        We work with two processors: Supabase (hosting of account and app data) and Firebase/Google (delivering
+        We work with these processors: Supabase (hosting of account and app data), Brevo (sending the newsletter, only
+        if you sign up for it) and Firebase/Google (delivering
         push notifications on the app — Google receives a device token for this, not account data). Movie
         information is fetched from The Movie Database (TMDB); no personal data is sent in that process. We do not
         pass data to third parties for their own purposes.
