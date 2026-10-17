@@ -2,7 +2,9 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { removeMember, upsertMember } from "@/lib/newsletter";
 import { THEME_COOKIE, LOCALE_COOKIE, SOURCE_COOKIE, type ThemePreference } from "@/lib/preferences";
 import type { Locale } from "@/lib/i18n/dictionary";
 import type { Profile, PublicProfile } from "@/types/database";
@@ -49,6 +51,12 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
   }
   if (!error) {
     await logSignupEvent(user.id);
+    // Ticked the newsletter box at sign-up: put them on the Brevo list after
+    // the response, so the mailing service can never slow down or break sign-up.
+    if (optedIn && user.email && (created as Profile | null)?.newsletter_opt_in) {
+      const email = user.email;
+      after(() => upsertMember(email));
+    }
     return created as Profile;
   }
 
@@ -81,6 +89,17 @@ export async function setNewsletterOptIn(optIn: boolean): Promise<{ error: strin
     .from("profiles")
     .update({ newsletter_opt_in: optIn, newsletter_opt_in_at: optIn ? new Date().toISOString() : null })
     .eq("id", user.id);
+  if (!error && user.email) {
+    const email = user.email;
+    after(async () => {
+      if (!optIn) {
+        await removeMember(email);
+        return;
+      }
+      const { data: profile } = await supabase.from("profiles").select("name").eq("id", user.id).maybeSingle();
+      await upsertMember(email, profile?.name);
+    });
+  }
   revalidatePath("/profile");
   return { error: error?.message ?? null };
 }

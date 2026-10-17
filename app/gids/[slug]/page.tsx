@@ -5,6 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { GUIDES, getGuide } from "@/lib/guides";
 import { GuideShell } from "@/components/guide-shell";
 import { Button } from "@/components/ui/button";
+import { NewsletterSignup } from "@/components/newsletter-signup";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -70,6 +71,10 @@ export default async function GuidePage({ params }: Props) {
           <Link href={`/register?ref=gids-${guide.slug}`}>Gratis beginnen</Link>
         </Button>
       </aside>
+
+      {/* Guides are static pages, so no session check: members who sign up here
+          just get Brevo's confirmation mail like anyone else. */}
+      <NewsletterSignup signedIn={false} className="mt-8 max-w-2xl" />
 
       {others.length > 0 && (
         <nav className="mt-14 max-w-2xl" aria-label="Meer gidsen">
