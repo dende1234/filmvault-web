@@ -275,7 +275,16 @@ export function CollectionItemEditor({
               <Badge variant="secondary">{item.editie}</Badge>
               {series && <Badge variant="secondary">{seasonsLabel(item.seasons, regularTotal)}</Badge>}
               {item.watched && <Badge variant="success">{t("watched_label")}</Badge>}
-              {item.box_name && <Badge variant="outline">{t("collection_item_box_caption", item.box_name)}</Badge>}
+              {item.box_name &&
+                (item.box_group_id ? (
+                  <Link href={`/collections/${item.collection_id}/boxes/${item.box_group_id}`}>
+                    <Badge variant="outline" className="hover:text-primary hover:ring-primary/50">
+                      {t("collection_item_box_caption", item.box_name)}
+                    </Badge>
+                  </Link>
+                ) : (
+                  <Badge variant="outline">{t("collection_item_box_caption", item.box_name)}</Badge>
+                ))}
             </div>
             <p className="font-mono text-xs text-muted-foreground">{item.barcode}</p>
           </div>

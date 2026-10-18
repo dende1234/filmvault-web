@@ -16,6 +16,7 @@ import { PosterGrid } from "@/components/movie/poster-grid";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { BoxCard } from "@/components/box-card";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -46,6 +47,24 @@ export default async function PublicCollectionPage({ params }: Props) {
   const dict = getDictionary(await getLocale());
   const collection = await loadCollection(id);
   if (!collection) notFound();
+
+  // A box shows as one card where its first film would be. Without
+  // public_collection_boxes.sql there is no box_group_id: group on name + format.
+  type PublicItem = (typeof collection.items)[number];
+  const entries: ({ kind: "item"; item: PublicItem } | { kind: "box"; key: string; items: PublicItem[] })[] = [];
+  const boxIndex = new Map<string, number>();
+  for (const item of collection.items) {
+    if (!item.is_box) {
+      entries.push({ kind: "item", item });
+      continue;
+    }
+    const key = item.box_group_id ?? `${item.box_name ?? ""}|${item.type}|${item.editie}`;
+    const at = boxIndex.get(key);
+    if (at === undefined) {
+      boxIndex.set(key, entries.length);
+      entries.push({ kind: "box", key, items: [item] });
+    } else (entries[at] as { items: PublicItem[] }).items.push(item);
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -82,7 +101,26 @@ export default async function PublicCollectionPage({ params }: Props) {
         {collection.description && <p className="-mt-4 max-w-prose text-muted-foreground">{collection.description}</p>}
 
         <PosterGrid>
-          {collection.items.map((item, i) => (
+          {entries.map((entry, i) => {
+            if (entry.kind === "box") {
+              const first = entry.items[0];
+              return (
+                <BoxCard
+                  key={`box-${entry.key}`}
+                  name={first.box_name ?? first.movie_title}
+                  type={first.type}
+                  editie={first.editie}
+                  films={entry.items.map((item, j) => ({
+                    key: `${item.tmdb_movie_id}-${j}`,
+                    title: item.movie_title,
+                    poster: item.movie_poster,
+                    customCover: item.custom_cover_path,
+                  }))}
+                />
+              );
+            }
+            const item = entry.item;
+            return (
             <div key={`${item.tmdb_movie_id}-${item.type}-${item.editie}-${i}`} className="flex flex-col gap-2">
               <Poster path={item.movie_poster} customCover={item.custom_cover_path} title={item.movie_title} priority={i < 6}>
                 <PosterCorner position="bl">
@@ -95,10 +133,10 @@ export default async function PublicCollectionPage({ params }: Props) {
               <div className="min-w-0">
                 <p className="line-clamp-2 text-sm font-medium leading-snug">{item.movie_title}</p>
                 {item.editie && item.editie !== "Normaal" && <p className="text-xs text-primary">{item.editie}</p>}
-                {item.is_box && item.box_name && <p className="text-xs text-muted-foreground">{item.box_name}</p>}
               </div>
             </div>
-          ))}
+            );
+          })}
         </PosterGrid>
 
         <section className="bg-cinema mt-4 flex flex-col items-center gap-3 rounded-card border border-primary/30 px-6 py-10 text-center">

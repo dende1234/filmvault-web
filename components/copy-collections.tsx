@@ -19,9 +19,12 @@ export function CopyCollections({
   isBox,
   collections,
   initialIds,
+  boxGroupId,
 }: {
   itemId: string;
   isBox: boolean;
+  /** On a box page: after unticking this collection, go to the box page in a remaining one. */
+  boxGroupId?: string;
   collections: Collection[];
   initialIds: string[];
 }) {
@@ -56,7 +59,12 @@ export function CopyCollections({
       else {
         toast.success(t("copy_collections_saved"));
         // The current collection was unticked: show this copy in one it is still in.
-        if (result.itemId && result.itemId !== itemId) router.replace(`/collections/${result.collectionId}/items/${result.itemId}`);
+        if (result.itemId && result.itemId !== itemId)
+          router.replace(
+            boxGroupId
+              ? `/collections/${result.collectionId}/boxes/${boxGroupId}`
+              : `/collections/${result.collectionId}/items/${result.itemId}`,
+          );
         else router.refresh();
       }
     } catch {

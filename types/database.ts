@@ -55,6 +55,8 @@ export interface PublicCollection {
     seasons?: number[] | null;
     custom_cover_path?: string | null;
     is_box: boolean;
+    /** Present once public_collection_boxes.sql has run. */
+    box_group_id?: string | null;
     box_name: string | null;
   }[];
 }

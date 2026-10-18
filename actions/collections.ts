@@ -297,6 +297,29 @@ export async function setCopyCollections(
   return { error: null, itemId: (next as { id: string } | null)?.id, collectionId: (next as { collection_id: string } | null)?.collection_id };
 }
 
+/** The films of one box in one collection, by title. */
+export async function getBoxItems(collectionId: string, boxGroupId: string): Promise<CollectionItem[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("collection_items")
+    .select("*")
+    .eq("collection_id", collectionId)
+    .eq("box_group_id", boxGroupId)
+    .order("movie_title");
+  if (error) throw error;
+  return data as CollectionItem[];
+}
+
+/** Removes a whole box (its films' rows) from one collection only. */
+export async function removeBoxFromCollection(collectionId: string, itemIds: string[]) {
+  if (itemIds.length === 0) return;
+  await requireUserId();
+  const supabase = await createClient();
+  const { error } = await supabase.from("collection_items").delete().eq("collection_id", collectionId).in("id", itemIds);
+  if (error) throw error;
+  revalidatePath("/collections", "layout");
+}
+
 export async function getBarcodesForMovie(tmdbMovieId: number): Promise<Barcode[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("barcodes").select("*").eq("tmdb_movie_id", tmdbMovieId);
@@ -756,7 +779,15 @@ export async function approvePendingBox(pendingRowsFromClient: PendingBarcode[])
 export type ScannedBarcodeResult =
   | { kind: "none"; barcode: string }
   | { kind: "title"; barcode: string; title: { id: number; title: string; poster: string | null } }
-  | { kind: "box"; barcode: string; boxName: string | null };
+  | {
+      kind: "box";
+      barcode: string;
+      boxGroupId: string | null;
+      boxName: string | null;
+      type: string;
+      editie: string;
+      films: { tmdb_movie_id: number; movie_title: string; movie_poster: string | null }[];
+    };
 
 /** What a scanned barcode is on the master film list: one film/series,
  * a box, or unknown (then the user picks the title and it goes to approval). */
@@ -766,7 +797,25 @@ export async function lookupScannedBarcode(raw: string): Promise<ScannedBarcodeR
   const known = barcode ? await findBarcodesByCode(barcode) : [];
   if (known.length === 0) return { kind: "none", barcode };
   if (known.some((b) => b.is_box) || new Set(known.map((b) => b.tmdb_movie_id)).size > 1) {
-    return { kind: "box", barcode, boxName: known[0].box_name };
+    // The barcodes table has no titles: resolve each film once via TMDB.
+    const locale = await getLocale();
+    const ids = Array.from(new Set(known.map((b) => b.tmdb_movie_id)));
+    const films = await Promise.all(
+      ids.map(async (id) => {
+        const detail = await getTitleDetail(id, locale).catch(() => null);
+        return { tmdb_movie_id: id, movie_title: detail?.title ?? `TMDB #${id}`, movie_poster: detail?.poster_path ?? null };
+      }),
+    );
+    const first = known.find((b) => b.box_group_id) ?? known[0];
+    return {
+      kind: "box",
+      barcode,
+      boxGroupId: first.box_group_id,
+      boxName: first.box_name,
+      type: first.type,
+      editie: first.editie,
+      films,
+    };
   }
   const detail = await getTitleDetail(known[0].tmdb_movie_id, await getLocale()).catch(() => null);
   return {

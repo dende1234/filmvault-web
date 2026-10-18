@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Eye, Film, SearchX, X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
-import { removeCollectionItem } from "@/actions/collections";
+import { removeBoxFromCollection, removeCollectionItem } from "@/actions/collections";
 import { getMediaTypes } from "@/actions/media-types";
 import { isLoanOverdue, type Collection, type CollectionItem } from "@/types/database";
 import { Poster, PosterCorner } from "@/components/movie/poster";
@@ -22,6 +22,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { AddFilmFlow } from "@/components/add-film-flow";
 import { AddBoxFlow } from "@/components/add-box-flow";
 import { ShareCollectionButton } from "@/components/share-collection-button";
+import { BoxCard } from "@/components/box-card";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,15 @@ import {
 } from "@/components/ui/dialog";
 
 const ALL = "all";
+
+/** A box shows as one card: its films share box_group_id (older boxes without
+ * one fall back to name + barcode). */
+type Entry = { kind: "item"; item: CollectionItem } | { kind: "box"; key: string; items: CollectionItem[] };
+
+function boxKey(item: CollectionItem): string | null {
+  if (!item.is_box) return null;
+  return item.box_group_id ?? `${item.box_name ?? ""}|${item.barcode}`;
+}
 
 export function CollectionDetailClient({
   collection,
@@ -54,6 +64,7 @@ export function CollectionDetailClient({
   const [sort, setSort] = useState<"name" | "added" | "rating">("name");
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingDelete, setPendingDelete] = useState<CollectionItem | null>(null);
+  const [pendingBoxDelete, setPendingBoxDelete] = useState<CollectionItem[] | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [mediaTypes, setMediaTypes] = useState<string[]>([]);
 
@@ -62,20 +73,53 @@ export function CollectionDetailClient({
   }, []);
 
   const filtered = useMemo(() => {
-    let list = items;
-    if (typeFilter !== ALL) list = list.filter((i) => i.type === typeFilter);
-    if (kindFilter === "movie") list = list.filter((i) => !isSeries(i.tmdb_movie_id));
-    if (kindFilter === "tv") list = list.filter((i) => isSeries(i.tmdb_movie_id));
-    if (watchedFilter === "watched") list = list.filter((i) => i.watched);
-    if (watchedFilter === "not_watched") list = list.filter((i) => !i.watched);
-    if (searchQuery.trim()) list = list.filter((i) => i.movie_title.toLowerCase().includes(searchQuery.trim().toLowerCase()));
+    const query = searchQuery.trim().toLowerCase();
+    const matches = (i: CollectionItem) =>
+      (typeFilter === ALL || i.type === typeFilter) &&
+      (kindFilter !== "movie" || !isSeries(i.tmdb_movie_id)) &&
+      (kindFilter !== "tv" || isSeries(i.tmdb_movie_id)) &&
+      (watchedFilter !== "watched" || i.watched) &&
+      (watchedFilter !== "not_watched" || !i.watched) &&
+      (!query || i.movie_title.toLowerCase().includes(query) || (i.box_name ?? "").toLowerCase().includes(query));
 
-    const copy = [...list];
-    if (sort === "name") copy.sort((a, b) => a.movie_title.localeCompare(b.movie_title));
-    else if (sort === "added") copy.sort((a, b) => (b.added_at ?? "").localeCompare(a.added_at ?? ""));
-    else copy.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
-    return copy;
+    // Group boxes first (all their films), then keep a box when any film matches.
+    const entries: Entry[] = [];
+    const boxes = new Map<string, CollectionItem[]>();
+    for (const item of items) {
+      const key = boxKey(item);
+      if (!key) {
+        if (matches(item)) entries.push({ kind: "item", item });
+        continue;
+      }
+      if (!boxes.has(key)) boxes.set(key, []);
+      boxes.get(key)!.push(item);
+    }
+    for (const [key, boxItems] of boxes) {
+      if (boxItems.some(matches)) entries.push({ kind: "box", key, items: boxItems });
+    }
+
+    const name = (e: Entry) => (e.kind === "item" ? e.item.movie_title : (e.items[0].box_name ?? e.items[0].movie_title));
+    const added = (e: Entry) => (e.kind === "item" ? [e.item] : e.items).reduce((max, i) => ((i.added_at ?? "") > max ? (i.added_at ?? "") : max), "");
+    const rating = (e: Entry) => Math.max(...(e.kind === "item" ? [e.item] : e.items).map((i) => i.rating ?? 0));
+    if (sort === "name") entries.sort((a, b) => name(a).localeCompare(name(b)));
+    else if (sort === "added") entries.sort((a, b) => added(b).localeCompare(added(a)));
+    else entries.sort((a, b) => rating(b) - rating(a));
+    return entries;
   }, [items, typeFilter, kindFilter, watchedFilter, sort, searchQuery]);
+
+  async function handleBoxDelete() {
+    if (!pendingBoxDelete) return;
+    setIsDeleting(true);
+    try {
+      await removeBoxFromCollection(collection.id, pendingBoxDelete.map((i) => i.id));
+      setPendingBoxDelete(null);
+      router.refresh();
+    } catch {
+      toast.error(t("box_remove_error"));
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   async function handleDelete() {
     if (!pendingDelete) return;
@@ -183,7 +227,31 @@ export function CollectionDetailClient({
         <EmptyState icon={SearchX} title={t("collection_detail_no_matches")} />
       ) : (
         <PosterGrid>
-          {filtered.map((item) => (
+          {filtered.map((entry) => {
+            if (entry.kind === "box") {
+              const first = entry.items[0];
+              const films = [...entry.items].sort((a, b) => a.movie_title.localeCompare(b.movie_title));
+              return (
+                <BoxCard
+                  key={`box-${entry.key}`}
+                  name={first.box_name ?? first.movie_title}
+                  type={first.type}
+                  editie={first.editie}
+                  href={first.box_group_id ? `/collections/${collection.id}/boxes/${first.box_group_id}` : undefined}
+                  onRemove={isOwner ? () => setPendingBoxDelete(entry.items) : undefined}
+                  films={films.map((i) => ({
+                    key: i.id,
+                    title: i.movie_title,
+                    poster: i.movie_poster,
+                    customCover: i.custom_cover_path,
+                    watched: i.watched,
+                    href: `/collections/${collection.id}/items/${i.id}`,
+                  }))}
+                />
+              );
+            }
+            const item = entry.item;
+            return (
             <div key={item.id} className="group relative flex flex-col gap-2">
               <Link href={`/collections/${collection.id}/items/${item.id}`} className="flex flex-col gap-2 focus-visible:outline-none">
                 <Poster path={item.movie_poster} customCover={item.custom_cover_path} title={item.movie_title} hover>
@@ -222,9 +290,30 @@ export function CollectionDetailClient({
                 </button>
               </PosterCorner>
             </div>
-          ))}
+            );
+          })}
         </PosterGrid>
       )}
+
+      <Dialog open={!!pendingBoxDelete} onOpenChange={(open) => !open && setPendingBoxDelete(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("box_remove_title")}</DialogTitle>
+            <DialogDescription>
+              {pendingBoxDelete &&
+                t("box_remove_confirm", pendingBoxDelete[0].box_name ?? pendingBoxDelete[0].movie_title, pendingBoxDelete.length)}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingBoxDelete(null)} disabled={isDeleting}>
+              {t("action_cancel")}
+            </Button>
+            <Button variant="destructive" onClick={handleBoxDelete} disabled={isDeleting}>
+              {t("action_delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
         <DialogContent>
