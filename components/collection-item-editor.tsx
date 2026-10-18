@@ -18,13 +18,14 @@ import {
   updateCollectionItemTags,
   updateCollectionItemWatched,
 } from "@/actions/collections";
-import { isLoanOverdue, type CollectionItem, type Condition, type FilmLog, type FilmViewing } from "@/types/database";
+import { isLoanOverdue, type Collection, type CollectionItem, type Condition, type FilmLog, type FilmViewing } from "@/types/database";
 import { setFilmRating, setFilmReview, setFilmWatched } from "@/actions/watched";
 import { LogFilmDialog } from "@/components/watched/log-film-dialog";
 import { getSeriesSeasons, type SeasonOption } from "@/actions/series";
 import { isSeries } from "@/lib/titles";
 import { SeasonsPicker, useSeasonsLabel } from "@/components/seasons-picker";
 import { CoverUpload } from "@/components/cover-upload";
+import { CopyCollections } from "@/components/copy-collections";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import type { MovieDetailDto } from "@/types/tmdb";
@@ -51,10 +52,15 @@ export function CollectionItemEditor({
   item: initial,
   movie,
   filmLog,
+  collections,
+  copyCollectionIds,
 }: {
   item: CollectionItem;
   movie: MovieDetailDto | null;
   filmLog: { log: FilmLog | null; viewings: FilmViewing[] };
+  /** All of the user's collections, and the ones this copy (or box) is in. */
+  collections: Collection[];
+  copyCollectionIds: string[];
 }) {
   const { t } = useT();
   const router = useRouter();
@@ -284,6 +290,22 @@ export function CollectionItemEditor({
           <p className="leading-relaxed text-foreground/90">{movie.overview}</p>
         </div>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("copy_collections_title")}</CardTitle>
+          <p className="text-xs text-muted-foreground">{t("copy_collections_hint")}</p>
+        </CardHeader>
+        <CardContent>
+          <CopyCollections
+            key={copyCollectionIds.slice().sort().join(",")}
+            itemId={item.id}
+            isBox={item.is_box}
+            collections={collections}
+            initialIds={copyCollectionIds}
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

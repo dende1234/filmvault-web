@@ -855,4 +855,12 @@ export const nl = {
   admin_growth_sync_partial: "{0} gesynchroniseerd, {1} mislukt",
   admin_growth_sync_not_configured: "Brevo is nog niet ingesteld (BREVO_API_KEY en BREVO_LIST_ID).",
   admin_growth_sync_error: "Synchroniseren is mislukt",
+  copy_collections_title: "In collecties",
+  copy_collections_hint: "Vink aan in welke collecties dit exemplaar staat. Het blijft één exemplaar: rating, notitie, uitlenen en cover gelden overal.",
+  copy_collections_hint_box: "Deze box staat met alle films in de collecties die je aanvinkt.",
+  copy_collections_save: "Opslaan",
+  copy_collections_saved: "Collecties bijgewerkt",
+  copy_collections_error: "Bijwerken is mislukt",
+  copy_collections_empty: "Kies minstens één collectie. Wil je het exemplaar helemaal weghalen? Gebruik dan Verwijderen.",
+  copy_collections_new: "Nieuwe collectie maken",
 };

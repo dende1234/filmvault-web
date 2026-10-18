@@ -203,6 +203,100 @@ export async function removeCollectionItem(itemId: string) {
   revalidatePath("/collections", "layout");
 }
 
+// One physical copy can sit in several collections: one collection_items row
+// per collection, all sharing item_group_id (shared_film_across_collections.sql).
+// A box is several films (each its own item_group_id) sharing box_group_id, and
+// always moves as a whole. Columns copied to a new collection's row — only those
+// the source row actually has, so a not-yet-run migration never breaks this.
+const COPY_COLUMNS = [
+  "item_group_id", "tmdb_movie_id", "movie_title", "movie_poster", "barcode", "type", "editie",
+  "rating", "watched", "seasons", "custom_cover_path", "is_box", "box_group_id", "box_name",
+  "personal_note", "loaned_to", "loaned_at", "is_favorite", "tags", "condition",
+] as const;
+
+/** The caller's rows for this copy (or, for a box, the whole box), across all
+ * of their collections. Friends can read collection_items too, so ownership is
+ * checked against the caller's own collections, not just RLS. */
+async function ownCopyRows(itemId: string) {
+  const userId = await requireUserId();
+  const supabase = await createClient();
+  const { data: own } = await supabase.from("collections").select("id").eq("user_id", userId);
+  const ownIds = (own ?? []).map((c: { id: string }) => c.id);
+  const { data: source } = await supabase.from("collection_items").select("*").eq("id", itemId).maybeSingle();
+  if (!source || !ownIds.includes((source as CollectionItem).collection_id)) return null;
+  const item = source as CollectionItem;
+  const { data: rows, error } =
+    item.is_box && item.box_group_id
+      ? await supabase.from("collection_items").select("*").eq("box_group_id", item.box_group_id).in("collection_id", ownIds)
+      : await supabase.from("collection_items").select("*").eq("item_group_id", item.item_group_id).in("collection_id", ownIds);
+  if (error) throw error;
+  return { item, rows: (rows ?? []) as CollectionItem[], ownIds };
+}
+
+/** Collections this copy (or box) is in, for the "In collecties" block. */
+export async function getCopyCollectionIds(itemId: string): Promise<string[]> {
+  const found = await ownCopyRows(itemId);
+  if (!found) return [];
+  return Array.from(new Set(found.rows.map((r) => r.collection_id)));
+}
+
+/** Puts this copy (or box) in exactly targetCollectionIds: adds rows sharing
+ * the same item_group_id (so rating, note, loan, cover etc. stay one value)
+ * and removes it from collections that were unticked. At least one collection
+ * must remain — removing it everywhere is "Verwijderen", not this. Returns the
+ * item id to show afterwards (the current one, or its row in a remaining
+ * collection when the current collection was unticked). */
+export async function setCopyCollections(
+  itemId: string,
+  targetCollectionIds: string[],
+): Promise<{ error: "not_found" | "empty" | null; itemId?: string; collectionId?: string }> {
+  const found = await ownCopyRows(itemId);
+  if (!found) return { error: "not_found" };
+  const targets = Array.from(new Set(targetCollectionIds)).filter((id) => found.ownIds.includes(id));
+  if (targets.length === 0) return { error: "empty" };
+
+  const supabase = await createClient();
+  const current = new Set(found.rows.map((r) => r.collection_id));
+  const toAdd = targets.filter((id) => !current.has(id));
+  const toRemove = Array.from(current).filter((id) => !targets.includes(id));
+
+  // One representative row per film (item_group_id) of this copy or box.
+  const perGroup = new Map<string, CollectionItem>();
+  for (const row of found.rows) if (!perGroup.has(row.item_group_id)) perGroup.set(row.item_group_id, row);
+
+  if (toAdd.length > 0) {
+    const inserts = toAdd.flatMap((collectionId) =>
+      Array.from(perGroup.values()).map((row) => {
+        const copy: Record<string, unknown> = { collection_id: collectionId };
+        for (const col of COPY_COLUMNS) if (col in row) copy[col] = (row as unknown as Record<string, unknown>)[col];
+        return copy;
+      }),
+    );
+    const { error } = await supabase.from("collection_items").insert(inserts);
+    if (error) throw error;
+  }
+  if (toRemove.length > 0) {
+    const groupIds = Array.from(perGroup.keys());
+    const { error } = await supabase
+      .from("collection_items")
+      .delete()
+      .in("item_group_id", groupIds)
+      .in("collection_id", toRemove);
+    if (error) throw error;
+  }
+  revalidatePath("/collections", "layout");
+
+  if (targets.includes(found.item.collection_id)) return { error: null, itemId, collectionId: found.item.collection_id };
+  const { data: next } = await supabase
+    .from("collection_items")
+    .select("id, collection_id")
+    .eq("item_group_id", found.item.item_group_id)
+    .in("collection_id", targets)
+    .limit(1)
+    .maybeSingle();
+  return { error: null, itemId: (next as { id: string } | null)?.id, collectionId: (next as { collection_id: string } | null)?.collection_id };
+}
+
 export async function getBarcodesForMovie(tmdbMovieId: number): Promise<Barcode[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("barcodes").select("*").eq("tmdb_movie_id", tmdbMovieId);

@@ -852,4 +852,12 @@ export const en: Record<keyof typeof nl, string> = {
   admin_growth_sync_partial: "{0} synced, {1} failed",
   admin_growth_sync_not_configured: "Brevo isn't set up yet (BREVO_API_KEY and BREVO_LIST_ID).",
   admin_growth_sync_error: "Sync failed",
+  copy_collections_title: "In collections",
+  copy_collections_hint: "Tick which collections this copy is in. It stays one copy: rating, note, loan and cover apply everywhere.",
+  copy_collections_hint_box: "This box, with all its films, is in the collections you tick.",
+  copy_collections_save: "Save",
+  copy_collections_saved: "Collections updated",
+  copy_collections_error: "Updating failed",
+  copy_collections_empty: "Pick at least one collection. Want to remove the copy entirely? Use Delete.",
+  copy_collections_new: "Create a new collection",
 };
