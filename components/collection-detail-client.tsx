@@ -59,6 +59,8 @@ export function CollectionDetailClient({
   const [typeFilter, setTypeFilter] = useState<string>(ALL);
   const [watchedFilter, setWatchedFilter] = useState<"all" | "watched" | "not_watched">("all");
   const [kindFilter, setKindFilter] = useState<"all" | "movie" | "tv">("all");
+  const [boxFilter, setBoxFilter] = useState<"all" | "boxes" | "single">("all");
+  const hasBoxes = items.some((i) => i.is_box);
   const seasonsLabel = useSeasonsLabel();
   const hasSeries = items.some((i) => isSeries(i.tmdb_movie_id));
   const [sort, setSort] = useState<"name" | "added" | "rating">("name");
@@ -88,9 +90,10 @@ export function CollectionDetailClient({
     for (const item of items) {
       const key = boxKey(item);
       if (!key) {
-        if (matches(item)) entries.push({ kind: "item", item });
+        if (boxFilter !== "boxes" && matches(item)) entries.push({ kind: "item", item });
         continue;
       }
+      if (boxFilter === "single") continue;
       if (!boxes.has(key)) boxes.set(key, []);
       boxes.get(key)!.push(item);
     }
@@ -105,7 +108,7 @@ export function CollectionDetailClient({
     else if (sort === "added") entries.sort((a, b) => added(b).localeCompare(added(a)));
     else entries.sort((a, b) => rating(b) - rating(a));
     return entries;
-  }, [items, typeFilter, kindFilter, watchedFilter, sort, searchQuery]);
+  }, [items, typeFilter, kindFilter, boxFilter, watchedFilter, sort, searchQuery]);
 
   async function handleBoxDelete() {
     if (!pendingBoxDelete) return;
@@ -165,6 +168,18 @@ export function CollectionDetailClient({
           />
 
           <div className="flex flex-wrap gap-2 lg:flex-nowrap">
+            {hasBoxes && (
+              <Select value={boxFilter} onValueChange={(v) => setBoxFilter(v as typeof boxFilter)}>
+                <SelectTrigger className="w-40">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("filter_boxes_all")}</SelectItem>
+                  <SelectItem value="single">{t("filter_boxes_single")}</SelectItem>
+                  <SelectItem value="boxes">{t("filter_boxes_only")}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
             {hasSeries && (
               <Select value={kindFilter} onValueChange={(v) => setKindFilter(v as typeof kindFilter)}>
                 <SelectTrigger className="w-36">

@@ -880,4 +880,7 @@ export const nl = {
   box_page_films: "Films in deze box",
   box_page_remove: "Box verwijderen uit deze collectie",
   box_page_back: "Terug naar {0}",
+  filter_boxes_all: "Films en boxen",
+  filter_boxes_single: "Alleen losse films",
+  filter_boxes_only: "Alleen boxen",
 };

@@ -877,4 +877,7 @@ export const en: Record<keyof typeof nl, string> = {
   box_page_films: "Films in this box",
   box_page_remove: "Remove box from this collection",
   box_page_back: "Back to {0}",
+  filter_boxes_all: "Films and boxes",
+  filter_boxes_single: "Single films only",
+  filter_boxes_only: "Boxes only",
 };
