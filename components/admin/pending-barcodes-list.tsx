@@ -218,12 +218,13 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
                       {t("barcode_type_editie_line", first.barcode, first.type ?? "DVD", first.editie ?? "Normaal")}
                       {isSeries(first.tmdb_movie_id) && ` · ${t("picker_kind_series")} · ${seasonsLabel(first.seasons)}`}
                     </p>
-                    {(first.cut || first.label || first.audio_languages?.length || first.subtitle_languages?.length) && (
+                    {(first.cut || first.label || first.region || first.audio_languages?.length || first.subtitle_languages?.length) && (
                       // Details from the submitter (e.g. a CSV import); they land on the copy when approved.
                       <p className="text-xs text-muted-foreground">
                         {[
                           first.cut,
                           first.label,
+                          first.region ? `${t("details_region")}: ${first.region}` : null,
                           first.audio_languages?.length ? `${t("details_audio")}: ${first.audio_languages.map((c) => c.toUpperCase()).join(", ")}` : null,
                           first.subtitle_languages?.length
                             ? `${t("details_subtitles")}: ${first.subtitle_languages.map((c) => c.toUpperCase()).join(", ")}`

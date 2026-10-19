@@ -105,6 +105,12 @@ function Dutch() {
         verdwijnen ook je meldingen en screenshots. 
       </p>
       <p>
+        Stuur je een barcode in die Filmory nog niet kent, dan zie je in de app of die is goedgekeurd. Goedgekeurde
+        barcodes tellen mee in de ranglijst &quot;Top barcode-bijdragers&quot;, die alleen ingelogde gebruikers zien.
+        Daarin staan je profielnaam (of &quot;Verzamelaar&quot; als je geen naam hebt ingevuld), je profielfoto en het
+        aantal goedgekeurde barcodes. <mark>[CONTROLEER]</mark>
+      </p>
+      <p>
         Zet je een collectie zelf op &quot;openbaar via link&quot;, dan kan iedereen met die link de naam en
         beschrijving van de collectie zien, de films met formaat en editie, en je naam en avatar. Notities,
         beoordelingen, uitleenstatus en barcodes blijven privé. Je kunt het delen altijd weer uitzetten; openbare
@@ -219,6 +225,12 @@ function English() {
         non-reversible code (hash) of your IP address for messages sent without an account, never the IP address
         itself. We keep feedback as long as needed to handle it; deleting
         your account also deletes your messages and screenshots. 
+      </p>
+      <p>
+        If you submit a barcode Filmory doesn&apos;t know yet, the app shows you whether it was approved. Approved
+        barcodes count towards the &quot;Top barcode contributors&quot; leaderboard, visible only to signed-in users.
+        It shows your profile name (or &quot;Verzamelaar&quot; if you didn&apos;t set one), your profile picture and
+        the number of approved barcodes. <mark>[CHECK]</mark>
       </p>
       <p>
         If you set a collection to &quot;public via link&quot; yourself, anyone with that link can see the

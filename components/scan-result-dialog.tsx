@@ -24,8 +24,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 
 type Known = Extract<ScannedBarcodeResult, { kind: "title" | "box" }>;
 
-function release(type: string, editie: string, cut?: string | null, label?: string | null) {
-  return [type, editie !== "Normaal" ? editie : null, cut, label].filter(Boolean).join(" · ");
+function release(type: string, editie: string, cut?: string | null, label?: string | null, region?: string | null) {
+  const regionText = region ? (region === "Regiovrij" ? "Regiovrij" : `Regio ${region}`) : null;
+  return [type, editie !== "Normaal" ? editie : null, cut, label, regionText].filter(Boolean).join(" · ");
 }
 
 /** A known barcode (film, series or box) in one screen: what it means for
@@ -187,7 +188,7 @@ export function ScanResultDialog({ result, onClose }: { result: Known; onClose: 
               {list.map((c) => (
                 <li key={c.itemId} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-elevated/40 px-3 py-2">
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">{release(c.type, c.editie, c.cut, c.label)}</p>
+                    <p className="truncate text-sm font-medium">{release(c.type, c.editie, c.cut, c.label, c.region)}</p>
                     <p className="truncate text-xs text-muted-foreground">{t("scan_result_in", c.collections.join(", "))}</p>
                   </div>
                   <Button asChild size="sm" variant="ghost" className="shrink-0">

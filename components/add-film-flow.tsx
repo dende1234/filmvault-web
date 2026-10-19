@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Film, Package, Plus } from "lucide-react";
+import Link from "next/link";
+import { Film, Package, Plus, ScanLine } from "lucide-react";
+import { useHasCamera } from "@/lib/use-has-camera";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { lookupScannedBarcode, type ScannedBarcodeResult } from "@/actions/collections";
@@ -25,6 +27,7 @@ type Selected = { id: number; title: string; poster: string | null };
  * barcode is pre-filled for approval. */
 export function AddFilmFlow() {
   const { t } = useT();
+  const hasCamera = useHasCamera();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [boxPickerOpen, setBoxPickerOpen] = useState(false);
   const [selected, setSelected] = useState<Selected | null>(null);
@@ -70,6 +73,14 @@ export function AddFilmFlow() {
         {t("dashboard_add_film_button")}
       </Button>
       <BarcodeScanButton onDetected={onScan} />
+      {hasCamera && (
+        <Button asChild variant="ghost">
+          <Link href="/collections/scan">
+            <ScanLine />
+            {t("bulk_scan_button")}
+          </Link>
+        </Button>
+      )}
       {lookingUp && <span className="sr-only" role="status">{t("scan_box_loading")}</span>}
 
       <Dialog open={!!unknownCode} onOpenChange={(open) => !open && setUnknownCode(null)}>

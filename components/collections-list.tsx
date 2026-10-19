@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileUp, LibraryBig, Plus } from "lucide-react";
+import { Download, FileUp, LibraryBig, Plus } from "lucide-react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n/locale-provider";
 import { createCollection } from "@/actions/collections";
@@ -84,6 +84,13 @@ export function CollectionsList({
                 <FileUp />
                 {t("import_button")}
               </Link>
+            </Button>
+            <Button asChild variant="secondary">
+              {/* Plain link: the route answers with a CSV download. */}
+              <a href="/api/export" download>
+                <Download />
+                {t("export_all_button")}
+              </a>
             </Button>
             <Button onClick={() => setShowCreate(true)}>
               <Plus />

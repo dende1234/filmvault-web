@@ -201,16 +201,27 @@ export async function updateCollectionItemSeasons(itemGroupId: string, seasons: 
  * "not_ready" until copy_details.sql has run, instead of throwing. */
 export async function updateCollectionItemDetails(
   itemGroupId: string,
-  details: { cut: string | null; label: string | null; audioLanguages: string[] | null; subtitleLanguages: string[] | null },
+  details: {
+    cut: string | null;
+    label: string | null;
+    audioLanguages: string[] | null;
+    subtitleLanguages: string[] | null;
+    region?: string | null;
+  },
 ): Promise<{ error: "not_ready" | "invalid" | null }> {
   const cut = details.cut?.trim().slice(0, 60) || null;
   const label = details.label?.trim().slice(0, 80) || null;
+  const region = details.region?.trim().slice(0, 20) || null;
   const supabase = await createClient();
+  // region only when set or changed from the form, so the update also works
+  // before contributors_region.sql has run.
+  const regionField = details.region !== undefined ? { region } : {};
   const { error } = await supabase
     .from("collection_items")
     .update({
       cut,
       label,
+      ...regionField,
       audio_languages: cleanLanguages(details.audioLanguages)?.slice(0, 20) ?? null,
       subtitle_languages: cleanLanguages(details.subtitleLanguages)?.slice(0, 40) ?? null,
     })
@@ -238,7 +249,7 @@ const COPY_COLUMNS = [
   "item_group_id", "tmdb_movie_id", "movie_title", "movie_poster", "barcode", "type", "editie",
   "rating", "watched", "seasons", "custom_cover_path", "is_box", "box_group_id", "box_name",
   "personal_note", "loaned_to", "loaned_at", "is_favorite", "tags", "condition",
-  "cut", "audio_languages", "subtitle_languages", "label",
+  "cut", "audio_languages", "subtitle_languages", "label", "region",
 ] as const;
 
 /** The caller's rows for this copy (or, for a box, the whole box), across all
@@ -686,6 +697,34 @@ async function barcodeAlreadyExists(supabase: Awaited<ReturnType<typeof createCl
  * Postgres RPC). Guards against duplicating a barcode that another
  * (near-simultaneous) approval already registered for this film.
  */
+/** Tells the submitter their barcode was approved or rejected
+ * (contributors_region.sql). Best effort: a missing table or any error never
+ * blocks the review itself. Admin-only via RLS. */
+async function notifySubmitter(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  pending: PendingBarcode,
+  kind: "barcode_approved" | "barcode_rejected",
+  collectionIds: string[] = [],
+) {
+  try {
+    await supabase.from("user_notifications").insert({
+      user_id: pending.submitted_by,
+      kind,
+      payload: {
+        title: pending.is_box ? (pending.box_name ?? pending.movie_title) : pending.movie_title,
+        poster: pending.movie_poster,
+        barcode: pending.barcode,
+        isBox: pending.is_box,
+        tmdbMovieId: pending.tmdb_movie_id,
+        boxGroupId: pending.box_group_id,
+        collectionIds,
+      },
+    });
+  } catch {
+    // ignore
+  }
+}
+
 export async function approvePendingBarcode(pendingFromClient: PendingBarcode): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
@@ -729,6 +768,7 @@ export async function approvePendingBarcode(pendingFromClient: PendingBarcode): 
         // Details submitted with the barcode (e.g. from a CSV import).
         ...detailsColumns({
           cut: pending.cut,
+          region: pending.region,
           label: pending.label,
           audioLanguages: pending.audio_languages,
           subtitleLanguages: pending.subtitle_languages,
@@ -737,6 +777,7 @@ export async function approvePendingBarcode(pendingFromClient: PendingBarcode): 
     );
     if (error) throw error;
   }
+  await notifySubmitter(supabase, pending, "barcode_approved", targetCollectionIds);
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
 }
@@ -744,8 +785,20 @@ export async function approvePendingBarcode(pendingFromClient: PendingBarcode): 
 export async function rejectPendingBarcode(id: string): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
+  const pending = await getPendingBarcodeById(supabase, id);
   const { error } = await supabase.from("pending_barcodes").update({ status: "rejected" }).eq("id", id);
   if (error) throw error;
+  // A box is rejected row by row: notify once, when its last film is done.
+  let lastOfBox = true;
+  if (pending.box_group_id) {
+    const { count } = await supabase
+      .from("pending_barcodes")
+      .select("id", { count: "exact", head: true })
+      .eq("box_group_id", pending.box_group_id)
+      .eq("status", "pending");
+    lastOfBox = (count ?? 0) === 0;
+  }
+  if (lastOfBox) await notifySubmitter(supabase, pending, "barcode_rejected");
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
 }
@@ -814,6 +867,7 @@ export async function approvePendingBox(pendingRowsFromClient: PendingBarcode[])
     const { error } = await supabase.from("collection_items").insert(inserts);
     if (error) throw error;
   }
+  await notifySubmitter(supabase, first, "barcode_approved", targetCollectionIds);
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
 }
@@ -828,6 +882,7 @@ export type OwnedCopy = {
   editie: string;
   cut: string | null;
   label: string | null;
+  region: string | null;
 };
 
 export type ScannedBarcodeResult =
@@ -899,6 +954,7 @@ function toOwnedCopies(rows: OwnedRow[]): OwnedCopy[] {
       editie: row.editie,
       cut: row.cut ?? null,
       label: row.label ?? null,
+      region: row.region ?? null,
     });
   }
   return Array.from(byGroup.values());

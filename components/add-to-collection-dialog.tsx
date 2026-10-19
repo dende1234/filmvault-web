@@ -205,7 +205,9 @@ export function AddToCollectionDialog({
                     <li key={c.itemId} className="flex items-center justify-between gap-3 rounded-md bg-background/60 px-3 py-2">
                       <div className="min-w-0">
                         <p className="truncate text-sm font-medium">
-                          {[c.type, c.editie !== "Normaal" ? c.editie : null, c.cut, c.label].filter(Boolean).join(" · ")}
+                          {[c.type, c.editie !== "Normaal" ? c.editie : null, c.cut, c.label, c.region ? `${t("details_region")}: ${c.region}` : null]
+                            .filter(Boolean)
+                            .join(" · ")}
                         </p>
                         <p className="truncate text-xs text-muted-foreground">{t("scan_result_in", c.collections.join(", "))}</p>
                       </div>

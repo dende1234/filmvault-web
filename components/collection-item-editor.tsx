@@ -277,6 +277,11 @@ export function CollectionItemEditor({
               {series && <Badge variant="secondary">{seasonsLabel(item.seasons, regularTotal)}</Badge>}
               {initial.cut && <Badge variant="secondary">{initial.cut}</Badge>}
               {initial.label && <Badge variant="secondary">{initial.label}</Badge>}
+              {initial.region && (
+                <Badge variant="secondary">
+                  {initial.region === "Regiovrij" ? t("details_region_free") : t("details_region_value", initial.region)}
+                </Badge>
+              )}
               {!!initial.audio_languages?.length && (
                 <Badge variant="outline" title={t("details_audio")}>
                   <Volume2 aria-hidden />
@@ -322,7 +327,7 @@ export function CollectionItemEditor({
         </CardHeader>
         <CardContent>
           <CopyDetails
-            key={[initial.cut, initial.label, initial.audio_languages?.join(","), initial.subtitle_languages?.join(",")].join("|")}
+            key={[initial.cut, initial.label, initial.region, initial.audio_languages?.join(","), initial.subtitle_languages?.join(",")].join("|")}
             item={initial}
           />
         </CardContent>

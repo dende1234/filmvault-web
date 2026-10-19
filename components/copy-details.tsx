@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
-import { CUTS, LABELS, LANGUAGES, languageName } from "@/lib/copy-details";
+import { CUTS, LABELS, LANGUAGES, languageName, regionsFor } from "@/lib/copy-details";
 import { updateCollectionItemDetails } from "@/actions/collections";
 import type { CollectionItem } from "@/types/database";
 import { Button } from "@/components/ui/button";
@@ -77,10 +77,17 @@ export function CopyDetails({ item }: { item: CollectionItem }) {
   const [label, setLabel] = useState(item.label ?? "");
   const [audio, setAudio] = useState<string[]>(item.audio_languages ?? []);
   const [subs, setSubs] = useState<string[]>(item.subtitle_languages ?? []);
+  const initialRegion = item.region ?? "";
+  const [region, setRegion] = useState(initialRegion || NONE);
+  const regionValue = region === NONE ? "" : region;
+  const regionOptions = Array.from(new Set([...regionsFor(item.type), ...(initialRegion ? [initialRegion] : [])]));
+  const is4k = /4k|uhd/i.test(item.type);
   const [saving, setSaving] = useState(false);
 
   const cut = cutChoice === NONE ? "" : cutChoice === OTHER ? cutOther.trim() : cutChoice;
+  const regionChanged = regionValue !== initialRegion;
   const changed =
+    regionChanged ||
     cut !== initialCut ||
     label.trim() !== (item.label ?? "") ||
     audio.join(",") !== (item.audio_languages ?? []).join(",") ||
@@ -94,6 +101,8 @@ export function CopyDetails({ item }: { item: CollectionItem }) {
         label: label.trim() || null,
         audioLanguages: audio,
         subtitleLanguages: subs,
+        // Only sent when changed, so the rest also saves before contributors_region.sql has run.
+        ...(regionChanged ? { region: regionValue || null } : {}),
       });
       if (result.error === "not_ready") toast.error(t("details_not_ready"));
       else if (result.error) toast.error(t("details_error"));
@@ -153,6 +162,23 @@ export function CopyDetails({ item }: { item: CollectionItem }) {
             ))}
           </datalist>
         </div>
+      </div>
+      <div className="flex flex-col gap-2 sm:w-1/2 sm:pr-2">
+        <Label htmlFor={`${baseId}-region`}>{t("details_region")}</Label>
+        <Select value={region} onValueChange={setRegion}>
+          <SelectTrigger id={`${baseId}-region`}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={NONE}>{t("details_cut_none")}</SelectItem>
+            {regionOptions.map((r) => (
+              <SelectItem key={r} value={r}>
+                {r === "Regiovrij" ? t("details_region_free") : t("details_region_value", r)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {is4k && <p className="text-xs text-muted-foreground">{t("details_region_4k_hint")}</p>}
       </div>
       <LanguagePicker id={`${baseId}-audio`} label={t("details_audio")} value={audio} onChange={setAudio} />
       <LanguagePicker id={`${baseId}-subs`} label={t("details_subtitles")} value={subs} onChange={setSubs} />

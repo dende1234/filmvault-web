@@ -3,6 +3,33 @@
 /** Common cuts. Anything else is typed as free text ("Anders"). */
 export const CUTS = ["Theatrical", "Extended", "Director's Cut", "Unrated", "Final Cut", "TV-versie"] as const;
 
+/** Region codes per disc type. 4K UHD discs are nearly always region free. */
+export const REGION_FREE = "Regiovrij";
+export const BLURAY_REGIONS = ["A", "B", "C", "A/B", "B/C", "A/C", "A/B/C", REGION_FREE];
+export const DVD_REGIONS = ["1", "2", "3", "4", "5", "6", "2/4", "1/2", REGION_FREE];
+
+/** The region choices that fit a media type name ("Blu-ray", "DVD", "4K Ultra HD"). */
+export function regionsFor(type: string): string[] {
+  if (/dvd/i.test(type)) return DVD_REGIONS;
+  return BLURAY_REGIONS;
+}
+
+/** "Region B", "RB", "Reg. 2", "Code 2", "Regio 2/4", "region free", "RF",
+ * "A,B,C" → a canonical region code; anything else → null. */
+export function normalizeRegion(text: string | null | undefined): string | null {
+  const v = text?.trim();
+  if (!v) return null;
+  if (/region\s*-?\s*free|regio\s*-?\s*vrij|regionfree|code\s*free|all\s*regions?|\bRF\b|\bR0\b|regio\s*0|region\s*0/i.test(v)) return REGION_FREE;
+  const m = v.match(/(?:^|\b)(?:region|regio|reg\.?|code|zone|r)\s*:?\s*([ABC1-6](?:\s*[/,+&]\s*[ABC1-6])*)\b/i) ?? v.match(/^\s*([ABC1-6](?:\s*[/,+&]\s*[ABC1-6])*)\s*$/i);
+  if (!m) return null;
+  const parts = Array.from(new Set(m[1].toUpperCase().split(/\s*[/,+&]\s*/).filter(Boolean)));
+  const letters = parts.filter((p) => /[ABC]/.test(p)).sort();
+  const digits = parts.filter((p) => /\d/.test(p)).sort();
+  if (letters.length && digits.length) return null;
+  const code = (letters.length ? letters : digits).join("/");
+  return code.length <= 20 ? code : null;
+}
+
 /** Suggestions only; any label can be typed. */
 export const LABELS = [
   "Criterion",
@@ -45,6 +72,7 @@ export function cleanLanguages(codes: string[] | null | undefined): string[] | n
 /** Cut, languages and label for one copy, as sent from the client. */
 export type CopyDetailsInput = {
   cut?: string | null;
+  region?: string | null;
   label?: string | null;
   audioLanguages?: string[] | null;
   subtitleLanguages?: string[] | null;
@@ -59,7 +87,9 @@ export function detailsColumns(d: CopyDetailsInput | null | undefined): Record<s
   const label = d.label?.trim().slice(0, 80);
   const audio = cleanLanguages(d.audioLanguages)?.slice(0, 20);
   const subs = cleanLanguages(d.subtitleLanguages)?.slice(0, 40);
+  const region = d.region?.trim().slice(0, 20);
   if (cut) out.cut = cut;
+  if (region) out.region = region;
   if (label) out.label = label;
   if (audio) out.audio_languages = audio;
   if (subs) out.subtitle_languages = subs;

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, Film, SearchX, X } from "lucide-react";
+import { Download, Eye, Film, MoreHorizontal, ScanLine, SearchX, X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { removeBoxFromCollection, removeCollectionItem } from "@/actions/collections";
@@ -23,6 +23,7 @@ import { AddFilmFlow } from "@/components/add-film-flow";
 import { AddBoxFlow } from "@/components/add-box-flow";
 import { ShareCollectionButton } from "@/components/share-collection-button";
 import { BoxCard } from "@/components/box-card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PosterControl, WatchedToggle } from "@/components/watched-toggle";
 import { setFilmWatched } from "@/actions/watched";
 import {
@@ -181,6 +182,31 @@ export function CollectionDetailClient({
             {isOwner && (
               <ShareCollectionButton collectionId={collection.id} initialPublic={collection.is_public === true} shareUrl={shareUrl} />
             )}
+            {isOwner && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="secondary" aria-label={t("nav_more")}>
+                    <MoreHorizontal />
+                    {t("nav_more")}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href={`/collections/scan?collection=${collection.id}`}>
+                      <ScanLine />
+                      {t("bulk_scan_button")}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    {/* Plain link: the route answers with a CSV download. */}
+                    <a href={`/api/export?collection=${collection.id}`} download>
+                      <Download />
+                      {t("export_button")}
+                    </a>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </>
         }
       />
@@ -320,7 +346,8 @@ export function CollectionDetailClient({
                     {item.movie_title}
                   </p>
                   {(() => {
-                    const sub = [item.editie !== "Normaal" ? item.editie : null, item.cut, item.label].filter(Boolean).join(" · ");
+                    const region = item.region ? (item.region === "Regiovrij" ? t("details_region_free") : t("details_region_value", item.region)) : null;
+                    const sub = [item.editie !== "Normaal" ? item.editie : null, item.cut, item.label, region].filter(Boolean).join(" · ");
                     return sub ? <p className="line-clamp-1 text-xs text-muted-foreground">{sub}</p> : null;
                   })()}
                 </div>

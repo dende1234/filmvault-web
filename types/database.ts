@@ -83,6 +83,8 @@ export interface CollectionItem {
   audio_languages?: string[] | null;
   subtitle_languages?: string[] | null;
   label?: string | null;
+  /** Region code (contributors_region.sql): "B", "2/4", "Regiovrij". */
+  region?: string | null;
   is_box: boolean;
   box_group_id: string | null;
   box_name: string | null;
@@ -139,6 +141,7 @@ export interface PendingBarcode {
   audio_languages?: string[] | null;
   subtitle_languages?: string[] | null;
   label?: string | null;
+  region?: string | null;
   submitted_by: string;
   submitted_at: string | null;
   collection_id: string;
@@ -234,6 +237,10 @@ export const BADGE_IDS = [
   { id: "ten_friends", titleKey: "badge_ten_friends_title", descKey: "badge_ten_friends_desc" },
   { id: "first_review", titleKey: "badge_first_review_title", descKey: "badge_first_review_desc" },
   { id: "generous_lender", titleKey: "badge_generous_lender_title", descKey: "badge_generous_lender_desc" },
+  // Barcode contributors (contributors_region.sql widens the CHECK on user_badges).
+  { id: "first_barcode", titleKey: "badge_first_barcode_title", descKey: "badge_first_barcode_desc" },
+  { id: "ten_barcodes", titleKey: "badge_ten_barcodes_title", descKey: "badge_ten_barcodes_desc" },
+  { id: "fifty_barcodes", titleKey: "badge_fifty_barcodes_title", descKey: "badge_fifty_barcodes_desc" },
 ] as const;
 
 // --- Fase 3: Curated lijsten ---
@@ -447,4 +454,21 @@ export interface UserFeedback {
   screenshot_path: string | null;
   status: FeedbackStatus;
   admin_reply: string | null;
+}
+
+/** user_notifications (contributors_region.sql). */
+export interface UserNotification {
+  id: string;
+  kind: "barcode_approved" | "barcode_rejected";
+  payload: {
+    title?: string;
+    poster?: string | null;
+    barcode?: string;
+    isBox?: boolean;
+    tmdbMovieId?: number;
+    boxGroupId?: string | null;
+    collectionIds?: string[];
+  };
+  created_at: string;
+  read_at: string | null;
 }

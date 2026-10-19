@@ -72,6 +72,15 @@ export async function checkAndAwardBadges(): Promise<string[]> {
   if (friendCount >= 10) shouldHave.push("ten_friends");
   if (reviewCount >= 1) shouldHave.push("first_review");
   if (hasLoanedItem) shouldHave.push("generous_lender");
+  // Approved barcode submissions (a box counts once). If the RPC is missing,
+  // contributors_region.sql hasn't run and the CHECK on user_badges would
+  // reject these ids, so they're only awarded once it has.
+  const { data: approvedCount, error: approvedError } = await supabase.rpc("my_approved_barcode_count", { p_since: null });
+  if (!approvedError && typeof approvedCount === "number") {
+    if (approvedCount >= 1) shouldHave.push("first_barcode");
+    if (approvedCount >= 10) shouldHave.push("ten_barcodes");
+    if (approvedCount >= 50) shouldHave.push("fifty_barcodes");
+  }
 
   const newlyEarned = shouldHave.filter((id) => !alreadyEarned.has(id));
   if (newlyEarned.length > 0) {
@@ -81,4 +90,37 @@ export async function checkAndAwardBadges(): Promise<string[]> {
     if (error) throw error;
   }
   return newlyEarned;
+}
+
+export type LeaderboardRow = { userId: string; name: string; avatarUrl: string | null; count: number };
+
+/** Top 20 barcode contributors this month and all time, plus your own counts.
+ * Empty until contributors_region.sql has run. */
+export async function getContributorLeaderboard(): Promise<{
+  month: LeaderboardRow[];
+  allTime: LeaderboardRow[];
+  mine: { month: number; allTime: number };
+} | null> {
+  const supabase = await createClient();
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+  const [month, allTime, mineMonth, mineAll] = await Promise.all([
+    supabase.rpc("barcode_contributor_leaderboard", { p_since: monthStart }),
+    supabase.rpc("barcode_contributor_leaderboard", { p_since: null }),
+    supabase.rpc("my_approved_barcode_count", { p_since: monthStart }),
+    supabase.rpc("my_approved_barcode_count", { p_since: null }),
+  ]);
+  if (allTime.error) return null;
+  const rows = (data: unknown): LeaderboardRow[] =>
+    ((data ?? []) as { user_id: string; name: string; avatar_url: string | null; approved_count: number | string }[]).map((r) => ({
+      userId: r.user_id,
+      name: r.name,
+      avatarUrl: r.avatar_url,
+      count: Number(r.approved_count),
+    }));
+  return {
+    month: rows(month.data),
+    allTime: rows(allTime.data),
+    mine: { month: Number(mineMonth.data ?? 0), allTime: Number(mineAll.data ?? 0) },
+  };
 }

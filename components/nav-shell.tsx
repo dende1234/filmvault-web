@@ -33,6 +33,7 @@ import {
   Eye,
   MessageSquareText,
   Inbox,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/locale-provider";
@@ -121,11 +122,14 @@ function TabLink({ href, icon: Icon, label }: { href: string; icon: typeof Film;
 export function NavShell({
   profile,
   feedbackNewCount = 0,
+  unreadNotifications = 0,
   children,
 }: {
   profile: Profile | null;
   /** New feedback items, shown on the admin menu (admins only, else 0). */
   feedbackNewCount?: number;
+  /** Unread notifications (e.g. a barcode you submitted was approved). */
+  unreadNotifications?: number;
   children: React.ReactNode;
 }) {
   const { t } = useT();
@@ -159,6 +163,7 @@ export function NavShell({
 
       <SectionLabel>{t("nav_section_profile")}</SectionLabel>
       <NavLink href="/profile" icon={User} label={t("profile_title")} onNavigate={close} />
+      <NavLink href="/meldingen" icon={Bell} label={t("notifications_title")} onNavigate={close} count={unreadNotifications} />
       <NavLink href="/friends" icon={Users} label={t("nav_friends")} onNavigate={close} />
       <NavLink href="/badges" icon={Award} label={t("nav_badges")} onNavigate={close} />
       <NavLink href="/feed" icon={Rss} label={t("nav_feed")} onNavigate={close} />
@@ -264,7 +269,21 @@ export function NavShell({
             <Logo markClassName="size-6" className="[&>span:last-child]:text-lg" />
           </Link>
           {profile && (
-            <Link href="/profile" className="ml-auto" aria-label={t("profile_title")}>
+            <Link
+              href="/meldingen"
+              className="relative ml-auto rounded-full p-1.5 text-muted-foreground hover:bg-elevated hover:text-foreground"
+              aria-label={unreadNotifications > 0 ? t("notifications_unread", unreadNotifications) : t("notifications_title")}
+            >
+              <Bell className="size-5" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] font-semibold leading-4 text-primary-foreground tabular-nums">
+                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                </span>
+              )}
+            </Link>
+          )}
+          {profile && (
+            <Link href="/profile" aria-label={t("profile_title")}>
               <Avatar src={profile.avatar_url} name={profile.name} className="size-8" />
             </Link>
           )}

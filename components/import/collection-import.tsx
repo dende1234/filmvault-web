@@ -27,7 +27,7 @@ import {
   primaryTitle,
   splitBoxTitle,
 } from "@/lib/import-mapping";
-import { extractCut, extractLabel, normalizeCut, parseLanguages } from "@/lib/copy-details";
+import { extractCut, extractLabel, normalizeCut, normalizeRegion, parseLanguages } from "@/lib/copy-details";
 import { importBatch, matchImportRows, type ImportFilm, type ImportItem, type ImportResult, type ImportRowMatch, type ImportStatus } from "@/actions/import";
 import { createCollection } from "@/actions/collections";
 import type { Collection } from "@/types/database";
@@ -71,6 +71,7 @@ type ParsedRow = {
   /** Per-copy details: own columns, or a cut/label recognised in the edition text. */
   cut: string | null;
   label: string | null;
+  region: string | null;
   audio: string[] | null;
   subtitles: string[] | null;
   /** Letterboxd watchlist row: goes to the wishlist. */
@@ -168,12 +169,12 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
 
   function downloadTemplate() {
     const csv = toCsv([
-      ["Titel", "Soort", "Seizoenen", "Jaar", "Barcode", "Formaat", "Editie", "Cut", "Label", "Audio", "Ondertitels", "Bekeken", "Rating", "Datum bekeken", "Box"],
-      ["Dune: Part Two", "Film", "", "2024", "5051888270935", "4K UHD", "Steelbook", "", "", "Engels, Duits", "Nederlands", "ja", "4.5", "2024-03-02", ""],
-      ["The Lord of the Rings: The Fellowship of the Ring", "Film", "", "2001", "8717418556432", "Blu-ray", "", "Extended", "", "", "", "ja", "5", "", "The Lord of the Rings Trilogy"],
-      ["The Lord of the Rings: The Two Towers", "Film", "", "2002", "8717418556432", "Blu-ray", "", "Extended", "", "", "", "nee", "", "", "The Lord of the Rings Trilogy"],
-      ["Drive", "Film", "", "2011", "5060105721625", "4K UHD", "Limited Edition", "", "Second Sight", "Engels", "Engels", "ja", "4", "", ""],
-      ["Game of Thrones", "Serie", "1-3", "2011", "5051888250005", "Blu-ray", "", "", "", "", "", "ja", "4", "", ""],
+      ["Titel", "Soort", "Seizoenen", "Jaar", "Barcode", "Formaat", "Editie", "Cut", "Label", "Regio", "Audio", "Ondertitels", "Bekeken", "Rating", "Datum bekeken", "Box"],
+      ["Dune: Part Two", "Film", "", "2024", "5051888270935", "4K UHD", "Steelbook", "", "", "Regiovrij", "Engels, Duits", "Nederlands", "ja", "4.5", "2024-03-02", ""],
+      ["The Lord of the Rings: The Fellowship of the Ring", "Film", "", "2001", "8717418556432", "Blu-ray", "", "Extended", "", "B", "", "", "ja", "5", "", "The Lord of the Rings Trilogy"],
+      ["The Lord of the Rings: The Two Towers", "Film", "", "2002", "8717418556432", "Blu-ray", "", "Extended", "", "B", "", "", "nee", "", "", "The Lord of the Rings Trilogy"],
+      ["Drive", "Film", "", "2011", "5060105721625", "4K UHD", "Limited Edition", "", "Second Sight", "", "Engels", "Engels", "ja", "4", "", ""],
+      ["Game of Thrones", "Serie", "1-3", "2011", "5051888250005", "Blu-ray", "", "", "", "B", "", "", "ja", "4", "", ""],
     ]);
     const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
     const a = document.createElement("a");
@@ -221,6 +222,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
         seasonsText: cell(r, "seasons"),
         cut: normalizeCut(cell(r, "cut")) ?? extractCut(cell(r, "edition")),
         label: cell(r, "label").trim().slice(0, 80) || extractLabel(cell(r, "edition")),
+        region: normalizeRegion(cell(r, "region")) ?? normalizeRegion(cell(r, "edition")),
         audio: parseLanguages(cell(r, "audio")),
         subtitles: parseLanguages(cell(r, "subtitles")),
         toWishlist: letterboxd === "watchlist",
@@ -363,7 +365,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
           watched: r.watched,
           rating: r.rating,
           watchedOn: r.watchedOn,
-          details: { cut: r.cut, label: r.label, audioLanguages: r.audio, subtitleLanguages: r.subtitles },
+          details: { cut: r.cut, label: r.label, region: r.region, audioLanguages: r.audio, subtitleLanguages: r.subtitles },
           ...(r.toWishlist ? { toWishlist: true, barcode: null } : {}),
         });
       } else {
@@ -696,7 +698,9 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
                         {r.watched && " · "}
                         {r.watched && <Eye className="inline size-3 text-primary" />}
                         {r.rating != null && ` · ★ ${r.rating}`}
-                        {[r.cut, r.label, r.audio?.map((c) => c.toUpperCase()).join("/")].filter(Boolean).map((d) => ` · ${d}`)}
+                        {[r.cut, r.label, r.region ? `${t("details_region")} ${r.region}` : null, r.audio?.map((c) => c.toUpperCase()).join("/")]
+                          .filter(Boolean)
+                          .map((d) => ` · ${d}`)}
                       </p>
                     </div>
                     {statusBadge}

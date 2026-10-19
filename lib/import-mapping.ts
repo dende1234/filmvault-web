@@ -6,7 +6,7 @@
 // Order matters for the "contains" pass: subtitles before audio, so a header
 // like "Subtitle languages" isn't taken as audio.
 export const IMPORT_FIELDS = [
-  "title", "kind", "seasons", "year", "barcode", "format", "edition", "cut", "label", "subtitles", "audio",
+  "title", "kind", "seasons", "year", "barcode", "format", "edition", "cut", "label", "region", "subtitles", "audio",
   "watched", "rating", "watchedOn", "box",
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
@@ -26,6 +26,8 @@ const HEADER_SYNONYMS: Record<ImportField, string[]> = {
   seasons: ["seizoenen", "seizoen", "seasons", "season", "seizoen(en)", "volumes"],
   cut: ["cut", "filmversie", "fassung", "schnittfassung", "film cut", "versie film"],
   label: ["label", "uitgever", "publisher", "distributor", "distributeur", "verlag", "boutique label"],
+  // Not "code": that would match "barcode".
+  region: ["regio", "region", "regiocode", "region code", "regio code", "regionalcode", "ländercode", "zone"],
   subtitles: ["ondertitels", "ondertiteling", "subtitles", "subtitle", "subs", "untertitel", "sous titres"],
   audio: ["audio", "audiotalen", "audio languages", "audio language", "talen", "taal", "languages", "language", "sprache", "sprachen", "tonspur"],
 };
