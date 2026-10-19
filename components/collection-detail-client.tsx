@@ -291,7 +291,10 @@ export function CollectionDetailClient({
                   <p className="line-clamp-2 text-sm font-medium leading-snug transition-colors group-hover:text-primary">
                     {item.movie_title}
                   </p>
-                  {item.editie && item.editie !== "Normaal" && <p className="text-xs text-muted-foreground">{item.editie}</p>}
+                  {(() => {
+                    const sub = [item.editie !== "Normaal" ? item.editie : null, item.cut, item.label].filter(Boolean).join(" · ");
+                    return sub ? <p className="line-clamp-1 text-xs text-muted-foreground">{sub}</p> : null;
+                  })()}
                 </div>
               </Link>
               <PosterCorner position="tr">

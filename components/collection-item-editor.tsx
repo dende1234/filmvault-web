@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { titleHref } from "@/lib/titles";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Check, Eye, Plus, X } from "lucide-react";
+import { Captions, Check, Eye, Plus, Volume2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import {
@@ -26,6 +26,7 @@ import { isSeries } from "@/lib/titles";
 import { SeasonsPicker, useSeasonsLabel } from "@/components/seasons-picker";
 import { CoverUpload } from "@/components/cover-upload";
 import { CopyCollections } from "@/components/copy-collections";
+import { CopyDetails } from "@/components/copy-details";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import type { MovieDetailDto } from "@/types/tmdb";
@@ -274,6 +275,20 @@ export function CollectionItemEditor({
               <Badge variant="default">{item.type}</Badge>
               <Badge variant="secondary">{item.editie}</Badge>
               {series && <Badge variant="secondary">{seasonsLabel(item.seasons, regularTotal)}</Badge>}
+              {initial.cut && <Badge variant="secondary">{initial.cut}</Badge>}
+              {initial.label && <Badge variant="secondary">{initial.label}</Badge>}
+              {!!initial.audio_languages?.length && (
+                <Badge variant="outline" title={t("details_audio")}>
+                  <Volume2 aria-hidden />
+                  {initial.audio_languages.map((c) => c.toUpperCase()).join(" · ")}
+                </Badge>
+              )}
+              {!!initial.subtitle_languages?.length && (
+                <Badge variant="outline" title={t("details_subtitles")}>
+                  <Captions aria-hidden />
+                  {initial.subtitle_languages.map((c) => c.toUpperCase()).join(" · ")}
+                </Badge>
+              )}
               {item.watched && <Badge variant="success">{t("watched_label")}</Badge>}
               {item.box_name &&
                 (item.box_group_id ? (
@@ -299,6 +314,19 @@ export function CollectionItemEditor({
           <p className="leading-relaxed text-foreground/90">{movie.overview}</p>
         </div>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("details_title")}</CardTitle>
+          <p className="text-xs text-muted-foreground">{t("details_hint")}</p>
+        </CardHeader>
+        <CardContent>
+          <CopyDetails
+            key={[initial.cut, initial.label, initial.audio_languages?.join(","), initial.subtitle_languages?.join(",")].join("|")}
+            item={initial}
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

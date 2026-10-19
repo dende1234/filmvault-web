@@ -12,6 +12,7 @@ import { requireAdmin } from "@/lib/require-admin";
 import { getLocale } from "@/lib/preferences";
 import { getTitleDetail } from "@/lib/tmdb/server";
 import { normalizeBarcode } from "@/lib/barcode";
+import { cleanLanguages } from "@/lib/copy-details";
 import type {
   Barcode,
   BoxFilmInput,
@@ -196,6 +197,31 @@ export async function updateCollectionItemSeasons(itemGroupId: string, seasons: 
   await updateItemGroup(itemGroupId, { seasons: clean });
 }
 
+/** Cut, languages and label of one copy (every row of the group). Returns
+ * "not_ready" until copy_details.sql has run, instead of throwing. */
+export async function updateCollectionItemDetails(
+  itemGroupId: string,
+  details: { cut: string | null; label: string | null; audioLanguages: string[] | null; subtitleLanguages: string[] | null },
+): Promise<{ error: "not_ready" | "invalid" | null }> {
+  const cut = details.cut?.trim().slice(0, 60) || null;
+  const label = details.label?.trim().slice(0, 80) || null;
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("collection_items")
+    .update({
+      cut,
+      label,
+      audio_languages: cleanLanguages(details.audioLanguages)?.slice(0, 20) ?? null,
+      subtitle_languages: cleanLanguages(details.subtitleLanguages)?.slice(0, 40) ?? null,
+    })
+    .eq("item_group_id", itemGroupId);
+  if (error?.code === "PGRST204") return { error: "not_ready" };
+  if (error?.code === "23514") return { error: "invalid" };
+  if (error) throw error;
+  revalidatePath("/collections", "layout");
+  return { error: null };
+}
+
 export async function removeCollectionItem(itemId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("collection_items").delete().eq("id", itemId);
@@ -212,6 +238,7 @@ const COPY_COLUMNS = [
   "item_group_id", "tmdb_movie_id", "movie_title", "movie_poster", "barcode", "type", "editie",
   "rating", "watched", "seasons", "custom_cover_path", "is_box", "box_group_id", "box_name",
   "personal_note", "loaned_to", "loaned_at", "is_favorite", "tags", "condition",
+  "cut", "audio_languages", "subtitle_languages", "label",
 ] as const;
 
 /** The caller's rows for this copy (or, for a box, the whole box), across all
@@ -776,9 +803,30 @@ export async function approvePendingBox(pendingRowsFromClient: PendingBarcode[])
   revalidatePath("/admin/add-film");
 }
 
+/** One physical copy you own (all collections it is in), for the scan result. */
+export type OwnedCopy = {
+  itemId: string;
+  collectionId: string;
+  collections: string[];
+  type: string;
+  editie: string;
+  cut: string | null;
+  label: string | null;
+};
+
 export type ScannedBarcodeResult =
   | { kind: "none"; barcode: string }
-  | { kind: "title"; barcode: string; title: { id: number; title: string; poster: string | null } }
+  | {
+      kind: "title";
+      barcode: string;
+      title: { id: number; title: string; poster: string | null };
+      /** The scanned release as registered on the master list. */
+      release: { type: string; editie: string };
+      /** Copies of exactly this release (same barcode) you already own. */
+      owned: OwnedCopy[];
+      /** Copies of the same film/series in another release (other barcode). */
+      otherEditions: OwnedCopy[];
+    }
   | {
       kind: "box";
       barcode: string;
@@ -787,7 +835,52 @@ export type ScannedBarcodeResult =
       type: string;
       editie: string;
       films: { tmdb_movie_id: number; movie_title: string; movie_poster: string | null }[];
+      /** This box, if you already own it. */
+      owned: OwnedCopy[];
     };
+
+/** Your copies matching a scan: rows with this barcode, this box, or (for
+ * other editions) these titles — one entry per physical copy. */
+type OwnedRow = { row: CollectionItem; collectionName: string };
+
+async function ownedCopies(match: { barcode?: string; boxGroupId?: string | null; tmdbIds?: number[] }): Promise<OwnedRow[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+  const { data: cols } = await supabase.from("collections").select("id, name").eq("user_id", user.id);
+  const names = new Map((cols ?? []).map((c: { id: string; name: string }) => [c.id, c.name]));
+  if (names.size === 0) return [];
+  let query = supabase.from("collection_items").select("*").in("collection_id", Array.from(names.keys()));
+  if (match.boxGroupId) query = query.eq("box_group_id", match.boxGroupId);
+  else if (match.tmdbIds?.length) query = query.in("tmdb_movie_id", match.tmdbIds);
+  else if (match.barcode) query = query.eq("barcode", match.barcode);
+  const { data } = await query;
+  return ((data ?? []) as CollectionItem[]).map((row) => ({ row, collectionName: names.get(row.collection_id) ?? "" }));
+}
+
+function toOwnedCopies(rows: OwnedRow[]): OwnedCopy[] {
+  const byGroup = new Map<string, OwnedCopy>();
+  for (const { row, collectionName } of rows) {
+    const key = row.box_group_id ?? row.item_group_id;
+    const existing = byGroup.get(key);
+    if (existing) {
+      if (!existing.collections.includes(collectionName)) existing.collections.push(collectionName);
+      continue;
+    }
+    byGroup.set(key, {
+      itemId: row.id,
+      collectionId: row.collection_id,
+      collections: [collectionName],
+      type: row.type,
+      editie: row.editie,
+      cut: row.cut ?? null,
+      label: row.label ?? null,
+    });
+  }
+  return Array.from(byGroup.values());
+}
 
 /** What a scanned barcode is on the master film list: one film/series,
  * a box, or unknown (then the user picks the title and it goes to approval). */
@@ -807,7 +900,9 @@ export async function lookupScannedBarcode(raw: string): Promise<ScannedBarcodeR
       }),
     );
     const first = known.find((b) => b.box_group_id) ?? known[0];
+    const ownedRows = first.box_group_id ? await ownedCopies({ boxGroupId: first.box_group_id }) : [];
     return {
+      owned: toOwnedCopies(ownedRows),
       kind: "box",
       barcode,
       boxGroupId: first.box_group_id,
@@ -817,11 +912,19 @@ export async function lookupScannedBarcode(raw: string): Promise<ScannedBarcodeR
       films,
     };
   }
-  const detail = await getTitleDetail(known[0].tmdb_movie_id, await getLocale()).catch(() => null);
+  const [detail, rows] = await Promise.all([
+    getTitleDetail(known[0].tmdb_movie_id, await getLocale()).catch(() => null),
+    ownedCopies({ tmdbIds: [known[0].tmdb_movie_id] }),
+  ]);
+  const same = rows.filter((r) => r.row.barcode.toLowerCase() === barcode.toLowerCase());
+  const other = rows.filter((r) => r.row.barcode.toLowerCase() !== barcode.toLowerCase());
   return {
     kind: "title",
     barcode,
     title: { id: known[0].tmdb_movie_id, title: detail?.title ?? `TMDB #${known[0].tmdb_movie_id}`, poster: detail?.poster_path ?? null },
+    release: { type: known[0].type, editie: known[0].editie },
+    owned: toOwnedCopies(same),
+    otherEditions: toOwnedCopies(other),
   };
 }
 

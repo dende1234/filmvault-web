@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Film, Package, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
-import { lookupScannedBarcode } from "@/actions/collections";
+import { lookupScannedBarcode, type ScannedBarcodeResult } from "@/actions/collections";
 import type { MovieSummaryDto } from "@/types/tmdb";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,14 +12,16 @@ import { MovieMultiSelectPickerDialog, MovieSearchPickerDialog } from "@/compone
 import { AddToCollectionDialog } from "@/components/add-to-collection-dialog";
 import { BoxDetailsDialog, type BoxDraft } from "@/components/box-details-dialog";
 import { BarcodeScanButton } from "@/components/barcode-scanner";
+import { ScanResultDialog } from "@/components/scan-result-dialog";
 
 type Selected = { id: number; title: string; poster: string | null };
 
 /** Dashboard/Collections entry point: pick a film or series via search, or
  * scan its barcode (only offered when the device has a camera), then add it
- * to one or more collections. A known barcode skips the search (a known box
- * opens with its films filled in); for an unknown one you say whether it is a
- * single title or a box, and the barcode is pre-filled for approval. */
+ * to one or more collections. A known barcode first shows whether you already
+ * own it, own it in another edition, or not yet; adding then skips the search
+ * (a known box opens with its films filled in). For an unknown one you say
+ * whether it is a single title or a box, and the barcode is pre-filled. */
 export function AddFilmFlow() {
   const { t } = useT();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -30,6 +32,25 @@ export function AddFilmFlow() {
   const [boxDraft, setBoxDraft] = useState<BoxDraft | null>(null);
   const [boxSession, setBoxSession] = useState(0);
   const [lookingUp, setLookingUp] = useState(false);
+  // A known barcode first shows what it means for you (own it / other edition / new).
+  const [scanResult, setScanResult] = useState<Extract<ScannedBarcodeResult, { kind: "title" | "box" }> | null>(null);
+
+  function addScanned(result: Extract<ScannedBarcodeResult, { kind: "title" | "box" }>) {
+    setScanResult(null);
+    if (result.kind === "title") {
+      setScanned(result.barcode);
+      setSelected(result.title);
+    } else {
+      openBox({
+        films: result.films,
+        barcode: result.barcode,
+        boxName: result.boxName ?? "",
+        type: result.type,
+        editie: result.editie,
+        knownBoxGroupId: result.boxGroupId,
+      });
+    }
+  }
 
   function openBox(draft: BoxDraft) {
     setBoxDraft(draft);
@@ -40,18 +61,8 @@ export function AddFilmFlow() {
     setLookingUp(true);
     try {
       const result = await lookupScannedBarcode(code);
-      if (result.kind === "title") {
-        setScanned(result.barcode);
-        setSelected(result.title);
-      } else if (result.kind === "box") {
-        openBox({
-          films: result.films,
-          barcode: result.barcode,
-          boxName: result.boxName ?? "",
-          type: result.type,
-          editie: result.editie,
-          knownBoxGroupId: result.boxGroupId,
-        });
+      if (result.kind === "title" || result.kind === "box") {
+        setScanResult(result);
       } else {
         setUnknownCode(result.barcode);
       }
@@ -142,6 +153,7 @@ export function AddFilmFlow() {
           initialBarcode={scanned ?? undefined}
         />
       )}
+      {scanResult && <ScanResultDialog result={scanResult} onAdd={() => addScanned(scanResult)} onClose={() => setScanResult(null)} />}
       {boxDraft && <BoxDetailsDialog key={boxSession} draft={boxDraft} onClose={() => setBoxDraft(null)} />}
     </>
   );

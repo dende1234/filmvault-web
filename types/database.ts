@@ -78,6 +78,11 @@ export interface CollectionItem {
   seasons?: number[] | null;
   /** Own cover photo for this copy (custom_covers.sql), storage path. */
   custom_cover_path?: string | null;
+  /** Per-copy details (copy_details.sql): cut, ISO 639-1 language codes, label. */
+  cut?: string | null;
+  audio_languages?: string[] | null;
+  subtitle_languages?: string[] | null;
+  label?: string | null;
   is_box: boolean;
   box_group_id: string | null;
   box_name: string | null;
