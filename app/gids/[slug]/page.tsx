@@ -65,7 +65,7 @@ export default async function GuidePage({ params }: Props) {
       <aside className="bg-cinema mt-14 flex max-w-2xl flex-col items-start gap-3 rounded-card border border-primary/30 p-6 md:p-8">
         <h2 className="font-display text-2xl font-semibold tracking-tight">Houd je collectie bij in Filmory</h2>
         <p className="text-sm text-muted-foreground">
-          Gratis. Voeg films toe op titel of barcode, leg formaat en editie vast en houd je verlanglijst bij.
+          Nu gratis te gebruiken. Voeg films en series toe op titel of barcode, leg formaat en editie vast en houd je verlanglijst bij.
         </p>
         <Button asChild className="mt-2">
           <Link href={`/register?ref=gids-${guide.slug}`}>Gratis beginnen</Link>

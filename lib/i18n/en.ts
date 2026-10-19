@@ -74,7 +74,7 @@ export const en: Record<keyof typeof nl, string> = {
   landing_step_discover_title: "Discover",
   landing_step_organize_description: "Add films and series by barcode or title. Record format, edition and seasons, sort them into collections and track box sets as one.",
   landing_step_organize_title: "Organise",
-  landing_step_register_description: "Create a free account. Your collection stays yours.",
+  landing_step_register_description: "Create a free account. Filmory is free right now; paid extra features will come later. Your collection stays yours.",
   landing_step_register_title: "Sign up",
   landing_steps_title: "Organised in three steps",
   landing_format_box: "Box set",

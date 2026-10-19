@@ -74,7 +74,7 @@ export const nl = {
   landing_step_discover_title: "Ontdek",
   landing_step_organize_description: "Voeg films en series toe met de barcode of op titel. Leg formaat, editie en seizoenen vast, orden in collecties en houd boxsets bij als één geheel.",
   landing_step_organize_title: "Organiseer",
-  landing_step_register_description: "Maak gratis een account aan. Je collectie blijft van jou.",
+  landing_step_register_description: "Maak gratis een account aan. Filmory is nu gratis; later komen er extra functies bij tegen betaling. Je collectie blijft van jou.",
   landing_step_register_title: "Registreer",
   landing_steps_title: "In drie stappen overzicht",
   landing_format_box: "Boxset",
