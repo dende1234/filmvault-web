@@ -1,0 +1,541 @@
+import type { HelpEntry } from "@/lib/help/match";
+
+/** Reel's knowledge base: what Filmory can (and can't yet) do, in Dutch and
+ * English. Keep it in step with the app: a new feature, a moved button or a
+ * "can't yet" that became possible means an edit here (see CLAUDE.md).
+ * Answers are short; [label](/path) renders as an internal link. Entries with
+ * possible: false say honestly that it isn't possible yet and offer feedback. */
+export const HELP_ENTRIES: HelpEntry[] = [
+  // ---------- Adding ----------
+  {
+    id: "add-film",
+    category: "add",
+    possible: true,
+    q: { nl: "Hoe voeg ik een film of serie toe?", en: "How do I add a film or series?" },
+    a: {
+      nl: "Klik op **Film of serie toevoegen** op je [dashboard](/dashboard) of bij [Collecties](/collections). Zoek de titel, kies de uitgave (barcode, formaat, editie) en de collectie(s). Heb je een camera, dan kun je ook de barcode scannen.",
+      en: "Click **Add film or series** on your [dashboard](/dashboard) or in [Collections](/collections). Search the title, pick the release (barcode, format, edition) and the collection(s). With a camera you can also scan the barcode.",
+    },
+    keywords: { nl: ["film toevoegen", "serie toevoegen", "dvd toevoegen", "blu-ray toevoegen", "nieuwe film"], en: ["add film", "add movie", "add series", "add dvd", "add blu-ray"] },
+    pages: ["/dashboard", "/collections"],
+  },
+  {
+    id: "scan-barcode",
+    category: "add",
+    possible: true,
+    q: { nl: "Hoe scan ik een barcode?", en: "How do I scan a barcode?" },
+    a: {
+      nl: "Tik op **Scan barcode** naast Film of serie toevoegen (alleen zichtbaar als je apparaat een camera heeft). Houd de barcode in het kader. Is de uitgave bekend, dan zie je meteen of je hem al hebt en kies je de collectie.",
+      en: "Tap **Scan barcode** next to Add film or series (only shown when your device has a camera). Hold the barcode in the frame. If the release is known you immediately see whether you own it and pick the collection.",
+    },
+    keywords: { nl: ["barcode scannen", "scannen", "camera", "streepjescode"], en: ["scan barcode", "scanner", "camera"] },
+    pages: ["/dashboard", "/collections"],
+  },
+  {
+    id: "scan-result",
+    category: "add",
+    possible: true,
+    q: { nl: "Wat betekent 'Je hebt deze al' of 'andere editie' bij scannen?", en: "What does 'You already own this' or 'another edition' mean when scanning?" },
+    a: {
+      nl: "Groen: precies deze uitgave staat al in je collectie. Oranje: je hebt de film, maar in een andere uitgave (je ziet welke). Nieuw: de titel heb je nog niet. Zo voorkom je in de winkel dat je iets dubbel koopt.",
+      en: "Green: this exact release is already in your collection. Orange: you own the film, but in another release (you see which). New: you don't have the title yet. Handy in a shop to avoid buying twice.",
+    },
+    keywords: { nl: ["al in bezit", "andere editie", "dubbel gekocht", "dubbel kopen", "dubbel"], en: ["already own", "another edition", "duplicate", "bought twice"] },
+  },
+  {
+    id: "bulk-scan",
+    category: "add",
+    possible: true,
+    q: { nl: "Kan ik meerdere schijven achter elkaar scannen?", en: "Can I scan several discs in a row?" },
+    a: {
+      nl: "Ja, via [Meerdere scannen](/collections/scan) (of in een collectie: **Meer → Meerdere scannen**). Scan een stapel, kies één collectie en klik op **Voeg … toe**. Een USB-barcodescanner werkt ook: klik in het veld en scan.",
+      en: "Yes, via [Scan several](/collections/scan) (or in a collection: **More → Scan several**). Scan a pile, choose one collection and click **Add …**. A USB barcode scanner works too: click the field and scan.",
+    },
+    keywords: { nl: ["meerdere scannen", "stapel", "veel films", "snel invoeren", "usb scanner", "bulk"], en: ["scan several", "bulk scan", "many discs", "usb scanner"] },
+    pages: ["/collections/scan", "/collections"],
+  },
+  {
+    id: "unknown-barcode",
+    category: "add",
+    possible: true,
+    q: { nl: "Mijn barcode wordt niet gevonden. Wat nu?", en: "My barcode isn't found. What now?" },
+    a: {
+      nl: "Kies of het een losse film/serie of een box is, zoek de titel en voeg hem toe. De barcode gaat dan naar goedkeuring. Is hij goedgekeurd, dan staat hij in je collectie, krijg je een [melding](/meldingen) en vindt iedereen hem voortaan.",
+      en: "Choose whether it's a single film/series or a box, search the title and add it. The barcode then goes for approval. Once approved it's in your collection, you get a [notification](/meldingen) and everyone finds it from then on.",
+    },
+    keywords: { nl: ["barcode niet gevonden", "onbekende barcode", "niet herkend", "goedkeuring"], en: ["barcode not found", "unknown barcode", "not recognised", "approval"] },
+  },
+  {
+    id: "approval-time",
+    category: "add",
+    possible: true,
+    q: { nl: "Hoe lang duurt het voor een barcode is goedgekeurd?", en: "How long does barcode approval take?" },
+    a: {
+      nl: "Een beheerder controleert nieuwe barcodes met de hand, meestal binnen een paar dagen. Je krijgt een [melding](/meldingen) zodra hij is goedgekeurd of afgewezen.",
+      en: "An admin checks new barcodes by hand, usually within a few days. You get a [notification](/meldingen) as soon as it's approved or rejected.",
+    },
+    keywords: { nl: ["goedgekeurd", "wachten", "in behandeling", "ter goedkeuring", "pending"], en: ["approved", "waiting", "pending", "approval"] },
+    pages: ["/meldingen"],
+  },
+  {
+    id: "box",
+    category: "add",
+    possible: true,
+    q: { nl: "Hoe voeg ik een box of boxset toe?", en: "How do I add a box set?" },
+    a: {
+      nl: "Scan de barcode van de box, of klik op **Box toevoegen**, kies de films erin en vul naam en barcode in. In je collectie staat de box als één kaart met de films erin; klik op de naam voor de box-pagina.",
+      en: "Scan the box's barcode, or click **Add box**, pick the films in it and fill in name and barcode. In your collection the box shows as one card with its films; click the name for the box page.",
+    },
+    keywords: { nl: ["box toevoegen", "boxset", "trilogie", "verzamelbox"], en: ["add box", "box set", "trilogy"] },
+    pages: ["/collections"],
+  },
+  {
+    id: "series-seasons",
+    category: "add",
+    possible: true,
+    q: { nl: "Hoe houd ik seizoenen van een serie bij?", en: "How do I track seasons of a series?" },
+    a: {
+      nl: "Voeg de serie toe en kies welke seizoenen in de uitgave zitten. Op de seriepagina zie je welke seizoenen je hebt en welke je nog mist; die kun je op je [verlanglijst](/wishlist) zetten.",
+      en: "Add the series and pick which seasons the release contains. On the series page you see which seasons you own and which you're missing; you can put those on your [wishlist](/wishlist).",
+    },
+    keywords: { nl: ["seizoenen", "serie", "seizoen toevoegen", "serie seizoen", "seizoen mist"], en: ["seasons", "series", "add season", "series season", "missing season", "tv show"] },
+  },
+  // ---------- A copy ----------
+  {
+    id: "edition-details",
+    category: "copy",
+    possible: true,
+    q: { nl: "Kan ik de cut, regio, talen of het label van een exemplaar vastleggen?", en: "Can I record the cut, region, languages or label of a copy?" },
+    a: {
+      nl: "Ja. Open de film in je collectie en vul **Details van dit exemplaar** in: cut (Theatrical, Extended, Director's Cut…), regiocode, audiotalen, ondertitels en label (Criterion, Arrow…).",
+      en: "Yes. Open the film in your collection and fill in **Details of this copy**: cut (Theatrical, Extended, Director's Cut…), region code, audio languages, subtitles and label (Criterion, Arrow…).",
+    },
+    keywords: { nl: ["cut", "versie", "regiocode", "regio", "audiotalen", "ondertitels", "label", "uitgever", "extended", "director's cut"], en: ["cut", "region", "region code", "audio languages", "subtitles", "label", "publisher", "extended"] },
+    pages: ["/collections"],
+  },
+  {
+    id: "edition",
+    category: "copy",
+    possible: true,
+    q: { nl: "Hoe geef ik aan dat het een steelbook of speciale editie is?", en: "How do I mark a steelbook or special edition?" },
+    a: {
+      nl: "Bij het toevoegen kies je formaat (dvd, Blu-ray, 4K UHD) en editie (bijv. Steelbook, Limited Edition). Bij een bekende barcode ligt dat al vast.",
+      en: "When adding, you pick format (DVD, Blu-ray, 4K UHD) and edition (e.g. Steelbook, Limited Edition). For a known barcode that's already set.",
+    },
+    keywords: { nl: ["steelbook", "editie", "speciale editie", "limited", "formaat", "4k"], en: ["steelbook", "edition", "special edition", "limited", "format"] },
+  },
+  {
+    id: "custom-cover",
+    category: "copy",
+    possible: true,
+    q: { nl: "Kan ik een eigen foto als cover gebruiken?", en: "Can I use my own photo as the cover?" },
+    a: {
+      nl: "Ja. Open de film in je collectie, ga naar **Eigen cover** en maak een foto of kies een bestand. Die cover zie je overal waar dit exemplaar staat. Met Verwijderen ga je terug naar de standaardposter.",
+      en: "Yes. Open the film in your collection, go to **Custom cover** and take a photo or choose a file. That cover shows wherever this copy appears. Remove it to go back to the standard poster.",
+    },
+    keywords: { nl: ["eigen cover", "foto", "hoesje", "afbeelding", "poster veranderen"], en: ["custom cover", "own photo", "change poster", "cover image"] },
+  },
+  {
+    id: "multiple-collections",
+    category: "copy",
+    possible: true,
+    q: { nl: "Kan een film in meerdere collecties staan?", en: "Can a film be in several collections?" },
+    a: {
+      nl: "Ja. Open de film en vink bij **In collecties** de andere collecties aan. Het blijft één exemplaar: rating, notitie, uitlenen en cover gelden overal.",
+      en: "Yes. Open the film and tick the other collections under **In collections**. It stays one copy: rating, note, loan and cover apply everywhere.",
+    },
+    keywords: { nl: ["meerdere collecties", "andere collectie", "twee collecties", "verplaatsen"], en: ["several collections", "another collection", "two collections", "move"] },
+    pages: ["/collections"],
+  },
+  {
+    id: "delete-copy",
+    category: "copy",
+    possible: true,
+    q: { nl: "Hoe verwijder ik een film uit mijn collectie?", en: "How do I remove a film from my collection?" },
+    a: {
+      nl: "Ga met je muis over de poster in de collectie en klik op het kruisje, of open de film en kies **Verwijderen**. Staat hij in meerdere collecties, dan vink je hem bij In collecties uit.",
+      en: "Hover the poster in the collection and click the cross, or open the film and choose **Delete**. If it's in several collections, untick it under In collections.",
+    },
+    keywords: { nl: ["film verwijderen", "weghalen", "uit collectie"], en: ["remove film", "delete film", "take out"] },
+    pages: ["/collections"],
+  },
+  {
+    id: "lend",
+    category: "copy",
+    possible: true,
+    q: { nl: "Hoe houd ik bij aan wie ik een film heb uitgeleend?", en: "How do I track who I lent a film to?" },
+    a: {
+      nl: "Open de film en klik op **Uitlenen**, vul de naam in. Ligt hij er na 30 dagen nog, dan zie je een herinnering. Met **Terug ontvangen** is hij weer thuis.",
+      en: "Open the film, click **Lend** and enter the name. If it's still out after 30 days you see a reminder. **Returned** marks it back home.",
+    },
+    keywords: { nl: ["uitlenen", "uitgeleend", "lenen", "geleend", "uitlenen aan vriend"], en: ["lend", "loan", "lent", "borrowed", "lend to friend"] },
+  },
+  {
+    id: "notes-tags",
+    category: "copy",
+    possible: true,
+    q: { nl: "Kan ik notities, tags of de conditie bijhouden?", en: "Can I keep notes, tags or the condition?" },
+    a: {
+      nl: "Ja, per exemplaar: open de film en gebruik de velden voor notitie, tags, conditie (nieuw, gebruikt, beschadigd) en favoriet.",
+      en: "Yes, per copy: open the film and use the fields for note, tags, condition (new, used, damaged) and favourite.",
+    },
+    keywords: { nl: ["notitie", "tags", "conditie", "favoriet", "beschadigd"], en: ["note", "tags", "condition", "favourite", "damaged"] },
+  },
+  // ---------- Collections ----------
+  {
+    id: "create-collection",
+    category: "collections",
+    possible: true,
+    q: { nl: "Hoe maak ik een nieuwe collectie?", en: "How do I create a new collection?" },
+    a: {
+      nl: "Ga naar [Collecties](/collections) en klik op **Toevoegen**. Geef een naam (en eventueel een beschrijving), bijvoorbeeld 'Kast woonkamer' of 'Steelbooks'.",
+      en: "Go to [Collections](/collections) and click **Add**. Give it a name (and optionally a description), for example 'Living room shelf' or 'Steelbooks'.",
+    },
+    keywords: { nl: ["collectie maken", "nieuwe collectie", "collectie aanmaken"], en: ["create collection", "new collection"] },
+    pages: ["/collections"],
+  },
+  {
+    id: "share-collection",
+    category: "collections",
+    possible: true,
+    q: { nl: "Hoe deel ik mijn collectie met iemand?", en: "How do I share my collection?" },
+    a: {
+      nl: "Open de collectie, klik op **Delen** en zet **Openbaar via link** aan. Iedereen met de link kan de collectie bekijken, ook zonder account. Handig voor je partner in de winkel.",
+      en: "Open the collection, click **Share** and turn on **Public via link**. Anyone with the link can view it, even without an account. Handy for your partner in a shop.",
+    },
+    keywords: { nl: ["collectie delen", "link delen", "openbaar", "partner laten zien"], en: ["share collection", "public link", "show partner"] },
+    pages: ["/collections"],
+  },
+  {
+    id: "filter-collection",
+    category: "collections",
+    possible: true,
+    q: { nl: "Kan ik mijn collectie filteren of sorteren?", en: "Can I filter or sort my collection?" },
+    a: {
+      nl: "Ja, in een collectie: zoeken, filteren op formaat, films/series, bekeken, en op boxen of losse films, en sorteren op naam, nieuwste of rating.",
+      en: "Yes, in a collection: search, filter by format, films/series, watched, and boxes or single films, and sort by name, newest or rating.",
+    },
+    keywords: { nl: ["filteren", "sorteren", "zoeken in collectie", "alleen boxen"], en: ["filter", "sort", "search collection", "only boxes"] },
+    pages: ["/collections"],
+  },
+  // ---------- Import / export ----------
+  {
+    id: "import-csv",
+    category: "import",
+    possible: true,
+    q: { nl: "Kan ik mijn spreadsheet of lijst importeren?", en: "Can I import my spreadsheet or list?" },
+    a: {
+      nl: "Ja, via [Importeren](/collections/import). Upload een CSV (uit Excel, Google Sheets, CLZ…). Kolommen worden automatisch herkend; je controleert alles voordat het wordt toegevoegd. Download het voorbeeldbestand om te zien welke kolommen kunnen.",
+      en: "Yes, via [Import](/collections/import). Upload a CSV (from Excel, Google Sheets, CLZ…). Columns are recognised automatically; you check everything before it's added. Download the example file to see which columns work.",
+    },
+    keywords: { nl: ["importeren", "spreadsheet", "excel", "csv", "lijst inlezen", "overzetten"], en: ["import", "spreadsheet", "excel", "csv", "transfer"] },
+    pages: ["/collections/import", "/collections"],
+  },
+  {
+    id: "import-letterboxd",
+    category: "import",
+    possible: true,
+    q: { nl: "Kan ik vanuit Letterboxd importeren?", en: "Can I import from Letterboxd?" },
+    a: {
+      nl: "Ja. Exporteer in Letterboxd je data (Settings → Import & Export), pak het zip-bestand uit en upload watched.csv, diary.csv of ratings.csv bij [Importeren](/collections/import): die gaan naar Bekeken. watchlist.csv gaat naar je verlanglijst.",
+      en: "Yes. Export your data in Letterboxd (Settings → Import & Export), unzip it and upload watched.csv, diary.csv or ratings.csv in [Import](/collections/import): those go to Watched. watchlist.csv goes to your wishlist.",
+    },
+    keywords: { nl: ["letterboxd", "letterboxd importeren"], en: ["letterboxd", "import letterboxd"] },
+    pages: ["/collections/import", "/watched"],
+  },
+  {
+    id: "import-columns",
+    category: "import",
+    possible: true,
+    q: { nl: "Welke kolommen kan mijn importbestand hebben?", en: "Which columns can my import file have?" },
+    a: {
+      nl: "Titel is genoeg. Daarnaast worden herkend: soort, seizoenen, jaar, barcode, formaat, editie, cut, label, regio, audio, ondertitels, bekeken, rating, datum bekeken en box. Een box in één cel ('Box • Film 1 • Film 2') wordt ook begrepen.",
+      en: "Title is enough. Also recognised: kind, seasons, year, barcode, format, edition, cut, label, region, audio, subtitles, watched, rating, watched date and box. A box in one cell ('Box • Film 1 • Film 2') works too.",
+    },
+    keywords: { nl: ["kolommen", "csv kolommen", "importbestand", "voorbeeldbestand", "welke velden"], en: ["columns", "csv columns", "import file", "example file", "which fields"] },
+    pages: ["/collections/import"],
+  },
+  {
+    id: "export",
+    category: "import",
+    possible: true,
+    q: { nl: "Kan ik mijn collectie exporteren of een back-up maken?", en: "Can I export my collection or make a backup?" },
+    a: {
+      nl: "Ja. Bij [Collecties](/collections) klik je op **Alles exporteren**, of in een collectie op **Meer → Exporteren**. Je krijgt een CSV in hetzelfde formaat als de import, dus je kunt hem later weer inlezen.",
+      en: "Yes. In [Collections](/collections) click **Export all**, or in a collection **More → Export**. You get a CSV in the same format as the import, so you can read it back in later.",
+    },
+    keywords: { nl: ["exporteren", "back-up", "backup", "downloaden", "data meenemen"], en: ["export", "backup", "download", "take my data"] },
+    pages: ["/collections"],
+  },
+  // ---------- Watched ----------
+  {
+    id: "watched",
+    category: "watched",
+    possible: true,
+    q: { nl: "Hoe geef ik aan dat ik een film heb gezien?", en: "How do I mark a film as watched?" },
+    a: {
+      nl: "Tik op het oogje op de poster in je collectie (één tik = bekeken, nog een = niet bekeken). Wil je een datum of review vastleggen, gebruik dan [Bekeken](/watched) of het blok bij de film.",
+      en: "Tap the eye on the poster in your collection (one tap = watched, again = not watched). To log a date or review, use [Watched](/watched) or the block on the film.",
+    },
+    keywords: { nl: ["bekeken", "gezien", "gekeken", "oogje", "markeren als bekeken", "gekeken zien"], en: ["watched", "seen", "mark watched", "eye", "see watched"] },
+    pages: ["/collections", "/watched"],
+  },
+  {
+    id: "rating-review",
+    category: "watched",
+    possible: true,
+    q: { nl: "Kan ik een film beoordelen of een review schrijven?", en: "Can I rate a film or write a review?" },
+    a: {
+      nl: "Ja. Bij de film geef je sterren (halve sterren kunnen) en schrijf je een review. Die kun je delen in de [feed](/feed). Rating en review gelden voor de film, ook als je meerdere exemplaren hebt.",
+      en: "Yes. On the film you give stars (half stars allowed) and write a review. You can share it in the [feed](/feed). Rating and review apply to the film, even with several copies.",
+    },
+    keywords: { nl: ["beoordelen", "rating", "sterren", "review", "recensie"], en: ["rate", "rating", "stars", "review"] },
+  },
+  {
+    id: "recap",
+    category: "watched",
+    possible: true,
+    q: { nl: "Waar zie ik mijn jaaroverzicht?", en: "Where do I see my yearly recap?" },
+    a: {
+      nl: "In het [Jaaroverzicht](/recap): hoeveel films je toevoegde, hoeveel je er zag, je gemiddelde rating en je drukste maand. Je kunt het delen in de feed.",
+      en: "In the [Yearly recap](/recap): how many films you added, how many you watched, your average rating and busiest month. You can share it in the feed.",
+    },
+    keywords: { nl: ["jaaroverzicht", "statistieken", "overzicht jaar"], en: ["yearly recap", "year in review", "stats"] },
+    pages: ["/recap"],
+  },
+  // ---------- Wishlist ----------
+  {
+    id: "wishlist",
+    category: "wishlist",
+    possible: true,
+    q: { nl: "Hoe werkt de verlanglijst?", en: "How does the wishlist work?" },
+    a: {
+      nl: "Op de pagina van een film of serie klik je op **Op verlanglijst zetten**. Op je [verlanglijst](/wishlist) zie je alles bij elkaar. Voeg je de titel later toe aan je collectie, dan verdwijnt hij vanzelf van je lijst.",
+      en: "On a film or series page click **Add to wishlist**. Your [wishlist](/wishlist) shows everything together. Add the title to your collection later and it's removed from the list automatically.",
+    },
+    keywords: { nl: ["verlanglijst", "wenslijst", "wil ik nog", "zoeken naar"], en: ["wishlist", "want list", "looking for"] },
+    pages: ["/wishlist"],
+  },
+  {
+    id: "holy-grail",
+    category: "wishlist",
+    possible: true,
+    q: { nl: "Wat is een Holy Grail?", en: "What is a Holy Grail?" },
+    a: {
+      nl: "De titels die je het allerliefst wilt hebben. Tik op het kroontje bij een titel op je [verlanglijst](/wishlist); Holy Grails staan bovenaan en je kunt erop filteren.",
+      en: "The titles you want most. Tap the crown on a title in your [wishlist](/wishlist); Holy Grails are listed first and you can filter on them.",
+    },
+    keywords: { nl: ["holy grail", "kroon", "belangrijkste", "prioriteit"], en: ["holy grail", "crown", "priority", "most wanted"] },
+    pages: ["/wishlist"],
+  },
+  {
+    id: "wishlist-share",
+    category: "wishlist",
+    possible: false,
+    q: { nl: "Kan ik mijn verlanglijst delen?", en: "Can I share my wishlist?" },
+    a: {
+      nl: "Dat kan nog niet: je verlanglijst is alleen voor jou. Een deelbare link (bijvoorbeeld voor verjaardagen) staat op de ideeënlijst.",
+      en: "Not yet: your wishlist is private. A shareable link (for birthdays, say) is on the ideas list.",
+    },
+    keywords: { nl: ["verlanglijst delen", "cadeau", "verjaardag"], en: ["share wishlist", "gift", "birthday"] },
+    pages: ["/wishlist"],
+  },
+  // ---------- Social ----------
+  {
+    id: "friends",
+    category: "social",
+    possible: true,
+    q: { nl: "Hoe voeg ik vrienden toe?", en: "How do I add friends?" },
+    a: {
+      nl: "Ga naar [Vrienden](/friends), zoek iemand en stuur een verzoek. Vrienden zien elkaars collecties. Met **Nodig een verzamelaar uit** stuur je een uitnodigingslink.",
+      en: "Go to [Friends](/friends), search someone and send a request. Friends see each other's collections. **Invite a collector** sends an invite link.",
+    },
+    keywords: { nl: ["vrienden", "vriend toevoegen", "uitnodigen", "volgen"], en: ["friends", "add friend", "invite", "follow"] },
+    pages: ["/friends"],
+  },
+  {
+    id: "feed-lists",
+    category: "social",
+    possible: true,
+    q: { nl: "Wat zijn de feed en lijsten?", en: "What are the feed and lists?" },
+    a: {
+      nl: "In de [feed](/feed) zie je reviews en berichten van verzamelaars die je volgt. Met [Lijsten](/lists) maak je eigen filmlijsten (bijv. 'Beste horror') die anderen kunnen volgen.",
+      en: "The [feed](/feed) shows reviews and posts from collectors you follow. [Lists](/lists) are your own film lists (e.g. 'Best horror') others can follow.",
+    },
+    keywords: { nl: ["feed", "lijsten", "lijst maken", "berichten"], en: ["feed", "lists", "make a list", "posts"] },
+    pages: ["/feed", "/lists"],
+  },
+  {
+    id: "badges",
+    category: "social",
+    possible: true,
+    q: { nl: "Hoe verdien ik badges?", en: "How do I earn badges?" },
+    a: {
+      nl: "Badges verdien je door te verzamelen: je eerste collectie, 10/50/100 films, vrienden, een review, uitlenen, en goedgekeurde barcodes. Op [Badges](/badges) staat ook de ranglijst van barcode-bijdragers.",
+      en: "You earn badges by collecting: your first collection, 10/50/100 films, friends, a review, lending, and approved barcodes. [Badges](/badges) also shows the barcode contributor leaderboard.",
+    },
+    keywords: { nl: ["badges", "ranglijst", "bijdragers", "prestaties"], en: ["badges", "leaderboard", "contributors", "achievements"] },
+    pages: ["/badges"],
+  },
+  // ---------- Account ----------
+  {
+    id: "language-theme",
+    category: "account",
+    possible: true,
+    q: { nl: "Hoe verander ik de taal of het thema (donker/licht)?", en: "How do I change the language or theme (dark/light)?" },
+    a: {
+      nl: "In je [profiel](/profile) kies je de taal (Nederlands/Engels) en het thema (systeem, licht of donker).",
+      en: "In your [profile](/profile) you choose the language (Dutch/English) and theme (system, light or dark).",
+    },
+    keywords: { nl: ["taal", "engels", "nederlands", "thema", "donker", "licht"], en: ["language", "english", "dutch", "theme", "dark mode", "light mode"] },
+    pages: ["/profile"],
+  },
+  {
+    id: "newsletter",
+    category: "account",
+    possible: true,
+    q: { nl: "Hoe meld ik me aan of af voor de nieuwsbrief?", en: "How do I subscribe or unsubscribe from the newsletter?" },
+    a: {
+      nl: "Zet de nieuwsbrief aan of uit in je [profiel](/profile), of meld je af via de link onderaan elke mail. Hooguit één mail per maand.",
+      en: "Turn the newsletter on or off in your [profile](/profile), or unsubscribe via the link at the bottom of every email. At most one email a month.",
+    },
+    keywords: { nl: ["nieuwsbrief", "aanmelden", "afmelden", "mail"], en: ["newsletter", "subscribe", "unsubscribe", "email"] },
+    pages: ["/profile"],
+  },
+  {
+    id: "delete-account",
+    category: "account",
+    possible: true,
+    q: { nl: "Hoe verwijder ik mijn account?", en: "How do I delete my account?" },
+    a: {
+      nl: "Onderaan je [profiel](/profile) kun je je account verwijderen. Al je collecties, kijkgeschiedenis, covers en meldingen worden dan definitief gewist. Wil je je data bewaren, [exporteer](/collections) dan eerst.",
+      en: "At the bottom of your [profile](/profile) you can delete your account. All your collections, viewing history, covers and messages are then permanently erased. To keep your data, [export](/collections) first.",
+    },
+    keywords: { nl: ["account verwijderen", "opzeggen", "stoppen", "gegevens wissen"], en: ["delete account", "close account", "erase data"] },
+    pages: ["/profile"],
+  },
+  {
+    id: "privacy",
+    category: "account",
+    possible: true,
+    q: { nl: "Wie kan mijn collectie zien?", en: "Who can see my collection?" },
+    a: {
+      nl: "Je collecties zijn privé, behalve voor vrienden die je accepteert, en voor collecties die jij zelf openbaar maakt via een link. Je verlanglijst is altijd privé. Meer in het [privacybeleid](/privacy).",
+      en: "Your collections are private, except to friends you accept and collections you make public via a link yourself. Your wishlist is always private. More in the [privacy policy](/privacy).",
+    },
+    keywords: { nl: ["privacy", "collectie zien", "zichtbaar", "privé"], en: ["privacy", "see collection", "visible", "private"] },
+  },
+  {
+    id: "price",
+    category: "account",
+    possible: true,
+    q: { nl: "Is Filmory gratis?", en: "Is Filmory free?" },
+    a: {
+      nl: "Ja, Filmory is nu gratis. Later komen er extra functies bij tegen betaling; wat je nu gebruikt kun je gewoon blijven gebruiken.",
+      en: "Yes, Filmory is free right now. Paid extra features will come later; what you use now you can keep using.",
+    },
+    keywords: { nl: ["gratis", "prijs", "kosten", "betalen", "abonnement"], en: ["free", "price", "cost", "pay", "subscription"] },
+  },
+  {
+    id: "notifications",
+    category: "account",
+    possible: true,
+    q: { nl: "Waar zie ik mijn meldingen?", en: "Where do I see my notifications?" },
+    a: {
+      nl: "Bij [Meldingen](/meldingen) in het menu (op je telefoon het belletje bovenaan). Daar zie je bijvoorbeeld of je ingestuurde barcode is goedgekeurd.",
+      en: "In [Notifications](/meldingen) in the menu (on your phone the bell at the top). There you see, for example, whether your submitted barcode was approved.",
+    },
+    keywords: { nl: ["meldingen", "notificaties", "belletje"], en: ["notifications", "bell", "alerts"] },
+    pages: ["/meldingen"],
+  },
+  {
+    id: "feedback",
+    category: "account",
+    possible: true,
+    q: { nl: "Hoe meld ik een fout of idee?", en: "How do I report a bug or idea?" },
+    a: {
+      nl: "Via **Feedback geven** in het menu, of hier bij mij met de knop hieronder. Bij [Mijn meldingen](/my-feedback) zie je wat ermee gebeurt.",
+      en: "Via **Send feedback** in the menu, or right here with the button below. [My feedback](/my-feedback) shows what happens with it.",
+    },
+    keywords: { nl: ["fout melden", "bug", "idee", "feedback", "werkt niet", "probleem"], en: ["report bug", "idea", "feedback", "doesn't work", "problem"] },
+    pages: ["/my-feedback"],
+  },
+  {
+    id: "phone",
+    category: "account",
+    possible: true,
+    q: { nl: "Werkt Filmory op mijn telefoon?", en: "Does Filmory work on my phone?" },
+    a: {
+      nl: "Ja, gewoon in de browser van je telefoon, inclusief barcode scannen met je camera. Tip: zet filmory.nl op je beginscherm (in je browser: Delen → Zet op beginscherm).",
+      en: "Yes, right in your phone's browser, including scanning barcodes with your camera. Tip: add filmory.nl to your home screen (in your browser: Share → Add to Home Screen).",
+    },
+    keywords: { nl: ["telefoon", "mobiel", "iphone", "beginscherm"], en: ["phone", "mobile", "iphone", "home screen"] },
+  },
+  // ---------- Not possible yet ----------
+  {
+    id: "games",
+    category: "not-yet",
+    possible: false,
+    q: { nl: "Kan ik ook games of muziek bijhouden?", en: "Can I track games or music too?" },
+    a: {
+      nl: "Nee, Filmory is er voor films en series (dvd, Blu-ray, 4K UHD). Games of muziek kunnen niet. Wil je dat graag? Laat het weten, dan tellen we de stemmen.",
+      en: "No, Filmory is for films and series (DVD, Blu-ray, 4K UHD). Games or music aren't possible. Would you like that? Let us know and we'll count the votes.",
+    },
+    keywords: { nl: ["games", "spellen", "muziek", "cd", "vinyl", "boeken"], en: ["games", "music", "cd", "vinyl", "books"] },
+  },
+  {
+    id: "value",
+    category: "not-yet",
+    possible: false,
+    q: { nl: "Kan ik de waarde of aankoopprijs van mijn collectie bijhouden?", en: "Can I track the value or purchase price of my collection?" },
+    a: {
+      nl: "Dat kan nog niet. Je kunt wel een notitie per exemplaar gebruiken. Aankoopprijs en totale waarde staan op de ideeënlijst.",
+      en: "Not yet. You can use a note per copy. Purchase price and total value are on the ideas list.",
+    },
+    keywords: { nl: ["waarde", "aankoopprijs", "wat heb ik betaald", "verzekering", "totale waarde"], en: ["value", "purchase price", "what i paid", "insurance", "worth"] },
+  },
+  {
+    id: "android-app",
+    category: "not-yet",
+    possible: false,
+    q: { nl: "Is er een app in de App Store of Play Store?", en: "Is there an app in the App Store or Play Store?" },
+    a: {
+      nl: "De website werkt op elke telefoon, inclusief scannen. Een eigen app in de stores is er (nog) niet voor iedereen; zet filmory.nl op je beginscherm voor dezelfde ervaring.",
+      en: "The website works on any phone, scanning included. A store app isn't (yet) available to everyone; add filmory.nl to your home screen for the same experience.",
+    },
+    keywords: { nl: ["app store", "play store", "app downloaden", "android app", "ios app"], en: ["app store", "play store", "download app", "android app", "ios app"] },
+  },
+  {
+    id: "email-notifications",
+    category: "not-yet",
+    possible: false,
+    q: { nl: "Kan ik meldingen per e-mail krijgen?", en: "Can I get notifications by email?" },
+    a: {
+      nl: "Dat kan nog niet: meldingen staan in de app bij [Meldingen](/meldingen). Wil je ze liever per mail? Laat het weten.",
+      en: "Not yet: notifications are in the app under [Notifications](/meldingen). Prefer them by email? Let us know.",
+    },
+    keywords: { nl: ["meldingen per mail", "e-mail melding", "mail bij goedkeuring"], en: ["email notifications", "notify by email"] },
+  },
+  {
+    id: "price-tracking",
+    category: "not-yet",
+    possible: false,
+    q: { nl: "Kan Filmory laten zien waar een film het goedkoopst is?", en: "Can Filmory show where a film is cheapest?" },
+    a: {
+      nl: "Nee, prijzen van winkels zitten (nog) niet in Filmory. Interessant idee? Laat het weten.",
+      en: "No, shop prices aren't in Filmory (yet). Interesting idea? Let us know.",
+    },
+    keywords: { nl: ["goedkoopst", "prijsvergelijking", "aanbieding", "winkel"], en: ["cheapest", "price comparison", "deal", "shop"] },
+  },
+  {
+    id: "release-calendar",
+    category: "not-yet",
+    possible: false,
+    q: { nl: "Kan ik zien welke steelbooks of 4K-releases eraan komen?", en: "Can I see upcoming steelbook or 4K releases?" },
+    a: {
+      nl: "Een releasekalender is er nog niet. Laat het weten als je dat wilt, dan nemen we het mee.",
+      en: "There's no release calendar yet. Let us know if you'd like one and we'll consider it.",
+    },
+    keywords: { nl: ["releasekalender", "nieuwe releases", "binnenkort", "pre-order"], en: ["release calendar", "upcoming releases", "coming soon", "pre-order"] },
+  },
+];

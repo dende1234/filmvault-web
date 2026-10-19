@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -31,6 +32,7 @@ import {
   MoreHorizontal,
   TrendingUp,
   Eye,
+  LifeBuoy,
   MessageSquareText,
   Inbox,
   Bell,
@@ -42,6 +44,10 @@ import type { Profile } from "@/types/database";
 import { Logo } from "@/components/brand/logo";
 import { Avatar } from "@/components/avatar";
 import { FeedbackDialog } from "@/components/feedback-dialog";
+import { ReelAssistant } from "@/components/help/reel-assistant";
+import { useLocalFlag } from "@/lib/use-local-flag";
+
+const REEL_HIDDEN_KEY = "fv_reel_hidden";
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -138,7 +144,14 @@ export function NavShell({
   const [open, setOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(() => pathname.startsWith("/admin"));
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [reelOpen, setReelOpen] = useState(false);
+  const [reelHidden, setReelHidden] = useLocalFlag(REEL_HIDDEN_KEY);
   const close = () => setOpen(false);
+
+  function setReelVisibility(hidden: boolean) {
+    setReelHidden(hidden);
+    if (hidden) toast(t("reel_hidden_toast"));
+  }
 
   const sidebar = (
     <nav className="flex h-full w-64 flex-col gap-0.5 overflow-y-auto border-r border-border bg-card/80 p-3 backdrop-blur">
@@ -224,6 +237,18 @@ export function NavShell({
           <MessageSquareText className="h-4 w-4" />
           {t("feedback_nav")}
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            close();
+            if (reelHidden) setReelVisibility(false);
+            setReelOpen(true);
+          }}
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-elevated/60 hover:text-foreground"
+        >
+          <LifeBuoy className="h-4 w-4" />
+          {t("reel_nav")}
+        </button>
         <NavLink href="/my-feedback" icon={Inbox} label={t("feedback_my_nav")} onNavigate={close} />
         <NavLink href="/privacy" icon={ShieldQuestion} label={t("privacy_policy_link")} onNavigate={close} />
         <NavLink href="/about" icon={Info} label={t("nav_about")} onNavigate={close} />
@@ -247,6 +272,9 @@ export function NavShell({
   return (
     <div className="flex min-h-screen">
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+      {profile && (
+        <ReelAssistant open={reelOpen} onOpenChange={setReelOpen} hidden={reelHidden} onHide={() => setReelVisibility(true)} />
+      )}
       <div className="sticky top-0 hidden h-screen md:block">{sidebar}</div>
 
       {open && (

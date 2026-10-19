@@ -34,23 +34,32 @@ const ERROR_KEY: Record<FeedbackError, keyof Dictionary> = {
 /** Bug / idea / other, for users (with an optional screenshot) and visitors
  * (with an optional email). Page, browser, screen size and language are sent
  * along automatically, and the form says so. `page` overrides the current
- * path, e.g. the page a dialog was opened from. */
+ * path, e.g. the page a dialog was opened from. `initialMessage` and
+ * `initialKind` prefill the form (Reel hands over the question asked). */
 export function FeedbackForm({
   signedIn,
   page,
   onCancel,
   className,
+  initialMessage = "",
+  initialKind = "bug",
+  startedAt,
 }: {
   signedIn: boolean;
   page?: string;
   onCancel?: () => void;
   className?: string;
+  initialMessage?: string;
+  initialKind?: FeedbackKind;
+  /** When the user started (e.g. opened Reel): the bot check measures from here,
+   * so a prefilled form sent quickly isn't dropped as a bot. */
+  startedAt?: number;
 }) {
   const { t, locale } = useT();
   const pathname = usePathname();
-  const [openedAt] = useState(() => Date.now());
-  const [kind, setKind] = useState<FeedbackKind>("bug");
-  const [message, setMessage] = useState("");
+  const [openedAt] = useState(() => startedAt ?? Date.now());
+  const [kind, setKind] = useState<FeedbackKind>(initialKind);
+  const [message, setMessage] = useState(initialMessage);
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
@@ -62,7 +71,7 @@ export function FeedbackForm({
   const hint = KIND_OPTIONS.find((o) => o.kind === kind)!.hint;
 
   function reset() {
-    setKind("bug");
+    setKind(initialKind);
     setMessage("");
     setEmail("");
     setScreenshot(null);

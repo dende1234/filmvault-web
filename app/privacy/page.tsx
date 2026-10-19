@@ -105,6 +105,13 @@ function Dutch() {
         verdwijnen ook je meldingen en screenshots. 
       </p>
       <p>
+        Stel je een vraag aan Reel, het hulpje in de app, dan bewaren we de vraag anoniem: zonder je naam, account of
+        IP-adres, alleen de tekst van de vraag, de pagina waar je was, je taal, welk antwoord Reel gaf en of het je
+        hielp. Zo zien we wat er in de hulp ontbreekt. Reel gebruikt geen AI: de antwoorden komen uit een vaste lijst.
+        Deze vragen worden na 90 dagen automatisch verwijderd. Stuur je een vraag via Reel door als feedback, dan geldt
+        wat hierboven over feedback staat.
+      </p>
+      <p>
         Stuur je een barcode in die Filmory nog niet kent, dan zie je in de app of die is goedgekeurd. Goedgekeurde
         barcodes tellen mee in de ranglijst &quot;Top barcode-bijdragers&quot;, die alleen ingelogde gebruikers zien.
         Daarin staan je profielnaam (of &quot;Verzamelaar&quot; als je geen naam hebt ingevuld), je profielfoto en het
@@ -225,6 +232,13 @@ function English() {
         non-reversible code (hash) of your IP address for messages sent without an account, never the IP address
         itself. We keep feedback as long as needed to handle it; deleting
         your account also deletes your messages and screenshots. 
+      </p>
+      <p>
+        If you ask Reel, the in-app helper, a question, we store the question anonymously: without your name, account
+        or IP address, only the text of the question, the page you were on, your language, which answer Reel gave and
+        whether it helped. That shows us what the help is missing. Reel doesn&apos;t use AI: the answers come from a
+        fixed list. These questions are deleted automatically after 90 days. If you send a question on as feedback
+        via Reel, what is said about feedback above applies.
       </p>
       <p>
         If you submit a barcode Filmory doesn&apos;t know yet, the app shows you whether it was approved. Approved
