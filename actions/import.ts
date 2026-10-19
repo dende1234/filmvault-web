@@ -13,6 +13,7 @@ import { getLocale } from "@/lib/preferences";
 import { getTitleDetail, getTvDetail, searchMovies, searchTv } from "@/lib/tmdb/server";
 import { parseTitleId } from "@/lib/titles";
 import { normalizeBarcode } from "@/lib/barcode";
+import { detailsColumns, type CopyDetailsInput } from "@/lib/copy-details";
 import {
   addBarcodesToCollections,
   addKnownBoxToCollections,
@@ -136,6 +137,8 @@ export type ImportItem =
       /** Series only: seasons in this release; completeSeries = all regular seasons. */
       seasons?: number[] | null;
       completeSeries?: boolean;
+      /** Cut, languages and label from the spreadsheet. */
+      details?: CopyDetailsInput | null;
     } & Viewing)
   | {
       kind: "box";
@@ -208,13 +211,24 @@ export async function importBatch(collectionId: string, items: ImportItem[]): Pr
         else {
           const unchanged = await addBarcodesToCollections(
             [],
-            [{ barcode, type: item.type, editie: item.editie, ...(seasons?.length ? { seasons } : {}) }],
+            [{ barcode, type: item.type, editie: item.editie, ...(seasons?.length ? { seasons } : {}), details: item.details }],
             item.film.tmdbId,
             item.film.title,
             item.film.poster,
             target,
           );
           status = knownForFilm ? (unchanged.has(collectionId) ? "already" : "added") : "pending";
+          // A known barcode went straight into the collection: put the details on that copy.
+          // (A pending one carries them on pending_barcodes until approval.)
+          const details = detailsColumns(item.details);
+          if (knownForFilm && Object.keys(details).length > 0) {
+            await supabase
+              .from("collection_items")
+              .update(details)
+              .eq("collection_id", collectionId)
+              .eq("barcode", barcode)
+              .eq("tmdb_movie_id", item.film.tmdbId);
+          }
         }
         await logViewing(item.film, item);
         results.push({ ref: item.ref, status });

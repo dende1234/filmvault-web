@@ -908,4 +908,8 @@ export const en: Record<keyof typeof nl, string> = {
   scan_result_view: "View",
   scan_result_add: "Add",
   scan_result_add_anyway: "Add anyway",
+  import_field_cut: "Cut / version",
+  import_field_label: "Label / publisher",
+  import_field_audio: "Audio languages",
+  import_field_subtitles: "Subtitles",
 };

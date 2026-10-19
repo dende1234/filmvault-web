@@ -134,6 +134,11 @@ export interface PendingBarcode {
   editie: string | null;
   /** Series only: season numbers in this release (series_support.sql). */
   seasons?: number[] | null;
+  /** Per-copy details carried to the collection on approval (copy_details.sql). */
+  cut?: string | null;
+  audio_languages?: string[] | null;
+  subtitle_languages?: string[] | null;
+  label?: string | null;
   submitted_by: string;
   submitted_at: string | null;
   collection_id: string;
@@ -155,6 +160,8 @@ export interface NewBarcodeInput {
   editie: string;
   /** Series only: season numbers in this release (series_support.sql). */
   seasons?: number[] | null;
+  /** Cut, languages and label to put on the copy (copy_details.sql). */
+  details?: import("@/lib/copy-details").CopyDetailsInput | null;
 }
 
 /** One film picked for a new box (client-only, mirrors BoxFilmInput). */

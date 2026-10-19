@@ -911,4 +911,8 @@ export const nl = {
   scan_result_view: "Bekijk",
   scan_result_add: "Toevoegen",
   scan_result_add_anyway: "Toch toevoegen",
+  import_field_cut: "Cut / versie",
+  import_field_label: "Label / uitgever",
+  import_field_audio: "Audiotalen",
+  import_field_subtitles: "Ondertitels",
 };

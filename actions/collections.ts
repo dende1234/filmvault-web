@@ -12,7 +12,7 @@ import { requireAdmin } from "@/lib/require-admin";
 import { getLocale } from "@/lib/preferences";
 import { getTitleDetail } from "@/lib/tmdb/server";
 import { normalizeBarcode } from "@/lib/barcode";
-import { cleanLanguages } from "@/lib/copy-details";
+import { cleanLanguages, detailsColumns } from "@/lib/copy-details";
 import type {
   Barcode,
   BoxFilmInput,
@@ -524,21 +524,23 @@ export async function addNewBarcodesAsPending(
   const submittedBy = await requireUserId();
 
   for (const staged of newBarcodes) {
-    const { data: inserted, error } = await supabase
-      .from("pending_barcodes")
-      .insert({
-        tmdb_movie_id: tmdbMovieId,
-        movie_title: movieTitle,
-        movie_poster: moviePoster,
-        barcode: staged.barcode,
-        type: staged.type,
-        editie: staged.editie,
-        ...seasonsField(staged.seasons),
-        submitted_by: submittedBy,
-        collection_id: collectionIds[0],
-      })
-      .select("*")
-      .single();
+    const row: Record<string, unknown> = {
+      tmdb_movie_id: tmdbMovieId,
+      movie_title: movieTitle,
+      movie_poster: moviePoster,
+      barcode: staged.barcode,
+      type: staged.type,
+      editie: staged.editie,
+      ...seasonsField(staged.seasons),
+      submitted_by: submittedBy,
+      collection_id: collectionIds[0],
+    };
+    const details = detailsColumns(staged.details);
+    let { data: inserted, error } = await supabase.from("pending_barcodes").insert({ ...row, ...details }).select("*").single();
+    // PGRST204 = copy_details.sql not run yet: submit without the details.
+    if (error?.code === "PGRST204" && Object.keys(details).length > 0) {
+      ({ data: inserted, error } = await supabase.from("pending_barcodes").insert(row).select("*").single());
+    }
     if (error) throw error;
     await insertPendingBarcodeCollectionLinks(supabase, (inserted as PendingBarcode).id, collectionIds);
   }
@@ -718,6 +720,13 @@ export async function approvePendingBarcode(pendingFromClient: PendingBarcode): 
         type: pending.type ?? "DVD",
         editie: pending.editie ?? "Normaal",
         ...seasonsField(pending.seasons),
+        // Details submitted with the barcode (e.g. from a CSV import).
+        ...detailsColumns({
+          cut: pending.cut,
+          label: pending.label,
+          audioLanguages: pending.audio_languages,
+          subtitleLanguages: pending.subtitle_languages,
+        }),
       })),
     );
     if (error) throw error;
