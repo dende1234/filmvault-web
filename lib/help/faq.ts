@@ -218,6 +218,42 @@ export const HELP_ENTRIES: HelpEntry[] = [
     keywords: { nl: ["filteren", "sorteren", "zoeken in collectie", "alleen boxen"], en: ["filter", "sort", "search collection", "only boxes"] },
     pages: ["/collections"],
   },
+  {
+    id: "franchises",
+    category: "collections",
+    possible: true,
+    q: { nl: "Welke delen van een filmreeks mis ik nog?", en: "Which parts of a film series am I missing?" },
+    a: {
+      nl: "Kijk bij [Reeksen](/reeksen). Daar staat per filmreeks (zoals Lord of the Rings of Harry Potter) hoeveel delen je hebt; ontbrekende delen zet je met één klik op je verlanglijst. Op de pagina van een film zie je het ook.",
+      en: "Check [Film series](/reeksen). Per series (like Lord of the Rings or Harry Potter) you see how many parts you own; put missing parts on your wishlist in one click. A film's page shows it too.",
+    },
+    keywords: { nl: ["reeks", "reeksen", "filmreeks", "delen", "ontbrekende delen", "compleet maken", "mis ik", "trilogie compleet"], en: ["film series", "franchise", "parts", "missing parts", "complete series", "sequel"] },
+    pages: ["/reeksen"],
+  },
+  {
+    id: "shop-mode",
+    category: "add",
+    possible: true,
+    q: { nl: "Hoe check ik in de winkel of ik een film al heb?", en: "How do I check in a shop whether I own a film?" },
+    a: {
+      nl: "Open de [Winkelmodus](/winkelmodus) en scan de barcode. Je ziet meteen of je hem hebt, in een andere editie hebt, of dat hij op je verlanglijst staat (een Holy Grail valt extra op). Zonder barcode kun je op titel zoeken. Je scherm blijft aan zolang de pagina open is.",
+      en: "Open [Shop mode](/winkelmodus) and scan the barcode. You see at once whether you own it, own another edition, or have it on your wishlist (a Holy Grail stands out). Without a barcode you can search by title. Your screen stays on while the page is open.",
+    },
+    keywords: { nl: ["winkel", "winkelmodus", "winkelen", "in de winkel kijken", "kringloop", "rommelmarkt", "check"], en: ["shop", "shop mode", "store", "shopping", "thrift", "flea market", "check"] },
+    pages: ["/winkelmodus", "/dashboard"],
+  },
+  {
+    id: "print",
+    category: "import",
+    possible: true,
+    q: { nl: "Kan ik een lijst van mijn collectie printen, bijvoorbeeld voor de verzekering?", en: "Can I print a list of my collection, e.g. for insurance?" },
+    a: {
+      nl: "Ja. Bij [Collecties](/collections) kies je **Meer → Alles printen / PDF**, of in een collectie **Meer → Printen / PDF**. Kies in het printvenster 'Opslaan als PDF'. Je krijgt een overzicht met cover, formaat, editie, regio, barcode en conditie.",
+      en: "Yes. In [Collections](/collections) choose **More → Print all / PDF**, or in a collection **More → Print / PDF**. Choose 'Save as PDF' in the print dialog. You get an overview with cover, format, edition, region, barcode and condition.",
+    },
+    keywords: { nl: ["printen", "pdf", "verzekering", "inboedel", "afdrukken", "inbraak", "papier"], en: ["print", "pdf", "insurance", "home insurance", "burglary", "paper"] },
+    pages: ["/collections"],
+  },
   // ---------- Import / export ----------
   {
     id: "import-csv",
@@ -261,8 +297,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Kan ik mijn collectie exporteren of een back-up maken?", en: "Can I export my collection or make a backup?" },
     a: {
-      nl: "Ja. Bij [Collecties](/collections) klik je op **Alles exporteren**, of in een collectie op **Meer → Exporteren**. Je krijgt een CSV in hetzelfde formaat als de import, dus je kunt hem later weer inlezen.",
-      en: "Yes. In [Collections](/collections) click **Export all**, or in a collection **More → Export**. You get a CSV in the same format as the import, so you can read it back in later.",
+      nl: "Ja. Bij [Collecties](/collections) klik je op **Alles exporteren**, of in een collectie op **Meer → Exporteren**. Je krijgt een CSV in hetzelfde formaat als de import, dus je kunt hem later weer inlezen. Liever op papier of als PDF? Kies **Printen / PDF**.",
+      en: "Yes. In [Collections](/collections) click **Export all**, or in a collection **More → Export**. You get a CSV in the same format as the import, so you can read it back in later. Prefer paper or PDF? Choose **Print / PDF**.",
     },
     keywords: { nl: ["exporteren", "back-up", "backup", "downloaden", "data meenemen"], en: ["export", "backup", "download", "take my data"] },
     pages: ["/collections"],
@@ -525,7 +561,7 @@ export const HELP_ENTRIES: HelpEntry[] = [
       nl: "Nee, prijzen van winkels zitten (nog) niet in Filmory. Interessant idee? Laat het weten.",
       en: "No, shop prices aren't in Filmory (yet). Interesting idea? Let us know.",
     },
-    keywords: { nl: ["goedkoopst", "prijsvergelijking", "aanbieding", "winkel"], en: ["cheapest", "price comparison", "deal", "shop"] },
+    keywords: { nl: ["goedkoopst", "prijsvergelijking", "aanbieding", "goedkoopste winkel"], en: ["cheapest", "price comparison", "deal", "cheapest shop"] },
   },
   {
     id: "release-calendar",

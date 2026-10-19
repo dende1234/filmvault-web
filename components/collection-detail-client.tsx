@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Download, Eye, Film, MoreHorizontal, ScanLine, SearchX, X } from "lucide-react";
+import { Download, Eye, Film, MoreHorizontal, Printer, ScanLine, SearchX, X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { removeBoxFromCollection, removeCollectionItem } from "@/actions/collections";
@@ -203,6 +203,12 @@ export function CollectionDetailClient({
                       <Download />
                       {t("export_button")}
                     </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/collections/print?collection=${collection.id}`}>
+                      <Printer />
+                      {t("print_menu")}
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Film, Package, Plus, ScanLine } from "lucide-react";
+import { Film, Package, Plus, ScanLine, Store } from "lucide-react";
 import { useHasCamera } from "@/lib/use-has-camera";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
@@ -78,6 +78,14 @@ export function AddFilmFlow() {
           <Link href="/collections/scan">
             <ScanLine />
             {t("bulk_scan_button")}
+          </Link>
+        </Button>
+      )}
+      {hasCamera && (
+        <Button asChild variant="ghost">
+          <Link href="/winkelmodus">
+            <Store />
+            {t("shop_nav")}
           </Link>
         </Button>
       )}

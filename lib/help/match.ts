@@ -58,6 +58,12 @@ const SYNONYMS: Record<string, string> = {
   // formats
   dvd: "format", blu: "format", bluray: "format", ray: "format", uhd: "format", "4k": "format", formaat: "format",
   format: "format", vhs: "format",
+  // film series
+  reeks: "franchise", reeksen: "franchise", filmreeks: "franchise", franchise: "franchise", sequel: "franchise",
+  // shop
+  winkel: "shop", winkelen: "shop", winkelmodus: "shop", shop: "shop", store: "shop", shopping: "shop",
+  // print
+  print: "print", printen: "print", afdrukken: "print", pdf: "print",
   // box
   box: "box", boxset: "box", verzamelbox: "box", trilogie: "box", trilogy: "box", collectiebox: "box",
   // collection

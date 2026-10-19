@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Download, FileUp, LibraryBig, Plus } from "lucide-react";
+import { Download, FileUp, Layers, LibraryBig, MoreHorizontal, Plus, Printer } from "lucide-react";
 import Link from "next/link";
 import { useT } from "@/lib/i18n/locale-provider";
 import { createCollection } from "@/actions/collections";
@@ -20,6 +20,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 export function CollectionsList({
   collections,
@@ -85,13 +86,35 @@ export function CollectionsList({
                 {t("import_button")}
               </Link>
             </Button>
-            <Button asChild variant="secondary">
-              {/* Plain link: the route answers with a CSV download. */}
-              <a href="/api/export" download>
-                <Download />
-                {t("export_all_button")}
-              </a>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="secondary" aria-label={t("nav_more")}>
+                  <MoreHorizontal />
+                  {t("nav_more")}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link href="/reeksen">
+                    <Layers />
+                    {t("franchise_nav")}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  {/* Plain link: the route answers with a CSV download. */}
+                  <a href="/api/export" download>
+                    <Download />
+                    {t("export_all_button")}
+                  </a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/collections/print">
+                    <Printer />
+                    {t("print_all_menu")}
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button onClick={() => setShowCreate(true)}>
               <Plus />
               {t("action_add")}

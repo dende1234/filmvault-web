@@ -25,6 +25,7 @@ import {
   BarChart3,
   Megaphone,
   ShieldQuestion,
+  Store,
   CalendarDays,
   Bookmark,
   Tags,
@@ -32,6 +33,7 @@ import {
   MoreHorizontal,
   TrendingUp,
   Eye,
+  Layers,
   LifeBuoy,
   MessageSquareText,
   Inbox,
@@ -170,6 +172,8 @@ export function NavShell({
       <NavLink href="/films" icon={Film} label={t("nav_films_series")} onNavigate={close} />
       <NavLink href="/watched" icon={Eye} label={t("nav_watched")} onNavigate={close} />
       <NavLink href="/collections" icon={LibraryBig} label={t("collections_label")} onNavigate={close} />
+      <NavLink href="/reeksen" icon={Layers} label={t("franchise_nav")} onNavigate={close} />
+      <NavLink href="/winkelmodus" icon={Store} label={t("shop_nav")} onNavigate={close} />
       <NavLink href="/lists" icon={ListChecks} label={t("nav_lists")} onNavigate={close} />
       <NavLink href="/recap" icon={CalendarDays} label={t("nav_yearly_recap")} onNavigate={close} />
       <NavLink href="/wishlist" icon={Bookmark} label={t("nav_wishlist")} onNavigate={close} />
@@ -273,9 +277,11 @@ export function NavShell({
     <div className="flex min-h-screen">
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
       {profile && (
+        <div className="print:hidden">
         <ReelAssistant open={reelOpen} onOpenChange={setReelOpen} hidden={reelHidden} onHide={() => setReelVisibility(true)} />
+        </div>
       )}
-      <div className="sticky top-0 hidden h-screen md:block">{sidebar}</div>
+      <div className="sticky top-0 hidden h-screen md:block print:hidden">{sidebar}</div>
 
       {open && (
         <div className="fixed inset-0 z-50 md:hidden">
@@ -285,7 +291,7 @@ export function NavShell({
       )}
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border/60 bg-background/75 px-4 py-3 backdrop-blur-md md:hidden">
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b print:hidden border-border/60 bg-background/75 px-4 py-3 backdrop-blur-md md:hidden">
           <button
             onClick={() => setOpen(true)}
             aria-label={t("nav_menu_description")}
@@ -317,9 +323,9 @@ export function NavShell({
           )}
         </header>
 
-        <main className="flex-1 p-4 pb-24 md:p-8">{children}</main>
+        <main className="flex-1 p-4 pb-24 md:p-8 print:p-0">{children}</main>
 
-        <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t print:hidden border-border/60 bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
           <TabLink href="/dashboard" icon={LayoutDashboard} label={t("nav_home")} />
           <TabLink href="/films" icon={Film} label={t("films_label")} />
           <TabLink href="/collections" icon={LibraryBig} label={t("collections_label")} />

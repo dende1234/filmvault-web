@@ -1,5 +1,5 @@
 import "server-only";
-import type { GenreDto, MovieDetailDto, MovieDetailFullDto, MoviePageDto, TvDetailDto, TvDetailFullDto, TvSummaryDto } from "@/types/tmdb";
+import type { CollectionDto, GenreDto, MovieDetailDto, MovieDetailFullDto, MoviePageDto, TvDetailDto, TvDetailFullDto, TvSummaryDto } from "@/types/tmdb";
 import { tvToSummary } from "@/types/tmdb";
 import { parseTitleId } from "@/lib/titles";
 
@@ -16,13 +16,13 @@ function tmdbLocale(language: string) {
   return language === "en" ? "en-US" : "nl-NL";
 }
 
-async function tmdbGet<T>(path: string, params: Record<string, string | number | undefined>): Promise<T> {
+async function tmdbGet<T>(path: string, params: Record<string, string | number | undefined>, revalidate = 3600): Promise<T> {
   const url = new URL(`${BASE_URL}${path}`);
   url.searchParams.set("api_key", API_KEY);
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined) url.searchParams.set(key, String(value));
   }
-  const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
+  const res = await fetch(url.toString(), { next: { revalidate } });
   if (!res.ok) throw new Error(`TMDB request failed: ${res.status} ${path}`);
   return res.json();
 }
@@ -54,6 +54,20 @@ export async function getGenres(language = "nl"): Promise<GenreDto[]> {
 
 export async function getMovieDetail(movieId: number, language = "nl"): Promise<MovieDetailDto> {
   return tmdbGet(`/movie/${movieId}`, { language: tmdbLocale(language) });
+}
+
+const WEEK = 7 * 24 * 3600;
+
+/** Which film series (TMDB "collection") a film belongs to, if any. Cached a
+ * week: it rarely changes, and /reeksen asks it for every film you own. */
+export async function getMovieCollectionRef(movieId: number): Promise<MovieDetailDto["belongs_to_collection"]> {
+  const detail = await tmdbGet<MovieDetailDto>(`/movie/${movieId}`, { language: "en-US" }, WEEK);
+  return detail.belongs_to_collection ?? null;
+}
+
+/** A film series with all its parts. */
+export async function getTmdbCollection(collectionId: number, language = "nl"): Promise<CollectionDto> {
+  return tmdbGet(`/collection/${collectionId}`, { language: tmdbLocale(language) }, WEEK);
 }
 
 /** Everything the film detail page shows, in one request: credits, videos
