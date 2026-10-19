@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Check, Clock, Download, Eye, FileUp, Package, SearchX, Upload } from "lucide-react";
+import { AlertTriangle, Bookmark, Check, Clock, Download, Eye, FileUp, Package, SearchX, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { parseCsv, toCsv } from "@/lib/csv";
@@ -52,7 +52,7 @@ const NONE = "none";
 const NEW_COLLECTION = "__new__";
 
 type Step = "file" | "columns" | "review" | "done";
-type RowStatus = "direct" | "pending" | "watched_only" | "no_barcode" | "no_match";
+type RowStatus = "direct" | "pending" | "watched_only" | "wishlist" | "no_barcode" | "no_match";
 
 type ParsedRow = {
   ref: string;
@@ -73,6 +73,8 @@ type ParsedRow = {
   label: string | null;
   audio: string[] | null;
   subtitles: string[] | null;
+  /** Letterboxd watchlist row: goes to the wishlist. */
+  toWishlist: boolean;
 };
 
 /** "Complete serie" etc. needs the series' season count — resolved on import. */
@@ -95,6 +97,7 @@ type Group =
 
 function rowStatus(row: ReviewRow): RowStatus {
   if (!row.film) return "no_match";
+  if (row.toWishlist) return "wishlist";
   const code = normalizeBarcode(row.barcodeInput);
   if (code) {
     const known = row.match?.known;
@@ -108,6 +111,7 @@ const STATUS_STYLE: Record<RowStatus, { variant: "success" | "warning" | "second
   direct: { variant: "success", icon: Check },
   pending: { variant: "warning", icon: Clock },
   watched_only: { variant: "secondary", icon: Eye },
+  wishlist: { variant: "secondary", icon: Bookmark },
   no_barcode: { variant: "outline", icon: AlertTriangle },
   no_match: { variant: "destructive", icon: SearchX },
 };
@@ -131,6 +135,10 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
   const [newName, setNewName] = useState("");
   const [results, setResults] = useState<ImportResult[]>([]);
   const [importedCollectionId, setImportedCollectionId] = useState<string | null>(null);
+  // A Letterboxd export (has a "Letterboxd URI" column): watched/diary/ratings
+  // go to "Bekeken", watchlist.csv to the wishlist. Detected from the header
+  // and the file name; can be switched in the review step.
+  const [letterboxd, setLetterboxd] = useState<"watched" | "watchlist" | null>(null);
 
   const defaultType = mediaTypes[0] ?? "DVD";
   const defaultEditie = edities[0] ?? "Normaal";
@@ -139,12 +147,14 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
   const dataRows = hasHeader ? table.slice(1) : table;
 
   // ---------- Step 1: file ----------
-  function readTable(content: string) {
+  function readTable(content: string, fileName?: string) {
     const parsed = parseCsv(content);
     if (parsed.length === 0) {
       toast.error(t("import_empty_file"));
       return;
     }
+    const isLetterboxd = parsed[0].some((h) => h.trim().toLowerCase() === "letterboxd uri");
+    setLetterboxd(isLetterboxd ? (fileName && /watchlist/i.test(fileName) ? "watchlist" : "watched") : null);
     const header = looksLikeHeader(parsed[0]);
     setTable(parsed);
     setHasHeader(header);
@@ -153,7 +163,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
   }
 
   async function onFile(file: File) {
-    readTable(await file.text());
+    readTable(await file.text(), file.name);
   }
 
   function downloadTemplate() {
@@ -202,8 +212,10 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
         barcode: normalizeBarcode(cell(r, "barcode")) || null,
         format: cell(r, "format"),
         edition: cell(r, "edition"),
-        watched: normalizeWatched(cell(r, "watched")) || !!normalizeDate(cell(r, "watchedOn")),
-        rating: normalizeRating(cell(r, "rating"), scale),
+        // Letterboxd watched/diary/ratings exports have no "watched" column: every row is a film you saw.
+        watched:
+          letterboxd === "watched" || (letterboxd === null && (normalizeWatched(cell(r, "watched")) || !!normalizeDate(cell(r, "watchedOn")))),
+        rating: letterboxd === "watchlist" ? null : normalizeRating(cell(r, "rating"), scale),
         watchedOn: normalizeDate(cell(r, "watchedOn")),
         kind: normalizeKind(cell(r, "kind")) ?? (cell(r, "seasons") ? ("tv" as const) : null),
         seasonsText: cell(r, "seasons"),
@@ -211,6 +223,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
         label: cell(r, "label").trim().slice(0, 80) || extractLabel(cell(r, "edition")),
         audio: parseLanguages(cell(r, "audio")),
         subtitles: parseLanguages(cell(r, "subtitles")),
+        toWishlist: letterboxd === "watchlist",
       };
       if (box) {
         return box.titles.map((title, j) => ({ ...base, ref: `r${i}_${j}`, title, box: cell(r, "box") || box.boxName }));
@@ -289,7 +302,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
   }, [rows]);
 
   const counts = useMemo(() => {
-    const c: Record<RowStatus, number> = { direct: 0, pending: 0, watched_only: 0, no_barcode: 0, no_match: 0 };
+    const c: Record<RowStatus, number> = { direct: 0, pending: 0, watched_only: 0, wishlist: 0, no_barcode: 0, no_match: 0 };
     for (const g of groups) c[g.status]++;
     return c;
   }, [groups]);
@@ -299,6 +312,8 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
   const pageGroups = visible.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const isIncluded = (g: Group) => (g.kind === "single" ? g.row.include : g.rows.some((r) => r.include));
   const importCount = groups.filter((g) => isIncluded(g) && g.status !== "no_match" && g.status !== "no_barcode").length;
+  // Only physical copies need a collection; viewings and wishlist titles don't.
+  const needsCollection = groups.some((g) => isIncluded(g) && (g.status === "direct" || g.status === "pending"));
 
   function updateRows(refs: string[], patch: Partial<ReviewRow>) {
     setRows((prev) => prev.map((r) => (refs.includes(r.ref) ? { ...r, ...patch } : r)));
@@ -316,9 +331,9 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
 
   // ---------- Step 4: import ----------
   async function startImport() {
-    let collectionId = target;
+    let collectionId: string | null = needsCollection ? target : null;
     try {
-      if (target === NEW_COLLECTION) {
+      if (needsCollection && target === NEW_COLLECTION) {
         if (!newName.trim()) {
           toast.error(t("collections_error_create_name_required"));
           return;
@@ -349,6 +364,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
           rating: r.rating,
           watchedOn: r.watchedOn,
           details: { cut: r.cut, label: r.label, audioLanguages: r.audio, subtitleLanguages: r.subtitles },
+          ...(r.toWishlist ? { toWishlist: true, barcode: null } : {}),
         });
       } else {
         const known = g.rows[0].match?.known?.isBox ? g.rows[0].match!.known! : null;
@@ -400,6 +416,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
     direct: t("import_status_direct"),
     pending: t("import_status_pending"),
     watched_only: t("import_status_watched_only"),
+    wishlist: t("import_status_wishlist"),
     no_barcode: t("import_status_no_barcode"),
     no_match: t("import_status_no_match"),
   };
@@ -470,6 +487,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
                 {t("import_template")}
               </Button>
             </div>
+            <p className="text-xs text-muted-foreground">{t("import_letterboxd_hint")}</p>
           </CardContent>
         </Card>
       )}
@@ -559,6 +577,40 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
 
       {step === "review" && !progress && rows.length > 0 && (
         <div className="flex flex-col gap-5">
+          {letterboxd && (
+            <Card className="border-success/30 bg-success/5">
+              <CardContent className="flex flex-col gap-3 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-1">
+                  <p className="font-medium">{t("import_letterboxd_title")}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t(letterboxd === "watchlist" ? "import_letterboxd_watchlist" : "import_letterboxd_watched")}
+                  </p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  {(["watched", "watchlist"] as const).map((mode) => (
+                    <Button
+                      key={mode}
+                      size="sm"
+                      variant={letterboxd === mode ? "default" : "secondary"}
+                      onClick={() => {
+                        setLetterboxd(mode);
+                        setRows((prev) =>
+                          prev.map((r) => ({
+                            ...r,
+                            toWishlist: mode === "watchlist",
+                            watched: mode === "watched",
+                            rating: mode === "watchlist" ? null : r.rating,
+                          })),
+                        );
+                      }}
+                    >
+                      {t(mode === "watched" ? "import_letterboxd_as_watched" : "import_letterboxd_as_wishlist")}
+                    </Button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
           <Card className="border-primary/30 bg-primary/5">
             <CardContent className="flex flex-col gap-1 pt-5">
               <p className="font-medium">{t("import_rules_title")}</p>
@@ -718,6 +770,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
 
           <Card className="sticky bottom-20 md:bottom-4">
             <CardContent className="flex flex-col gap-3 pt-5 sm:flex-row sm:items-end">
+              {needsCollection ? (
               <div className="flex flex-1 flex-col gap-1.5">
                 <Label>{t("import_target")}</Label>
                 <Select value={target} onValueChange={setTarget}>
@@ -734,7 +787,10 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
                   </SelectContent>
                 </Select>
               </div>
-              {target === NEW_COLLECTION && (
+              ) : (
+                <p className="flex-1 text-sm text-muted-foreground">{t("import_no_collection_needed")}</p>
+              )}
+              {needsCollection && target === NEW_COLLECTION && (
                 <Input
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
@@ -761,7 +817,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
           <CardContent className="flex flex-col gap-5 pt-5">
             <h2 className="font-display text-2xl font-semibold tracking-tight">{t("import_done_title")}</h2>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {(["added", "already", "pending", "watched_only", "skipped", "error"] as ImportStatus[]).map((s) => {
+              {(["added", "already", "pending", "watched_only", "wishlist", "skipped", "error"] as ImportStatus[]).map((s) => {
                 const n = results.filter((r) => r.status === s).length;
                 if (n === 0) return null;
                 return (
@@ -782,6 +838,11 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
               {results.some((r) => r.status === "watched_only") && (
                 <Button asChild variant="secondary">
                   <Link href="/watched">{t("import_go_watched")}</Link>
+                </Button>
+              )}
+              {results.some((r) => r.status === "wishlist") && (
+                <Button asChild variant="secondary">
+                  <Link href="/wishlist">{t("import_go_wishlist")}</Link>
                 </Button>
               )}
               <Button variant="ghost" onClick={reset}>

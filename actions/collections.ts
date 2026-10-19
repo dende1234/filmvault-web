@@ -337,6 +337,12 @@ export async function getBoxItems(collectionId: string, boxGroupId: string): Pro
   return data as CollectionItem[];
 }
 
+/** Your copies of a title (all releases), e.g. to warn on the film page
+ * that you already own it before adding another copy. */
+export async function getOwnedCopiesOfTitle(tmdbMovieId: number): Promise<OwnedCopy[]> {
+  return toOwnedCopies(await ownedCopies({ tmdbIds: [tmdbMovieId] }));
+}
+
 /** Removes a whole box (its films' rows) from one collection only. */
 export async function removeBoxFromCollection(collectionId: string, itemIds: string[]) {
   if (itemIds.length === 0) return;
@@ -817,6 +823,7 @@ export type OwnedCopy = {
   itemId: string;
   collectionId: string;
   collections: string[];
+  collectionIds: string[];
   type: string;
   editie: string;
   cut: string | null;
@@ -831,6 +838,8 @@ export type ScannedBarcodeResult =
       title: { id: number; title: string; poster: string | null };
       /** The scanned release as registered on the master list. */
       release: { type: string; editie: string };
+      /** That master-list row, to add this release straight to collections. */
+      barcodeRow: Barcode;
       /** Copies of exactly this release (same barcode) you already own. */
       owned: OwnedCopy[];
       /** Copies of the same film/series in another release (other barcode). */
@@ -875,13 +884,17 @@ function toOwnedCopies(rows: OwnedRow[]): OwnedCopy[] {
     const key = row.box_group_id ?? row.item_group_id;
     const existing = byGroup.get(key);
     if (existing) {
-      if (!existing.collections.includes(collectionName)) existing.collections.push(collectionName);
+      if (!existing.collectionIds.includes(row.collection_id)) {
+        existing.collectionIds.push(row.collection_id);
+        existing.collections.push(collectionName);
+      }
       continue;
     }
     byGroup.set(key, {
       itemId: row.id,
       collectionId: row.collection_id,
       collections: [collectionName],
+      collectionIds: [row.collection_id],
       type: row.type,
       editie: row.editie,
       cut: row.cut ?? null,
@@ -932,6 +945,7 @@ export async function lookupScannedBarcode(raw: string): Promise<ScannedBarcodeR
     barcode,
     title: { id: known[0].tmdb_movie_id, title: detail?.title ?? `TMDB #${known[0].tmdb_movie_id}`, poster: detail?.poster_path ?? null },
     release: { type: known[0].type, editie: known[0].editie },
+    barcodeRow: known[0],
     owned: toOwnedCopies(same),
     otherEditions: toOwnedCopies(other),
   };

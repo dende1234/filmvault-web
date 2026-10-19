@@ -39,7 +39,9 @@ function normHeader(h: string) {
 export function detectColumns(headers: string[]): ColumnMapping {
   const mapping: ColumnMapping = {};
   const used = new Set<number>();
-  const normalized = headers.map(normHeader);
+  // Link columns ("Letterboxd URI", "IMDb URL") are never data fields; without
+  // this, "box" would match inside "letterboxd".
+  const normalized = headers.map((h) => (/letterboxd|\buri\b|\burl\b|\blink\b/.test(normHeader(h)) ? "" : normHeader(h)));
   for (const pass of ["exact", "contains"] as const) {
     for (const field of IMPORT_FIELDS) {
       if (mapping[field] !== undefined) continue;

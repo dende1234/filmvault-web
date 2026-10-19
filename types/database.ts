@@ -216,6 +216,8 @@ export interface WishlistItem {
   added_at: string | null;
   /** Series only: the wanted seasons (null = the whole series). */
   seasons?: number[] | null;
+  /** "Holy Grail": what you hunt most (collector_extras.sql). */
+  is_grail?: boolean;
 }
 
 /** Mirrors badges/BadgeId.kt exactly — id + i18n key pair, same 11 fixed

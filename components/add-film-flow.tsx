@@ -18,10 +18,11 @@ type Selected = { id: number; title: string; poster: string | null };
 
 /** Dashboard/Collections entry point: pick a film or series via search, or
  * scan its barcode (only offered when the device has a camera), then add it
- * to one or more collections. A known barcode first shows whether you already
- * own it, own it in another edition, or not yet; adding then skips the search
- * (a known box opens with its films filled in). For an unknown one you say
- * whether it is a single title or a box, and the barcode is pre-filled. */
+ * to one or more collections. A known barcode (film, series or box) opens one
+ * screen: whether you already own it, own it in another edition, or not yet,
+ * and the collections to put it in, without barcode/format/edition fields.
+ * For an unknown one you say whether it is a single title or a box, and the
+ * barcode is pre-filled for approval. */
 export function AddFilmFlow() {
   const { t } = useT();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -32,25 +33,9 @@ export function AddFilmFlow() {
   const [boxDraft, setBoxDraft] = useState<BoxDraft | null>(null);
   const [boxSession, setBoxSession] = useState(0);
   const [lookingUp, setLookingUp] = useState(false);
-  // A known barcode first shows what it means for you (own it / other edition / new).
+  // A known barcode (film, series or box): one screen with what it means for
+  // you and the collections to put it in.
   const [scanResult, setScanResult] = useState<Extract<ScannedBarcodeResult, { kind: "title" | "box" }> | null>(null);
-
-  function addScanned(result: Extract<ScannedBarcodeResult, { kind: "title" | "box" }>) {
-    setScanResult(null);
-    if (result.kind === "title") {
-      setScanned(result.barcode);
-      setSelected(result.title);
-    } else {
-      openBox({
-        films: result.films,
-        barcode: result.barcode,
-        boxName: result.boxName ?? "",
-        type: result.type,
-        editie: result.editie,
-        knownBoxGroupId: result.boxGroupId,
-      });
-    }
-  }
 
   function openBox(draft: BoxDraft) {
     setBoxDraft(draft);
@@ -153,7 +138,7 @@ export function AddFilmFlow() {
           initialBarcode={scanned ?? undefined}
         />
       )}
-      {scanResult && <ScanResultDialog result={scanResult} onAdd={() => addScanned(scanResult)} onClose={() => setScanResult(null)} />}
+      {scanResult && <ScanResultDialog key={scanResult.barcode} result={scanResult} onClose={() => setScanResult(null)} />}
       {boxDraft && <BoxDetailsDialog key={boxSession} draft={boxDraft} onClose={() => setBoxDraft(null)} />}
     </>
   );

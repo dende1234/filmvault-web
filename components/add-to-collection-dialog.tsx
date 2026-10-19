@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
-import { addBarcodesToCollections, getBarcodesForMovie, getUserCollections } from "@/actions/collections";
+import { addBarcodesToCollections, getBarcodesForMovie, getOwnedCopiesOfTitle, getUserCollections, type OwnedCopy } from "@/actions/collections";
 import { getEdities, getMediaTypes } from "@/actions/media-types";
 import { removeFromWishlistIfCovered } from "@/actions/wishlist";
 import { getSeriesSeasons, type SeasonOption } from "@/actions/series";
@@ -56,6 +58,8 @@ export function AddToCollectionDialog({
   const [info, setInfo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Copies of this title you already own: shown first, so a second copy is a choice.
+  const [owned, setOwned] = useState<OwnedCopy[]>([]);
   // Series only: the seasons in the release being added.
   const series = isSeries(tmdbMovieId);
   const [seasonOptions, setSeasonOptions] = useState<SeasonOption[]>([]);
@@ -78,8 +82,10 @@ export function AddToCollectionDialog({
       getMediaTypes(),
       getEdities(),
       series ? getSeriesSeasons(tmdbMovieId) : Promise.resolve([] as SeasonOption[]),
+      getOwnedCopiesOfTitle(tmdbMovieId).catch(() => [] as OwnedCopy[]),
     ])
-      .then(([barcodes, cols, types, eds, seasonList]) => {
+      .then(([barcodes, cols, types, eds, seasonList, ownedCopies]) => {
+        setOwned(ownedCopies);
         setSeasonOptions(seasonList);
         setExistingBarcodes(barcodes);
         setCollections(cols);
@@ -185,6 +191,34 @@ export function AddToCollectionDialog({
           <p className="text-sm text-muted-foreground">…</p>
         ) : (
           <div className="flex flex-col gap-5">
+            {owned.length > 0 && (
+              <div className="flex flex-col gap-3 rounded-lg border border-warning/40 bg-warning/10 p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="mt-0.5 size-5 shrink-0 text-warning" aria-hidden />
+                  <div className="flex flex-col gap-0.5">
+                    <p className="font-medium">{t("add_to_collection_owned_title")}</p>
+                    <p className="text-sm text-muted-foreground">{t("add_to_collection_owned_hint")}</p>
+                  </div>
+                </div>
+                <ul className="flex flex-col gap-1.5">
+                  {owned.map((c) => (
+                    <li key={c.itemId} className="flex items-center justify-between gap-3 rounded-md bg-background/60 px-3 py-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">
+                          {[c.type, c.editie !== "Normaal" ? c.editie : null, c.cut, c.label].filter(Boolean).join(" · ")}
+                        </p>
+                        <p className="truncate text-xs text-muted-foreground">{t("scan_result_in", c.collections.join(", "))}</p>
+                      </div>
+                      <Button asChild size="sm" variant="ghost" className="shrink-0">
+                        <Link href={`/collections/${c.collectionId}/items/${c.itemId}`} onClick={() => onOpenChange(false)}>
+                          {t("scan_result_view")}
+                        </Link>
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             <div>
               <p className="mb-2 text-sm font-medium">{t("add_to_collection_barcodes_for", movieTitle)}</p>
               {existingBarcodes.length === 0 ? (

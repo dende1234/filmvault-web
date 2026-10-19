@@ -21,7 +21,22 @@ export async function getWishlist(): Promise<WishlistItem[]> {
   const userId = await requireUserId();
   const { data, error } = await supabase.from("wishlist_items").select("*").eq("user_id", userId);
   if (error) throw error;
-  return (data as WishlistItem[]).sort((a, b) => (b.added_at ?? "").localeCompare(a.added_at ?? ""));
+  // Holy Grails first, then newest.
+  return (data as WishlistItem[]).sort(
+    (a, b) => Number(!!b.is_grail) - Number(!!a.is_grail) || (b.added_at ?? "").localeCompare(a.added_at ?? ""),
+  );
+}
+
+/** Marks a wishlist title as Holy Grail (or not). "not_ready" until
+ * collector_extras.sql has run. */
+export async function setWishlistGrail(id: string, isGrail: boolean): Promise<{ error: "not_ready" | "failed" | null }> {
+  const supabase = await createClient();
+  const userId = await requireUserId();
+  const { error } = await supabase.from("wishlist_items").update({ is_grail: isGrail }).eq("id", id).eq("user_id", userId);
+  if (error?.code === "PGRST204") return { error: "not_ready" };
+  if (error) return { error: "failed" };
+  revalidatePath("/wishlist");
+  return { error: null };
 }
 
 export async function isOnWishlist(tmdbMovieId: number): Promise<boolean> {

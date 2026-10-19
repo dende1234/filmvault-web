@@ -1,12 +1,25 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Package, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
-import type { OwnedCopy, ScannedBarcodeResult } from "@/actions/collections";
+import {
+  addExistingBarcodesToCollections,
+  addKnownBoxToCollections,
+  getUserCollections,
+  setCopyCollections,
+  type OwnedCopy,
+  type ScannedBarcodeResult,
+} from "@/actions/collections";
+import { removeFromWishlistIfCovered } from "@/actions/wishlist";
+import type { Collection } from "@/types/database";
 import { cn } from "@/lib/utils";
 import { Poster } from "@/components/movie/poster";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 type Known = Extract<ScannedBarcodeResult, { kind: "title" | "box" }>;
@@ -15,23 +28,36 @@ function release(type: string, editie: string, cut?: string | null, label?: stri
   return [type, editie !== "Normaal" ? editie : null, cut, label].filter(Boolean).join(" · ");
 }
 
-/** What a scan means for you, before adding anything: you already own this
- * release, you own the title in another edition, or it is new to you. The
- * moment that matters in a shop. */
-export function ScanResultDialog({
-  result,
-  onAdd,
-  onClose,
-}: {
-  result: Known;
-  onAdd: () => void;
-  onClose: () => void;
-}) {
+/** A known barcode (film, series or box) in one screen: what it means for
+ * you (you own this release / you own the title in another edition / new),
+ * the title, and the collections to put it in. No barcode, format or edition
+ * fields: the master list already knows those. If you own this very release,
+ * the collections are those of that copy (ticking more keeps it one copy);
+ * "Ik heb er nog een" adds a second physical copy instead. */
+export function ScanResultDialog({ result, onClose }: { result: Known; onClose: () => void }) {
   const { t } = useT();
+  const router = useRouter();
   const isBox = result.kind === "box";
   const owned = result.owned;
   const other = result.kind === "title" ? result.otherEditions : [];
   const status: "owned" | "other" | "new" = owned.length > 0 ? "owned" : other.length > 0 ? "other" : "new";
+  const ownedCopy: OwnedCopy | null = owned[0] ?? null;
+
+  const [collections, setCollections] = useState<Collection[] | null>(null);
+  // "copy" = this owned copy's collections; "new" = a (second) physical copy.
+  const [mode, setMode] = useState<"copy" | "new">(ownedCopy ? "copy" : "new");
+  const [selected, setSelected] = useState<Set<string>>(() => new Set(ownedCopy?.collectionIds ?? []));
+  const [saving, setSaving] = useState(false);
+  const [info, setInfo] = useState<string | null>(null);
+
+  useEffect(() => {
+    getUserCollections()
+      .then((cols) => {
+        setCollections(cols);
+        if (!ownedCopy && cols.length === 1) setSelected(new Set([cols[0].id]));
+      })
+      .catch(() => setCollections([]));
+  }, [ownedCopy]);
 
   const name = isBox ? (result.boxName ?? result.films[0]?.movie_title ?? "") : result.title.title;
   const poster = isBox ? (result.films[0]?.movie_poster ?? null) : result.title.poster;
@@ -61,8 +87,65 @@ export function ScanResultDialog({
 
   const copyHref = (c: OwnedCopy) =>
     isBox && result.boxGroupId ? `/collections/${c.collectionId}/boxes/${result.boxGroupId}` : `/collections/${c.collectionId}/items/${c.itemId}`;
-
   const list = status === "owned" ? owned : other;
+
+  const unchanged =
+    mode === "copy" &&
+    ownedCopy !== null &&
+    selected.size === ownedCopy.collectionIds.length &&
+    ownedCopy.collectionIds.every((id) => selected.has(id));
+
+  function toggle(id: string, on: boolean) {
+    setInfo(null);
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  function startNewCopy() {
+    setMode("new");
+    setInfo(null);
+    setSelected(new Set(collections?.length === 1 ? [collections[0].id] : []));
+  }
+
+  async function save() {
+    if (selected.size === 0) return;
+    setSaving(true);
+    setInfo(null);
+    const ids = Array.from(selected);
+    try {
+      if (mode === "copy" && ownedCopy) {
+        const res = await setCopyCollections(ownedCopy.itemId, ids);
+        if (res.error) throw new Error(res.error);
+        toast.success(t("copy_collections_saved"));
+      } else {
+        const already =
+          result.kind === "box"
+            ? result.boxGroupId
+              ? await addKnownBoxToCollections(result.films, result.boxGroupId, result.boxName, result.barcode, result.type, result.editie, ids)
+              : new Set<string>()
+            : await addExistingBarcodesToCollections([result.barcodeRow], result.title.id, result.title.title, result.title.poster, ids);
+        const names = (collections ?? []).filter((c) => already.has(c.id)).map((c) => c.name).join(", ");
+        if (already.size === ids.length) {
+          setInfo(t("add_to_collection_already_in", names));
+          return;
+        }
+        if (already.size > 0) toast(t("add_to_collection_already_in_partial", names));
+        else toast.success(t("scan_result_added"));
+        if (result.kind === "title") await removeFromWishlistIfCovered(result.title.id).catch(() => {});
+        else for (const f of result.films) await removeFromWishlistIfCovered(f.tmdb_movie_id).catch(() => {});
+      }
+      onClose();
+      router.refresh();
+    } catch {
+      toast.error(t("add_to_collection_error_submit"));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -89,7 +172,11 @@ export function ScanResultDialog({
               <span className="line-clamp-2">{name}</span>
             </p>
             <p className="text-sm text-muted-foreground">{t("scan_result_scanned", scanned)}</p>
-            {isBox && <p className="text-xs text-muted-foreground">{t("box_card_film_count", result.films.length)}</p>}
+            {isBox && (
+              <p className="line-clamp-2 text-xs text-muted-foreground">
+                {t("box_card_film_count", result.films.length)}: {result.films.map((f) => f.movie_title).join(", ")}
+              </p>
+            )}
           </div>
         </div>
 
@@ -114,12 +201,45 @@ export function ScanResultDialog({
           </div>
         )}
 
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-medium">
+            {t(mode === "copy" ? "scan_result_collections_copy" : "scan_result_collections_new")}
+          </p>
+          {collections === null ? (
+            <p className="text-sm text-muted-foreground">{t("scan_box_loading")}</p>
+          ) : collections.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {t("scan_result_no_collections")}{" "}
+              <Link href="/collections" onClick={onClose} className="font-medium text-primary hover:underline">
+                {t("scan_result_create_collection")}
+              </Link>
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {collections.map((c) => (
+                <li key={c.id}>
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox checked={selected.has(c.id)} onCheckedChange={(v) => toggle(c.id, v === true)} />
+                    {c.name}
+                  </label>
+                </li>
+              ))}
+            </ul>
+          )}
+          {mode === "copy" && (
+            <button type="button" onClick={startNewCopy} className="w-fit text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline">
+              {t("scan_result_second_copy")}
+            </button>
+          )}
+          {info && <p className="text-sm text-muted-foreground">{info}</p>}
+        </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             {t("action_cancel")}
           </Button>
-          <Button variant={status === "owned" ? "secondary" : "default"} onClick={onAdd}>
-            {t(status === "owned" ? "scan_result_add_anyway" : "scan_result_add")}
+          <Button onClick={save} disabled={saving || selected.size === 0 || unchanged}>
+            {t(mode === "copy" ? "action_save" : "scan_result_add")}
           </Button>
         </DialogFooter>
       </DialogContent>

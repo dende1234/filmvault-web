@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { titleHref } from "@/lib/titles";
 import Link from "next/link";
-import { Bookmark, X } from "lucide-react";
+import { Bookmark, Crown, X } from "lucide-react";
+import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
-import { removeFromWishlist } from "@/actions/wishlist";
+import { removeFromWishlist, setWishlistGrail } from "@/actions/wishlist";
 import type { WishlistItem } from "@/types/database";
 import { Poster, PosterCorner } from "@/components/movie/poster";
 import { PosterGrid } from "@/components/movie/poster-grid";
@@ -14,12 +15,26 @@ import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
 import { isSeries } from "@/lib/titles";
 import { useSeasonsLabel } from "@/components/seasons-picker";
+import { cn } from "@/lib/utils";
 
 export function WishlistClient({ items: initialItems }: { items: WishlistItem[] }) {
   const { t } = useT();
   const [items, setItems] = useState(initialItems);
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
   const seasonsLabel = useSeasonsLabel();
+  const [grailsOnly, setGrailsOnly] = useState(false);
+  const grailCount = items.filter((i) => i.is_grail).length;
+  const shown = grailsOnly ? items.filter((i) => i.is_grail) : items;
+
+  async function toggleGrail(item: WishlistItem) {
+    const next = !item.is_grail;
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, is_grail: next } : i)));
+    const result = await setWishlistGrail(item.id, next).catch(() => ({ error: "failed" as const }));
+    if (result.error) {
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, is_grail: !next } : i)));
+      toast.error(t(result.error === "not_ready" ? "wishlist_grail_not_ready" : "wishlist_grail_error"));
+    }
+  }
 
   async function remove(item: WishlistItem) {
     setRemovingIds((prev) => new Set(prev).add(item.id));
@@ -37,7 +52,38 @@ export function WishlistClient({ items: initialItems }: { items: WishlistItem[] 
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title={t("nav_wishlist")} description={items.length > 0 ? t("wishlist_count", items.length) : undefined} />
+      <PageHeader
+        title={t("nav_wishlist")}
+        description={
+          items.length > 0 ? (
+            <>
+              {t("wishlist_count", items.length)}
+              {grailCount > 0 && <> · {t("wishlist_grail_count", grailCount)}</>}
+            </>
+          ) : undefined
+        }
+        actions={
+          items.length > 0 ? (
+            <div className="flex gap-2">
+              {[false, true].map((only) => (
+                <button
+                  key={String(only)}
+                  type="button"
+                  onClick={() => setGrailsOnly(only)}
+                  aria-pressed={grailsOnly === only}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                    grailsOnly === only ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {only && <Crown className="size-3.5" aria-hidden />}
+                  {t(only ? "wishlist_grail_filter" : "wishlist_grail_all")}
+                </button>
+              ))}
+            </div>
+          ) : undefined
+        }
+      />
 
       {items.length === 0 ? (
         <EmptyState
@@ -50,9 +96,11 @@ export function WishlistClient({ items: initialItems }: { items: WishlistItem[] 
             </Button>
           }
         />
+      ) : shown.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("wishlist_grail_empty")}</p>
       ) : (
         <PosterGrid>
-          {items.map((item) => (
+          {shown.map((item) => (
             <div key={item.id} className="group relative flex flex-col gap-2">
               <Link href={titleHref(item.tmdb_movie_id)} className="flex flex-col gap-2 focus-visible:outline-none">
                 <Poster path={item.movie_poster} title={item.movie_title} hover />
@@ -65,6 +113,23 @@ export function WishlistClient({ items: initialItems }: { items: WishlistItem[] 
                   </p>
                 )}
               </Link>
+              <PosterCorner position="tl">
+                <button
+                  type="button"
+                  onClick={() => toggleGrail(item)}
+                  aria-pressed={!!item.is_grail}
+                  aria-label={t(item.is_grail ? "wishlist_grail_unmark" : "wishlist_grail_mark")}
+                  title={t(item.is_grail ? "wishlist_grail_unmark" : "wishlist_grail_mark")}
+                  className={cn(
+                    "rounded-full p-1.5 backdrop-blur-sm transition-opacity focus-visible:opacity-100",
+                    item.is_grail
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-black/70 text-white hover:bg-primary hover:text-primary-foreground md:opacity-0 md:group-hover:opacity-100",
+                  )}
+                >
+                  <Crown className="size-3.5" />
+                </button>
+              </PosterCorner>
               <PosterCorner position="tr">
                 <button
                   type="button"
