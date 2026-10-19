@@ -14,7 +14,7 @@ npm run lint    # eslint (next core-web-vitals + typescript config)
 
 There is no test suite. CI (`.github/workflows/ci.yml`, Node 22) runs `npm ci`, `npm run lint` and `npm run build` with dummy env values, so a change is "green" when lint and build both pass.
 
-Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `TMDB_API_KEY` (required to build/run); optional: `NEXT_PUBLIC_SITE_URL`, `BREVO_API_KEY`/`BREVO_LIST_ID`/`BREVO_DOI_TEMPLATE_ID` (newsletter), `FEEDBACK_SALT` (IP hashing), `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`.
+Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `TMDB_API_KEY` (required to build/run); optional: `NEXT_PUBLIC_SITE_URL`, `BREVO_API_KEY`/`BREVO_LIST_ID`/`BREVO_DOI_TEMPLATE_ID` (newsletter), `FEEDBACK_SALT` (IP hashing), `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `ANTHROPIC_API_KEY` (admin shelf scan, `lib/ai/shelf-scan.ts`; runtime only).
 
 ## Stack
 
