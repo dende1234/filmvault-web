@@ -71,8 +71,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Hoe lang duurt het voor een barcode is goedgekeurd?", en: "How long does barcode approval take?" },
     a: {
-      nl: "Een beheerder controleert nieuwe barcodes met de hand, meestal binnen een paar dagen. Je krijgt een [melding](/meldingen) zodra hij is goedgekeurd of afgewezen.",
-      en: "An admin checks new barcodes by hand, usually within a few days. You get a [notification](/meldingen) as soon as it's approved or rejected.",
+      nl: "Een beheerder controleert nieuwe barcodes met de hand, meestal binnen een paar dagen. Bij [Meldingen](/meldingen) zie je wat nog wacht, en je krijgt daar een melding zodra hij is goedgekeurd of afgewezen.",
+      en: "An admin checks new barcodes by hand, usually within a few days. [Notifications](/meldingen) shows what is still waiting, and you get a notification there as soon as it's approved or rejected.",
     },
     keywords: { nl: ["goedgekeurd", "wachten", "in behandeling", "ter goedkeuring", "pending"], en: ["approved", "waiting", "pending", "approval"] },
     pages: ["/meldingen"],

@@ -379,6 +379,8 @@ export interface AdminReportUiItem {
 export interface PendingBarcodeUiItem {
   pending: PendingBarcode;
   targetCollectionNames: string[];
+  /** Who submitted it (profiles; admins can read every profile). */
+  submitter?: { id: string; name: string | null; email: string | null } | null;
 }
 
 /** One admin-approval card — either a single film, or a box's several film

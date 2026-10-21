@@ -692,39 +692,15 @@ async function barcodeAlreadyExists(supabase: Awaited<ReturnType<typeof createCl
   return (data ?? []).length > 0;
 }
 
+// The submitter's "approved / rejected" notification is made by the database
+// (trigger in approval_notifications.sql), so a review from any client,
+// the Android app included, notifies once.
+
 /**
  * Sequential, not atomic — acceptable tradeoff for this iteration (no
  * Postgres RPC). Guards against duplicating a barcode that another
  * (near-simultaneous) approval already registered for this film.
  */
-/** Tells the submitter their barcode was approved or rejected
- * (contributors_region.sql). Best effort: a missing table or any error never
- * blocks the review itself. Admin-only via RLS. */
-async function notifySubmitter(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  pending: PendingBarcode,
-  kind: "barcode_approved" | "barcode_rejected",
-  collectionIds: string[] = [],
-) {
-  try {
-    await supabase.from("user_notifications").insert({
-      user_id: pending.submitted_by,
-      kind,
-      payload: {
-        title: pending.is_box ? (pending.box_name ?? pending.movie_title) : pending.movie_title,
-        poster: pending.movie_poster,
-        barcode: pending.barcode,
-        isBox: pending.is_box,
-        tmdbMovieId: pending.tmdb_movie_id,
-        boxGroupId: pending.box_group_id,
-        collectionIds,
-      },
-    });
-  } catch {
-    // ignore
-  }
-}
-
 export async function approvePendingBarcode(pendingFromClient: PendingBarcode): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
@@ -777,7 +753,6 @@ export async function approvePendingBarcode(pendingFromClient: PendingBarcode): 
     );
     if (error) throw error;
   }
-  await notifySubmitter(supabase, pending, "barcode_approved", targetCollectionIds);
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
 }
@@ -785,20 +760,9 @@ export async function approvePendingBarcode(pendingFromClient: PendingBarcode): 
 export async function rejectPendingBarcode(id: string): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
-  const pending = await getPendingBarcodeById(supabase, id);
+  await getPendingBarcodeById(supabase, id); // must still be pending
   const { error } = await supabase.from("pending_barcodes").update({ status: "rejected" }).eq("id", id);
   if (error) throw error;
-  // A box is rejected row by row: notify once, when its last film is done.
-  let lastOfBox = true;
-  if (pending.box_group_id) {
-    const { count } = await supabase
-      .from("pending_barcodes")
-      .select("id", { count: "exact", head: true })
-      .eq("box_group_id", pending.box_group_id)
-      .eq("status", "pending");
-    lastOfBox = (count ?? 0) === 0;
-  }
-  if (lastOfBox) await notifySubmitter(supabase, pending, "barcode_rejected");
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
 }
@@ -867,7 +831,6 @@ export async function approvePendingBox(pendingRowsFromClient: PendingBarcode[])
     const { error } = await supabase.from("collection_items").insert(inserts);
     if (error) throw error;
   }
-  await notifySubmitter(supabase, first, "barcode_approved", targetCollectionIds);
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
 }

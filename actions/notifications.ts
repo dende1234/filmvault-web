@@ -1,9 +1,9 @@
 "use server";
 
 // In-app notifications (contributors_region.sql): for now "your submitted
-// barcode was approved / rejected". Created by admins while reviewing (see
-// notifySubmitter in actions/collections.ts); read and marked here. Before the
-// SQL has run every call quietly returns nothing.
+// barcode was approved / rejected". Created by a database trigger when a
+// submission is reviewed (approval_notifications.sql); read and marked here.
+// Before the SQL has run every call quietly returns nothing.
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -42,4 +42,22 @@ export async function markNotificationsRead(): Promise<void> {
   if (!user) return;
   await supabase.from("user_notifications").update({ read_at: new Date().toISOString() }).eq("user_id", user.id).is("read_at", null);
   revalidatePath("/", "layout"); // the menu badge
+}
+
+export type PendingSubmission = {
+  unit_key: string;
+  title: string;
+  poster: string | null;
+  barcode: string;
+  is_box: boolean;
+  film_count: number;
+  submitted_at: string | null;
+};
+
+/** Your submissions still waiting for review (approval_notifications.sql). */
+export async function getMyPendingSubmissions(): Promise<PendingSubmission[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("my_pending_submissions");
+  if (error) return [];
+  return (data ?? []) as PendingSubmission[];
 }
