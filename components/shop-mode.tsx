@@ -9,6 +9,7 @@ import { useHasCamera } from "@/lib/use-has-camera";
 import { normalizeBarcode } from "@/lib/barcode";
 import { getOwnedCopiesOfTitle, lookupScannedBarcode, type OwnedCopy, type ScannedBarcodeResult } from "@/actions/collections";
 import { addToWishlist, getWishlistStatus } from "@/actions/wishlist";
+import { suggestTitlesForBarcode, type BarcodeSuggestion } from "@/actions/barcode-suggest";
 import { cn } from "@/lib/utils";
 import { ScannerView } from "@/components/barcode-scanner";
 import { PageHeader } from "@/components/page-header";
@@ -34,6 +35,8 @@ export type Check = {
   /** Also on the wishlist (e.g. you own another edition and want this one). */
   alsoWished?: boolean;
   result?: Known;
+  /** Unknown barcode: what an external barcode database suggests. */
+  suggestions?: BarcodeSuggestion[];
 };
 
 const STATUS: Record<Status, { icon: typeof CheckCircle2; title: keyof Dictionary; hint: keyof Dictionary; tone: string; text: string; vibrate: number[] }> = {
@@ -111,7 +114,13 @@ export function ShopMode() {
     const key = begin(code);
     try {
       const result = await lookupScannedBarcode(code);
-      if (result.kind === "none") return finish(key, { status: "unknown" });
+      if (result.kind === "none") {
+        finish(key, { status: "unknown" });
+        suggestTitlesForBarcode(code)
+          .then((r) => r.suggestions.length > 0 && setChecks((prev) => prev.map((c) => (c.key === key ? { ...c, suggestions: r.suggestions } : c))))
+          .catch(() => {});
+        return;
+      }
       const ids = result.kind === "box" ? result.films.map((f) => f.tmdb_movie_id) : [result.title.id];
       const wishes = await getWishlistStatus(ids);
       const wish = ids.map((id) => wishes[id]).find(Boolean);
@@ -210,7 +219,15 @@ export function ShopMode() {
         </Button>
       </div>
 
-      {current && <ResultCard check={current} onWish={() => wish(current)} onAdd={() => current.result && setAdding(current.result)} onSearch={() => setSearchOpen(true)} />}
+      {current && (
+        <ResultCard
+          check={current}
+          onWish={() => wish(current)}
+          onAdd={() => current.result && setAdding(current.result)}
+          onSearch={() => setSearchOpen(true)}
+          onPick={(m) => checkTitle({ id: m.id, title: m.title, poster_path: m.poster })}
+        />
+      )}
 
       {history.length > 0 && (
         <section className="flex flex-col gap-2">
@@ -244,7 +261,19 @@ export function ShopMode() {
   );
 }
 
-export function ResultCard({ check: c, onWish, onAdd, onSearch }: { check: Check; onWish: () => void; onAdd: () => void; onSearch: () => void }) {
+export function ResultCard({
+  check: c,
+  onWish,
+  onAdd,
+  onSearch,
+  onPick,
+}: {
+  check: Check;
+  onWish: () => void;
+  onAdd: () => void;
+  onSearch: () => void;
+  onPick?: (m: BarcodeSuggestion) => void;
+}) {
   const { t } = useT();
   if (c.status === "loading")
     return (
@@ -301,6 +330,12 @@ export function ResultCard({ check: c, onWish, onAdd, onSearch }: { check: Check
             {t("shop_wish")}
           </Button>
         )}
+        {c.status === "unknown" &&
+          c.suggestions?.map((m) => (
+            <Button key={m.id} size="sm" onClick={() => onPick?.(m)}>
+              {t("shop_suggest_pick", m.year ? `${m.title} (${m.year})` : m.title)}
+            </Button>
+          ))}
         {c.status === "unknown" && (
           <Button size="sm" variant="secondary" onClick={onSearch}>
             <Search />

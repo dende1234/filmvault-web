@@ -60,8 +60,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Mijn barcode wordt niet gevonden. Wat nu?", en: "My barcode isn't found. What now?" },
     a: {
-      nl: "Kies of het een losse film/serie of een box is, zoek de titel en voeg hem toe. De barcode gaat dan naar goedkeuring. Is hij goedgekeurd, dan staat hij in je collectie, krijg je een [melding](/meldingen) en vindt iedereen hem voortaan.",
-      en: "Choose whether it's a single film/series or a box, search the title and add it. The barcode then goes for approval. Once approved it's in your collection, you get a [notification](/meldingen) and everyone finds it from then on.",
+      nl: "Vaak stelt Filmory de film al voor via een externe barcodedatabase (vooral Amerikaanse en Britse uitgaven); tik dan op de juiste. Anders kies je of het een losse film/serie of een box is, zoek je de titel en voeg je hem toe. De barcode gaat dan naar goedkeuring. Is hij goedgekeurd, dan staat hij in je collectie, krijg je een [melding](/meldingen) en vindt iedereen hem voortaan.",
+      en: "Often Filmory already suggests the film from an external barcode database (mostly US and UK releases); just tap the right one. Otherwise choose whether it's a single film/series or a box, search the title and add it. The barcode then goes for approval. Once approved it's in your collection, you get a [notification](/meldingen) and everyone finds it from then on.",
     },
     keywords: { nl: ["barcode niet gevonden", "onbekende barcode", "niet herkend", "goedkeuring"], en: ["barcode not found", "unknown barcode", "not recognised", "approval"] },
   },
