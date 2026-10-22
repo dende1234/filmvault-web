@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { editionLabel } from "@/lib/edition-label";
 import { notFound } from "next/navigation";
 import { Check, ChevronRight, Clock, Layers, Star } from "lucide-react";
 import { getMovieDetailFull } from "@/lib/tmdb/server";
@@ -212,7 +213,7 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
                 {ownedCopies.map((copy) => (
                   <Link key={copy.id} href={`/collections/${copy.collection_id}/items/${copy.id}`}>
                     <Badge variant="secondary" className="transition-colors hover:ring-primary/50">
-                      {copy.type} · {copy.editie}
+                      {copy.type} · {editionLabel(copy.editie, locale)}
                     </Badge>
                   </Link>
                 ))}

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Package } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
+import { editionLabel } from "@/lib/edition-label";
 import { addKnownBoxToCollections, addNewBoxAsPending, findBarcodesByCode, getUserCollections } from "@/actions/collections";
 import { getEdities, getMediaTypes } from "@/actions/media-types";
 import type { BoxFilmInput, Collection } from "@/types/database";
@@ -30,7 +31,7 @@ export type BoxDraft = {
  * by hand) and the scanner (a known box arrives fully filled in; an unknown
  * barcode arrives with only the barcode). Mount it with a key per draft. */
 export function BoxDetailsDialog({ draft, onClose }: { draft: BoxDraft; onClose: () => void }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
   const known = !!draft.knownBoxGroupId;
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -87,7 +88,7 @@ export function BoxDetailsDialog({ draft, onClose }: { draft: BoxDraft; onClose:
       } else {
         await addNewBoxAsPending(draft.films, boxName.trim(), barcode.trim(), type, editie || "Normaal", collectionIds);
       }
-      toast.success(t("add_to_collection_submit_button"));
+      toast.success(t("add_to_collection_submitted"));
       onClose();
       router.refresh();
     } catch {
@@ -148,7 +149,7 @@ export function BoxDetailsDialog({ draft, onClose }: { draft: BoxDraft; onClose:
                   <SelectContent>
                     {edities.map((e) => (
                       <SelectItem key={e} value={e}>
-                        {e}
+                        {editionLabel(e, locale)}
                       </SelectItem>
                     ))}
                   </SelectContent>

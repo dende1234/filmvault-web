@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, Bookmark, Check, Clock, Download, Eye, FileUp, Package, SearchX, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
+import { editionLabel } from "@/lib/edition-label";
 import { parseCsv, toCsv } from "@/lib/csv";
 import { normalizeBarcode } from "@/lib/barcode";
 import { isSeries } from "@/lib/titles";
@@ -118,7 +119,7 @@ const STATUS_STYLE: Record<RowStatus, { variant: "success" | "warning" | "second
 };
 
 export function CollectionImport({ collections, mediaTypes, edities }: { collections: Collection[]; mediaTypes: string[]; edities: string[] }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -707,7 +708,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
                   </div>
                   <div className="grid gap-2 sm:grid-cols-[1fr_12rem]">
                     {fixedByBarcode ? (
-                      <p className="self-center text-xs text-muted-foreground">{r.type} · {r.editie}</p>
+                      <p className="self-center text-xs text-muted-foreground">{r.type} · {editionLabel(r.editie, locale)}</p>
                     ) : (
                       <Select value={r.film ? String(r.film.tmdbId) : undefined} onValueChange={(v) => chooseFilm(r.ref, v)}>
                         <SelectTrigger>

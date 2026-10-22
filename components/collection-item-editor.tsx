@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Captions, Check, Eye, Plus, Volume2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
+import { editionLabel } from "@/lib/edition-label";
 import {
   removeCollectionItem,
   updateCollectionItemCondition,
@@ -63,7 +64,7 @@ export function CollectionItemEditor({
   collections: Collection[];
   copyCollectionIds: string[];
 }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
   const [item, setItem] = useState(initial);
   const [note, setNote] = useState(initial.personal_note ?? "");
@@ -273,7 +274,7 @@ export function CollectionItemEditor({
             </h1>
             <div className="flex flex-wrap gap-1.5">
               <Badge variant="default">{item.type}</Badge>
-              <Badge variant="secondary">{item.editie}</Badge>
+              <Badge variant="secondary">{editionLabel(item.editie, locale)}</Badge>
               {series && <Badge variant="secondary">{seasonsLabel(item.seasons, regularTotal)}</Badge>}
               {initial.cut && <Badge variant="secondary">{initial.cut}</Badge>}
               {initial.label && <Badge variant="secondary">{initial.label}</Badge>}

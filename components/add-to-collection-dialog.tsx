@@ -6,6 +6,7 @@ import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
+import { editionLabel } from "@/lib/edition-label";
 import { addBarcodesToCollections, getBarcodesForMovie, getOwnedCopiesOfTitle, getUserCollections, type OwnedCopy } from "@/actions/collections";
 import { getEdities, getMediaTypes } from "@/actions/media-types";
 import { removeFromWishlistIfCovered } from "@/actions/wishlist";
@@ -42,7 +43,7 @@ export function AddToCollectionDialog({
   /** A scanned barcode: pre-ticked when known for this title, else pre-filled as new. */
   initialBarcode?: string;
 }) {
-  const { t } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [existingBarcodes, setExistingBarcodes] = useState<Barcode[]>([]);
@@ -133,7 +134,18 @@ export function AddToCollectionDialog({
     setInfo(null);
   }
 
-  const stagedCount = selectedExisting.size + staged.length;
+  // A scanned or typed barcode counts even without pressing the small "Add"
+  // next to it first (people missed that step and nothing was submitted).
+  const typed = newBarcodeText.trim();
+  const typedIsNew =
+    !!typed &&
+    !existingBarcodes.some((b) => b.barcode.toLowerCase() === typed.toLowerCase()) &&
+    !staged.some((s) => s.barcode.toLowerCase() === typed.toLowerCase()) &&
+    (!series || newSeasons.length > 0);
+  const toSubmit: NewBarcodeInput[] = typedIsNew
+    ? [...staged, { barcode: typed, type: newBarcodeType, editie: newBarcodeEditie || "Normaal", ...(series ? { seasons: newSeasons } : {}) }]
+    : staged;
+  const stagedCount = selectedExisting.size + toSubmit.length;
   const canSubmit = stagedCount > 0 && selectedCollections.size > 0 && !isSubmitting;
 
   async function handleSubmit() {
@@ -144,7 +156,7 @@ export function AddToCollectionDialog({
       const targetCollectionIds = Array.from(selectedCollections);
       const alreadyContaining = await addBarcodesToCollections(
         selectedBarcodes,
-        staged,
+        toSubmit,
         tmdbMovieId,
         movieTitle,
         moviePoster,
@@ -160,7 +172,10 @@ export function AddToCollectionDialog({
         removeFromWishlistIfCovered(tmdbMovieId).catch(() => {});
       }
       if (alreadyContaining.size === 0) {
-        toast.success(t("add_to_collection_submit_button"));
+        // New barcodes go to the approval queue first: say so, or it looks like nothing happened.
+        if (toSubmit.length > 0 && selectedBarcodes.length > 0) toast.success(t("add_to_collection_added_and_submitted"), { duration: 8000 });
+        else if (toSubmit.length > 0) toast.success(t("add_to_collection_submitted"), { duration: 8000 });
+        else toast.success(t("add_to_collection_added"));
         onOpenChange(false);
         router.refresh();
       } else {
@@ -242,7 +257,7 @@ export function AddToCollectionDialog({
                             })
                           }
                         />
-                        {t("barcode_type_editie_line", b.barcode, b.type, b.editie)}
+                        {t("barcode_type_editie_line", b.barcode, b.type, editionLabel(b.editie, locale))}
                         {series && <span className="text-muted-foreground"> · {seasonsLabel(b.seasons, regularTotal)}</span>}
                       </label>
                     ))}
@@ -252,7 +267,8 @@ export function AddToCollectionDialog({
             </div>
 
             <div>
-              <p className="mb-2 text-sm font-medium">{t("add_to_collection_new_barcode_label")}</p>
+              <p className="text-sm font-medium">{t("add_to_collection_new_barcode_label")}</p>
+              <p className="mb-2 text-xs text-muted-foreground">{t("add_to_collection_new_barcode_hint")}</p>
               <div className="flex flex-col gap-2">
                 {series && (
                   <div className="flex flex-col gap-1.5">
@@ -298,7 +314,7 @@ export function AddToCollectionDialog({
                     <SelectContent>
                       {edities.map((editie) => (
                         <SelectItem key={editie} value={editie}>
-                          {editie}
+                          {editionLabel(editie, locale)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -310,7 +326,7 @@ export function AddToCollectionDialog({
                 {staged.map((s, i) => (
                   <div key={i} className="flex items-center justify-between rounded-md bg-muted px-3 py-1.5 text-sm">
                     <span>
-                      {t("add_to_collection_staged_note", s.barcode, s.type, s.editie)}
+                      {t("add_to_collection_staged_note", s.barcode, s.type, editionLabel(s.editie, locale))}
                       {s.seasons && ` · ${seasonsLabel(s.seasons, regularTotal)}`}
                     </span>
                     <button type="button" onClick={() => setStaged((prev) => prev.filter((_, idx) => idx !== i))}>
