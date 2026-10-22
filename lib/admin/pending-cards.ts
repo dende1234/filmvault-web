@@ -17,9 +17,10 @@ async function loadSubmitters(ids: string[]): Promise<Map<string, Submitter>> {
 }
 
 /** Builds the pending-approval cards (singles + grouped boxes) shared by
- * /admin/pending-barcodes and the barcode station's "Te keuren" tab. */
-export async function loadPendingBarcodeCards(): Promise<PendingBarcodeCardItem[]> {
-  const pending = await getPendingBarcodes();
+ * /admin/pending-barcodes and the barcode station's "Te keuren" tab; with
+ * status "rejected", the recently rejected ones (to restore a mistake). */
+export async function loadPendingBarcodeCards(status: "pending" | "rejected" = "pending"): Promise<PendingBarcodeCardItem[]> {
+  const pending = await getPendingBarcodes(status);
   const links = await getPendingBarcodeCollectionLinks(pending.map((p) => p.id));
   const linksByPendingId = new Map<string, string[]>();
   for (const link of links) {

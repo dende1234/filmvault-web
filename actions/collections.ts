@@ -486,6 +486,14 @@ async function insertPendingBarcodeCollectionLinks(supabase: Awaited<ReturnType<
   if (error) throw error;
 }
 
+/** Like insertPendingBarcodeCollectionLinks, but skips links that already exist
+ * (a re-submission of something still waiting). */
+async function addMissingPendingLinks(supabase: Awaited<ReturnType<typeof createClient>>, pendingBarcodeId: string, collectionIds: string[]) {
+  const existing = new Set((await getPendingBarcodeCollectionLinks([pendingBarcodeId])).map((l) => l.collection_id));
+  const missing = collectionIds.filter((id) => !existing.has(id));
+  if (missing.length > 0) await insertPendingBarcodeCollectionLinks(supabase, pendingBarcodeId, missing);
+}
+
 /** New-box path: submitting a box whose barcode isn't known yet goes through
  * admin approval — one pending_barcodes row per film, all sharing a fresh
  * box_group_id/box_name, same barcode. */
@@ -500,6 +508,13 @@ export async function addNewBoxAsPending(
   if (collectionIds.length === 0 || films.length === 0) return;
   const supabase = await createClient();
   const submittedBy = await requireUserId();
+  // Already waiting as a box from you: just make sure it targets these collections too.
+  const waiting = (await ownPendingWithBarcode(supabase, submittedBy, barcode)).filter((p) => p.is_box);
+  if (waiting.length > 0) {
+    for (const p of waiting) await addMissingPendingLinks(supabase, p.id, collectionIds);
+    revalidatePath("/collections", "layout");
+    return;
+  }
   const boxGroupId = randomUUID();
 
   for (const film of films) {
@@ -541,6 +556,11 @@ export async function addNewBarcodesAsPending(
   const submittedBy = await requireUserId();
 
   for (const staged of newBarcodes) {
+    const waiting = (await ownPendingWithBarcode(supabase, submittedBy, staged.barcode)).find((p) => p.tmdb_movie_id === tmdbMovieId && !p.is_box);
+    if (waiting) {
+      await addMissingPendingLinks(supabase, waiting.id, collectionIds);
+      continue;
+    }
     const row: Record<string, unknown> = {
       tmdb_movie_id: tmdbMovieId,
       movie_title: movieTitle,
@@ -604,11 +624,39 @@ export async function addBarcodesToCollections(
   return nothingAddedFor;
 }
 
-export async function getPendingBarcodes(): Promise<PendingBarcode[]> {
+export async function getPendingBarcodes(status: "pending" | "rejected" = "pending"): Promise<PendingBarcode[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("pending_barcodes").select("*").eq("status", "pending");
+  let query = supabase.from("pending_barcodes").select("*").eq("status", status);
+  // Rejected: the most recent ones, to restore a mistake.
+  if (status === "rejected") query = query.order("submitted_at", { ascending: false }).limit(300);
+  const { data, error } = await query;
   if (error) throw error;
   return data as PendingBarcode[];
+}
+
+/** Admin: puts rejected submissions back in the queue (e.g. rejected by
+ * mistake). They can then be approved as usual; the submitter is notified
+ * again by the trigger in approval_notifications.sql. */
+export async function restoreRejectedBarcodes(ids: string[]): Promise<void> {
+  await requireAdmin();
+  if (ids.length === 0) return;
+  const supabase = await createClient();
+  const { error } = await supabase.from("pending_barcodes").update({ status: "pending" }).in("id", ids).eq("status", "rejected");
+  if (error) throw error;
+  revalidatePath("/admin/pending-barcodes");
+  revalidatePath("/admin/add-film");
+}
+
+/** Your own submissions of this barcode that are still waiting: submitting it
+ * again (e.g. because nothing seemed to happen) shouldn't queue it twice. */
+async function ownPendingWithBarcode(supabase: Awaited<ReturnType<typeof createClient>>, submittedBy: string, barcode: string) {
+  const { data } = await supabase
+    .from("pending_barcodes")
+    .select("id, tmdb_movie_id, is_box")
+    .eq("submitted_by", submittedBy)
+    .eq("barcode", barcode)
+    .eq("status", "pending");
+  return (data ?? []) as { id: string; tmdb_movie_id: number; is_box: boolean }[];
 }
 
 export async function getCollectionsByIds(collectionIds: string[]): Promise<Collection[]> {
