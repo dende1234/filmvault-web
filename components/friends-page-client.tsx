@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { UserPlus, Users } from "lucide-react";
+import { Award, UserPlus, Users } from "lucide-react";
 import { useT } from "@/lib/i18n/locale-provider";
 import { Avatar } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
@@ -47,12 +47,15 @@ export function FriendsPageClient({
   outgoing,
   followingIds,
   inviteUrl,
+  inviteCount = null,
 }: {
   friends: ProfileSearchResult[];
   incoming: FriendRequestWithProfile[];
   outgoing: FriendRequestWithProfile[];
   followingIds: string[];
   inviteUrl: string;
+  /** Signups via your invite link; null before invite_rewards.sql. */
+  inviteCount?: number | null;
 }) {
   const { t } = useT();
   const router = useRouter();
@@ -146,6 +149,20 @@ export function FriendsPageClient({
           </>
         }
       />
+
+      {inviteCount !== null && (
+        <p className="flex items-center gap-2 rounded-lg border border-border bg-card/60 px-4 py-3 text-sm text-muted-foreground">
+          <Award className="size-4 shrink-0 text-primary" aria-hidden />
+          <span>
+            {inviteCount === 0
+              ? t("invite_count_none")
+              : inviteCount === 1
+                ? t("invite_count_one")
+                : t("invite_count", inviteCount)}
+            {inviteCount > 0 && inviteCount < 5 && <> {t("invite_count_next", 5 - inviteCount)}</>}
+          </span>
+        </p>
+      )}
 
       {incoming.length > 0 && (
         <section className="flex flex-col gap-2">

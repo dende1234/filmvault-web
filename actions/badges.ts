@@ -82,6 +82,14 @@ export async function checkAndAwardBadges(): Promise<string[]> {
     if (approvedCount >= 50) shouldHave.push("fifty_barcodes");
   }
 
+  // Collectors who signed up via your invite link (invite_rewards.sql; until
+  // then the RPC is missing and the CHECK would reject these ids).
+  const { data: inviteCount, error: inviteError } = await supabase.rpc("my_invite_count");
+  if (!inviteError && typeof inviteCount === "number") {
+    if (inviteCount >= 1) shouldHave.push("first_invite");
+    if (inviteCount >= 5) shouldHave.push("five_invites");
+  }
+
   const newlyEarned = shouldHave.filter((id) => !alreadyEarned.has(id));
   if (newlyEarned.length > 0) {
     const { error } = await supabase
@@ -123,4 +131,12 @@ export async function getContributorLeaderboard(): Promise<{
     allTime: rows(allTime.data),
     mine: { month: Number(mineMonth.data ?? 0), allTime: Number(mineAll.data ?? 0) },
   };
+}
+
+/** How many collectors signed up via your invite link; null before
+ * invite_rewards.sql has run. */
+export async function getMyInviteCount(): Promise<number | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("my_invite_count");
+  return error || typeof data !== "number" ? null : data;
 }

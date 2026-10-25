@@ -241,6 +241,9 @@ export const BADGE_IDS = [
   { id: "first_barcode", titleKey: "badge_first_barcode_title", descKey: "badge_first_barcode_desc" },
   { id: "ten_barcodes", titleKey: "badge_ten_barcodes_title", descKey: "badge_ten_barcodes_desc" },
   { id: "fifty_barcodes", titleKey: "badge_fifty_barcodes_title", descKey: "badge_fifty_barcodes_desc" },
+  // Invites that led to a signup (invite_rewards.sql).
+  { id: "first_invite", titleKey: "badge_first_invite_title", descKey: "badge_first_invite_desc" },
+  { id: "five_invites", titleKey: "badge_five_invites_title", descKey: "badge_five_invites_desc" },
 ] as const;
 
 // --- Fase 3: Curated lijsten ---
