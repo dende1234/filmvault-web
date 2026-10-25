@@ -502,8 +502,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Werkt Filmory op mijn telefoon?", en: "Does Filmory work on my phone?" },
     a: {
-      nl: "Ja, gewoon in de browser van je telefoon, inclusief barcode scannen met je camera. Tip: zet filmory.nl op je beginscherm (in je browser: Delen → Zet op beginscherm).",
-      en: "Yes, right in your phone's browser, including scanning barcodes with your camera. Tip: add filmory.nl to your home screen (in your browser: Share → Add to Home Screen).",
+      nl: "Ja, gewoon in de browser van je telefoon, inclusief barcode scannen met je camera. Zet Filmory op je beginscherm: op iPhone via Delen → Zet op beginscherm, op Android via de knop Installeren op je dashboard of het browsermenu. Dan opent hij als een app.",
+      en: "Yes, right in your phone's browser, including scanning barcodes with your camera. Put Filmory on your home screen: on iPhone via Share → Add to Home Screen, on Android via the Install button on your dashboard or the browser menu. Then it opens like an app.",
     },
     keywords: { nl: ["telefoon", "mobiel", "iphone", "beginscherm"], en: ["phone", "mobile", "iphone", "home screen"] },
   },
@@ -532,12 +532,12 @@ export const HELP_ENTRIES: HelpEntry[] = [
   },
   {
     id: "android-app",
-    category: "not-yet",
-    possible: false,
+    category: "account",
+    possible: true,
     q: { nl: "Is er een app in de App Store of Play Store?", en: "Is there an app in the App Store or Play Store?" },
     a: {
-      nl: "De website werkt op elke telefoon, inclusief scannen. Een eigen app in de stores is er (nog) niet voor iedereen; zet filmory.nl op je beginscherm voor dezelfde ervaring.",
-      en: "The website works on any phone, scanning included. A store app isn't (yet) available to everyone; add filmory.nl to your home screen for the same experience.",
+      nl: "De website werkt op elke telefoon, inclusief scannen. Je installeert hem vanuit de browser: op iPhone via Delen → Zet op beginscherm, op Android via Installeren. Dan opent hij als een app, met een eigen icoon.",
+      en: "The website works on any phone, scanning included. You can install it from the browser: on iPhone via Share → Add to Home Screen, on Android via Install. It then opens like an app, with its own icon.",
     },
     keywords: { nl: ["app store", "play store", "app downloaden", "android app", "ios app"], en: ["app store", "play store", "download app", "android app", "ios app"] },
   },

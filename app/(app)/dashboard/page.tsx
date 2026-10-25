@@ -13,6 +13,7 @@ import type { CollectionItem } from "@/types/database";
 import { AddFilmFlow } from "@/components/add-film-flow";
 import { AddBoxFlow } from "@/components/add-box-flow";
 import { SurpriseMeButton } from "@/components/surprise-me-button";
+import { InstallAppCard } from "@/components/install-app-card";
 import { BackdropHero } from "@/components/movie/backdrop-hero";
 import { Poster, PosterCorner } from "@/components/movie/poster";
 import { PosterRail, RailItem } from "@/components/movie/poster-rail";
@@ -133,6 +134,8 @@ export default async function DashboardPage() {
           hasName={!!profile?.name?.trim()}
           inviteUrl={inviteUrl}
         />
+
+        <InstallAppCard />
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatTile icon={LibraryBig} label={dict.collections_label} value={collections.length} />

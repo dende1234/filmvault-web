@@ -5,7 +5,6 @@ import { notFound } from "next/navigation";
 import { getPublicCollection } from "@/actions/collections";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
-import { posterUrl } from "@/types/tmdb";
 import { isSeries } from "@/lib/titles";
 import { seasonsShort } from "@/lib/seasons";
 import { Logo } from "@/components/brand/logo";
@@ -27,17 +26,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const collection = await loadCollection(id);
   if (!collection) return { title: "Collectie", robots: { index: false, follow: false } };
-  const firstPoster = collection.items.find((i) => i.movie_poster)?.movie_poster ?? null;
   const by = collection.owner_name ? ` · ${collection.owner_name}` : "";
   return {
     title: `${collection.name}${by}`,
     description: `${collection.items.length} films in deze collectie op Filmory.`,
     // Shared by link on purpose, but never in search results (privacy).
     robots: { index: false, follow: false },
+    // The image comes from ./opengraph-image.tsx (covers fanned out).
     openGraph: {
       title: `${collection.name}${by}`,
       description: `${collection.items.length} films · Filmory`,
-      images: firstPoster ? [{ url: posterUrl(firstPoster, "w500")! }] : undefined,
     },
   };
 }
