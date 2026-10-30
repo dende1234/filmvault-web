@@ -1344,4 +1344,11 @@ export const nl = {
   admin_quality_none: "Niets gevonden.",
   admin_quality_more: "En nog {0} meer.",
   admin_quality_box: "box",
+  search_title: "Zoeken",
+  search_placeholder: "Zoek in je collecties, verlanglijst en bekeken films…",
+  search_hint: "Typ een titel of een barcode. Tip: druk overal op / om te zoeken.",
+  search_none: "Niets gevonden in je eigen films.",
+  search_all_films: "Zoek \"{0}\" in alle films en series",
+  search_on_wishlist: "Op je verlanglijst",
+  search_watched: "Bekeken",
 };

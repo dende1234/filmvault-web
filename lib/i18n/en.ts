@@ -1341,4 +1341,11 @@ export const en: Record<keyof typeof nl, string> = {
   admin_quality_none: "Nothing found.",
   admin_quality_more: "And {0} more.",
   admin_quality_box: "box",
+  search_title: "Search",
+  search_placeholder: "Search your collections, wishlist and watched films…",
+  search_hint: "Type a title or a barcode. Tip: press / anywhere to search.",
+  search_none: "Nothing found in your own films.",
+  search_all_films: "Search \"{0}\" in all films and series",
+  search_on_wishlist: "On your wishlist",
+  search_watched: "Watched",
 };

@@ -37,6 +37,7 @@ import {
   Inbox,
   ScanLine,
   ScanBarcode,
+  Search,
   ClipboardCheck,
   ScrollText,
   Sparkles,
@@ -51,6 +52,7 @@ import type { Profile } from "@/types/database";
 import { Logo } from "@/components/brand/logo";
 import { Avatar } from "@/components/avatar";
 import { FeedbackDialog } from "@/components/feedback-dialog";
+import { GlobalSearch } from "@/components/global-search";
 import { ReelAssistant } from "@/components/help/reel-assistant";
 import { useLocalFlag } from "@/lib/use-local-flag";
 
@@ -151,6 +153,7 @@ export function NavShell({
   const [open, setOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(() => pathname.startsWith("/admin"));
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [reelOpen, setReelOpen] = useState(false);
   const [reelHidden, setReelHidden] = useLocalFlag(REEL_HIDDEN_KEY);
   const close = () => setOpen(false);
@@ -171,6 +174,18 @@ export function NavShell({
         </button>
       </div>
 
+      <button
+        type="button"
+        onClick={() => {
+          close();
+          setSearchOpen(true);
+        }}
+        className="mb-2 flex items-center gap-3 rounded-lg border border-border bg-background/60 px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <Search className="h-4 w-4" />
+        <span className="flex-1">{t("search_title")}</span>
+        <kbd className="rounded border border-border px-1.5 text-[10px] font-medium">/</kbd>
+      </button>
       <NavLink href="/dashboard" icon={LayoutDashboard} label={t("dashboard_title")} onNavigate={close} />
 
       <SectionLabel>{t("nav_section_collection")}</SectionLabel>
@@ -288,6 +303,7 @@ export function NavShell({
   return (
     <div className="flex min-h-screen">
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+      {profile && <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />}
       {profile && (
         <div className="print:hidden">
         <ReelAssistant open={reelOpen} onOpenChange={setReelOpen} hidden={reelHidden} onHide={() => setReelVisibility(true)} />
@@ -315,9 +331,19 @@ export function NavShell({
             <Logo markClassName="size-6" className="[&>span:last-child]:text-lg" />
           </Link>
           {profile && (
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="ml-auto rounded-full p-1.5 text-muted-foreground hover:bg-elevated hover:text-foreground"
+              aria-label={t("search_title")}
+            >
+              <Search className="size-5" />
+            </button>
+          )}
+          {profile && (
             <Link
               href="/meldingen"
-              className="relative ml-auto rounded-full p-1.5 text-muted-foreground hover:bg-elevated hover:text-foreground"
+              className="relative rounded-full p-1.5 text-muted-foreground hover:bg-elevated hover:text-foreground"
               aria-label={unreadNotifications > 0 ? t("notifications_unread", unreadNotifications) : t("notifications_title")}
             >
               <Bell className="size-5" />
