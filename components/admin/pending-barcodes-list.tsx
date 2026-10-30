@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { approvePendingBarcode, approvePendingBox, rejectPendingBarcode } from "@/actions/collections";
@@ -116,7 +117,8 @@ function PendingEditDialog({
 /** Pending-approval list — shared by /admin/pending-barcodes and the
  * barcode station's "Te keuren" tab. */
 export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBarcodeCardItem[] }) {
-  const { t } = useT();
+  const { t, locale } = useT();
+  const submittedAt = new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "nl-NL", { dateStyle: "medium", timeStyle: "short" });
   const router = useRouter();
   const [cards, setCards] = useState(initialCards);
   const [query, setQuery] = useState("");
@@ -202,6 +204,7 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
             const first = card.kind === "single" ? card.item.pending : card.items[0].pending;
             const poster = posterUrl(first.movie_poster, "w200");
             const targetCollectionNames = card.kind === "single" ? card.item.targetCollectionNames : card.items[0].targetCollectionNames;
+            const submitter = card.kind === "single" ? card.item.submitter : card.items[0].submitter;
             return (
               <Card key={card.id}>
                 <CardContent className="flex gap-3 pt-5">
@@ -218,14 +221,43 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
                       {t("barcode_type_editie_line", first.barcode, first.type ?? "DVD", first.editie ?? "Normaal")}
                       {isSeries(first.tmdb_movie_id) && ` · ${t("picker_kind_series")} · ${seasonsLabel(first.seasons)}`}
                     </p>
+                    {(first.cut || first.label || first.region || first.audio_languages?.length || first.subtitle_languages?.length) && (
+                      // Details from the submitter (e.g. a CSV import); they land on the copy when approved.
+                      <p className="text-xs text-muted-foreground">
+                        {[
+                          first.cut,
+                          first.label,
+                          first.region ? `${t("details_region")}: ${first.region}` : null,
+                          first.audio_languages?.length ? `${t("details_audio")}: ${first.audio_languages.map((c) => c.toUpperCase()).join(", ")}` : null,
+                          first.subtitle_languages?.length
+                            ? `${t("details_subtitles")}: ${first.subtitle_languages.map((c) => c.toUpperCase()).join(", ")}`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    )}
                     {card.kind === "box" &&
                       card.items.map((i) => (
                         <p key={i.pending.id} className="text-xs text-muted-foreground">
                           {i.pending.movie_title}
                         </p>
                       ))}
-                    {first.submitted_at && (
-                      <p className="text-xs text-muted-foreground">{t("pending_barcode_submitted_at", first.submitted_at)}</p>
+                    {(submitter || first.submitted_at) && (
+                      <p className="text-xs text-muted-foreground">
+                        {submitter ? (
+                          <>
+                            {t("pending_barcode_submitted_by")}{" "}
+                            <Link href={`/u/${submitter.id}`} className="font-medium text-foreground hover:underline">
+                              {submitter.name || submitter.email || t("pending_barcode_submitter_unknown")}
+                            </Link>
+                            {submitter.name && submitter.email && <span> ({submitter.email})</span>}
+                          </>
+                        ) : (
+                          t("pending_barcode_submitter_unknown")
+                        )}
+                        {first.submitted_at && <> · {submittedAt.format(new Date(first.submitted_at))}</>}
+                      </p>
                     )}
                     {targetCollectionNames.length > 0 && (
                       <p className="text-xs text-muted-foreground">

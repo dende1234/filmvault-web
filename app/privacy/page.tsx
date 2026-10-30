@@ -33,7 +33,7 @@ function Dutch() {
         <li>
           Gebruiksgegevens: welke kernacties je uitvoert (bijvoorbeeld een film toevoegen, een review plaatsen of
           iemand volgen) met het tijdstip, en via welke link je je aanmeldde (bijvoorbeeld een uitnodiging). Hiervoor
-          gebruiken we geen cookies of diensten van derden. <mark>[CONTROLEER]</mark>
+          gebruiken we geen cookies of diensten van derden. 
         </li>
         <li>Of je de nieuwsbrief wilt ontvangen, en wanneer je daarvoor toestemming gaf.</li>
       </ul>
@@ -47,12 +47,12 @@ function Dutch() {
       <p>
         De taal van de website kiezen we automatisch op basis van je land (afgeleid van je IP-adres, via Vercel) en
         de taalinstelling van je browser. Die gegevens slaan we niet op; alleen een taal die je zelf kiest, onthouden
-        we in een cookie en, als je een account hebt, in je profiel. <mark>[CONTROLEER]</mark>
+        we in een cookie en, als je een account hebt, in je profiel. 
       </p>
       <p>
         Daarnaast meten we websitebezoek met Vercel Web Analytics: welke pagina&apos;s bezocht worden, via welke
         website je binnenkwam, en je land en type apparaat. Dit gebeurt zonder cookies en zonder dat je als persoon
-        herkenbaar bent. Vercel treedt hierbij op als verwerker. <mark>[CONTROLEER]</mark>
+        herkenbaar bent. Vercel treedt hierbij op als verwerker.
       </p>
       <p>
         Gebruiksgegevens bekijken we alleen als totalen, om te zien hoe nieuwe leden de app gebruiken en wat beter
@@ -65,7 +65,6 @@ function Dutch() {
         halen we je daar weer weg. Zonder account kun je je ook aanmelden: je ontvangt dan eerst een mail om je
         aanmelding te bevestigen, en je e-mailadres staat alleen bij Brevo, niet in de database van Filmory. Brevo
         meet of een nieuwsbrief geopend en aangeklikt wordt, alleen om te zien wat lezers interessant vinden.
-        <mark>[CONTROLEER]</mark>
       </p>
 
       <h2>Met wie delen we gegevens</h2>
@@ -95,7 +94,6 @@ function Dutch() {
         zichtbaar voor iedereen die die collectie kan zien. De link naar de afbeelding is niet te raden, maar wie de
         link heeft, kan de afbeelding openen. Je kunt een cover altijd weer verwijderen. Gebruik je de barcodescanner,
         dan worden de camerabeelden alleen op je eigen apparaat verwerkt; ze worden niet verstuurd of opgeslagen.
-        <mark>[CONTROLEER]</mark>
       </p>
       <p>
         Stuur je feedback (een bug of idee), dan bewaren we je bericht met wat automatisch meegaat: de pagina waar je
@@ -103,8 +101,21 @@ function Dutch() {
         en kun je een screenshot meesturen; die is alleen zichtbaar voor jou en de beheerders. Zonder account kun je
         optioneel een e-mailadres achterlaten, alleen om je te kunnen antwoorden. Om misbruik te beperken bewaren we
         bij meldingen zonder account een onherleidbare code (hash) van je IP-adres, niet het IP-adres zelf. We bewaren
-        feedback zolang die nodig is om hem af te handelen, en uiterlijk <mark>[BEWAARTERMIJN]</mark>; met je account
-        verdwijnen ook je meldingen en screenshots. <mark>[CONTROLEER]</mark>
+        feedback zolang die nodig is om hem af te handelen; met je account
+        verdwijnen ook je meldingen en screenshots. 
+      </p>
+      <p>
+        Stel je een vraag aan Reel, het hulpje in de app, dan bewaren we de vraag anoniem: zonder je naam, account of
+        IP-adres, alleen de tekst van de vraag, de pagina waar je was, je taal, welk antwoord Reel gaf en of het je
+        hielp. Zo zien we wat er in de hulp ontbreekt. Reel gebruikt geen AI: de antwoorden komen uit een vaste lijst.
+        Deze vragen worden na 90 dagen automatisch verwijderd. Stuur je een vraag via Reel door als feedback, dan geldt
+        wat hierboven over feedback staat.
+      </p>
+      <p>
+        Stuur je een barcode in die Filmory nog niet kent, dan zie je in de app of die is goedgekeurd. Goedgekeurde
+        barcodes tellen mee in de ranglijst &quot;Top barcode-bijdragers&quot;, die alleen ingelogde gebruikers zien.
+        Daarin staan je profielnaam (of &quot;Verzamelaar&quot; als je geen naam hebt ingevuld), je profielfoto en het
+        aantal goedgekeurde barcodes. <mark>[CONTROLEER]</mark>
       </p>
       <p>
         Zet je een collectie zelf op &quot;openbaar via link&quot;, dan kan iedereen met die link de naam en
@@ -151,7 +162,7 @@ function English() {
         <li>
           Usage data: which core actions you take (for example adding a film, posting a review or following someone)
           with their time, and which link you signed up through (for example an invite). We use no cookies or
-          third-party services for this. <mark>[CHECK]</mark>
+          third-party services for this. 
         </li>
         <li>Whether you want to receive the newsletter, and when you gave that consent.</li>
       </ul>
@@ -165,12 +176,12 @@ function English() {
       <p>
         We choose the website&apos;s language automatically based on your country (derived from your IP address, via
         Vercel) and your browser&apos;s language setting. We don&apos;t store that data; only a language you choose
-        yourself is remembered in a cookie and, if you have an account, in your profile. <mark>[CHECK]</mark>
+        yourself is remembered in a cookie and, if you have an account, in your profile.
       </p>
       <p>
         We also measure website visits with Vercel Web Analytics: which pages are visited, which website you came
         from, and your country and device type. This happens without cookies and without identifying you as a
-        person. Vercel acts as a processor for this. <mark>[CHECK]</mark>
+        person. Vercel acts as a processor for this. 
       </p>
       <p>
         We only look at usage data as totals, to understand how new members use the app and what can be improved
@@ -182,7 +193,7 @@ function English() {
         address (and your name, if you filled it in) to Brevo; if you turn it off or delete your account, we remove
         you there again. You can also sign up without an account: you first receive an email to confirm, and your
         address is then stored only at Brevo, not in Filmory&apos;s database. Brevo measures whether a newsletter is
-        opened and clicked, only to see what readers find interesting. <mark>[CHECK]</mark>
+        opened and clicked, only to see what readers find interesting. 
       </p>
 
       <h2>Who we share data with</h2>
@@ -211,7 +222,7 @@ function English() {
         A custom cover you upload for a copy is stored with our storage provider (Supabase) and is visible to anyone
         who can see that collection. The image link can&apos;t be guessed, but anyone who has the link can open the
         image. You can always remove a cover. When you use the barcode scanner, camera images are processed on your
-        own device only; they are not sent or stored. <mark>[CHECK]</mark>
+        own device only; they are not sent or stored. 
       </p>
       <p>
         If you send feedback (a bug or an idea), we keep your message with what is included automatically: the page
@@ -219,8 +230,21 @@ function English() {
         your account and you can attach a screenshot, visible only to you and the administrators. Without an account
         you can optionally leave an email address, used only to reply to you. To limit abuse we store a
         non-reversible code (hash) of your IP address for messages sent without an account, never the IP address
-        itself. We keep feedback as long as needed to handle it, and at most <mark>[RETENTION PERIOD]</mark>; deleting
-        your account also deletes your messages and screenshots. <mark>[CHECK]</mark>
+        itself. We keep feedback as long as needed to handle it; deleting
+        your account also deletes your messages and screenshots. 
+      </p>
+      <p>
+        If you ask Reel, the in-app helper, a question, we store the question anonymously: without your name, account
+        or IP address, only the text of the question, the page you were on, your language, which answer Reel gave and
+        whether it helped. That shows us what the help is missing. Reel doesn&apos;t use AI: the answers come from a
+        fixed list. These questions are deleted automatically after 90 days. If you send a question on as feedback
+        via Reel, what is said about feedback above applies.
+      </p>
+      <p>
+        If you submit a barcode Filmory doesn&apos;t know yet, the app shows you whether it was approved. Approved
+        barcodes count towards the &quot;Top barcode contributors&quot; leaderboard, visible only to signed-in users.
+        It shows your profile name (or &quot;Verzamelaar&quot; if you didn&apos;t set one), your profile picture and
+        the number of approved barcodes. <mark>[CHECK]</mark>
       </p>
       <p>
         If you set a collection to &quot;public via link&quot; yourself, anyone with that link can see the

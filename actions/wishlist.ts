@@ -21,7 +21,22 @@ export async function getWishlist(): Promise<WishlistItem[]> {
   const userId = await requireUserId();
   const { data, error } = await supabase.from("wishlist_items").select("*").eq("user_id", userId);
   if (error) throw error;
-  return (data as WishlistItem[]).sort((a, b) => (b.added_at ?? "").localeCompare(a.added_at ?? ""));
+  // Holy Grails first, then newest.
+  return (data as WishlistItem[]).sort(
+    (a, b) => Number(!!b.is_grail) - Number(!!a.is_grail) || (b.added_at ?? "").localeCompare(a.added_at ?? ""),
+  );
+}
+
+/** Marks a wishlist title as Holy Grail (or not). "not_ready" until
+ * collector_extras.sql has run. */
+export async function setWishlistGrail(id: string, isGrail: boolean): Promise<{ error: "not_ready" | "failed" | null }> {
+  const supabase = await createClient();
+  const userId = await requireUserId();
+  const { error } = await supabase.from("wishlist_items").update({ is_grail: isGrail }).eq("id", id).eq("user_id", userId);
+  if (error?.code === "PGRST204") return { error: "not_ready" };
+  if (error) return { error: "failed" };
+  revalidatePath("/wishlist");
+  return { error: null };
 }
 
 export async function isOnWishlist(tmdbMovieId: number): Promise<boolean> {
@@ -98,4 +113,45 @@ export async function removeFromWishlistIfCovered(titleId: number): Promise<void
     if (!wanted.every((s) => owned.has(s))) return;
   }
   await removeFromWishlistByMovie(titleId);
+}
+
+/** Which of these titles are on your wishlist, and whether as Holy Grail
+ * (shop mode). select("*") so it also works before collector_extras.sql. */
+export async function getWishlistStatus(tmdbMovieIds: number[]): Promise<Record<number, { grail: boolean }>> {
+  if (tmdbMovieIds.length === 0) return {};
+  const supabase = await createClient();
+  const userId = await requireUserId();
+  const { data, error } = await supabase.from("wishlist_items").select("*").eq("user_id", userId).in("tmdb_movie_id", tmdbMovieIds);
+  if (error) throw error;
+  const status: Record<number, { grail: boolean }> = {};
+  for (const w of (data ?? []) as WishlistItem[]) status[w.tmdb_movie_id] = { grail: !!w.is_grail || !!status[w.tmdb_movie_id]?.grail };
+  return status;
+}
+
+/** Several titles at once (e.g. the missing parts of a film series); skips
+ * what's already on the list. Returns how many were added. */
+export async function addManyToWishlist(items: { tmdbMovieId: number; title: string; poster: string | null }[]): Promise<number> {
+  if (items.length === 0) return 0;
+  const supabase = await createClient();
+  const userId = await requireUserId();
+  const { data: existing, error: readError } = await supabase
+    .from("wishlist_items")
+    .select("tmdb_movie_id")
+    .eq("user_id", userId)
+    .in("tmdb_movie_id", items.map((i) => i.tmdbMovieId));
+  if (readError) throw readError;
+  const have = new Set((existing ?? []).map((r: { tmdb_movie_id: number }) => r.tmdb_movie_id));
+  const rows = Array.from(new Map(items.filter((i) => !have.has(i.tmdbMovieId)).map((i) => [i.tmdbMovieId, i])).values()).map((i) => ({
+    user_id: userId,
+    tmdb_movie_id: i.tmdbMovieId,
+    movie_title: i.title,
+    movie_poster: i.poster,
+  }));
+  if (rows.length > 0) {
+    const { error } = await supabase.from("wishlist_items").insert(rows);
+    if (error) throw error;
+  }
+  revalidatePath("/wishlist");
+  revalidatePath("/reeksen");
+  return rows.length;
 }

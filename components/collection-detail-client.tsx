@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Eye, Film, SearchX, X } from "lucide-react";
+import { Download, Eye, Film, MoreHorizontal, Printer, ScanLine, SearchX, X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { removeBoxFromCollection, removeCollectionItem } from "@/actions/collections";
@@ -23,6 +23,9 @@ import { AddFilmFlow } from "@/components/add-film-flow";
 import { AddBoxFlow } from "@/components/add-box-flow";
 import { ShareCollectionButton } from "@/components/share-collection-button";
 import { BoxCard } from "@/components/box-card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { PosterControl, WatchedToggle } from "@/components/watched-toggle";
+import { setFilmWatched } from "@/actions/watched";
 import {
   Dialog,
   DialogContent,
@@ -67,6 +70,29 @@ export function CollectionDetailClient({
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingDelete, setPendingDelete] = useState<CollectionItem | null>(null);
   const [pendingBoxDelete, setPendingBoxDelete] = useState<CollectionItem[] | null>(null);
+  // Watched is per title (film_logs), so every copy of a film flips together.
+  const [watchedOverride, setWatchedOverride] = useState<Map<number, boolean>>(new Map());
+  const [togglingIds, setTogglingIds] = useState<Set<number>>(new Set());
+  const isWatched = (i: CollectionItem) => watchedOverride.get(i.tmdb_movie_id) ?? i.watched;
+
+  async function toggleWatched(item: CollectionItem) {
+    const id = item.tmdb_movie_id;
+    const next = !isWatched(item);
+    setWatchedOverride((prev) => new Map(prev).set(id, next));
+    setTogglingIds((prev) => new Set(prev).add(id));
+    const result = await setFilmWatched({ tmdbMovieId: id, title: item.movie_title, poster: item.movie_poster }, next).catch(() => ({
+      error: "failed",
+    }));
+    setTogglingIds((prev) => {
+      const s2 = new Set(prev);
+      s2.delete(id);
+      return s2;
+    });
+    if (result.error) {
+      setWatchedOverride((prev) => new Map(prev).set(id, !next));
+      toast.error(t("watched_toggle_error"));
+    } else router.refresh();
+  }
   const [isDeleting, setIsDeleting] = useState(false);
   const [mediaTypes, setMediaTypes] = useState<string[]>([]);
 
@@ -80,8 +106,8 @@ export function CollectionDetailClient({
       (typeFilter === ALL || i.type === typeFilter) &&
       (kindFilter !== "movie" || !isSeries(i.tmdb_movie_id)) &&
       (kindFilter !== "tv" || isSeries(i.tmdb_movie_id)) &&
-      (watchedFilter !== "watched" || i.watched) &&
-      (watchedFilter !== "not_watched" || !i.watched) &&
+      (watchedFilter !== "watched" || isWatched(i)) &&
+      (watchedFilter !== "not_watched" || !isWatched(i)) &&
       (!query || i.movie_title.toLowerCase().includes(query) || (i.box_name ?? "").toLowerCase().includes(query));
 
     // Group boxes first (all their films), then keep a box when any film matches.
@@ -108,7 +134,8 @@ export function CollectionDetailClient({
     else if (sort === "added") entries.sort((a, b) => added(b).localeCompare(added(a)));
     else entries.sort((a, b) => rating(b) - rating(a));
     return entries;
-  }, [items, typeFilter, kindFilter, boxFilter, watchedFilter, sort, searchQuery]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isWatched reads watchedOverride
+  }, [items, typeFilter, kindFilter, boxFilter, watchedFilter, sort, searchQuery, watchedOverride]);
 
   async function handleBoxDelete() {
     if (!pendingBoxDelete) return;
@@ -154,6 +181,37 @@ export function CollectionDetailClient({
             <AddBoxFlow />
             {isOwner && (
               <ShareCollectionButton collectionId={collection.id} initialPublic={collection.is_public === true} shareUrl={shareUrl} />
+            )}
+            {isOwner && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="secondary" aria-label={t("nav_more")}>
+                    <MoreHorizontal />
+                    {t("nav_more")}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href={`/collections/scan?collection=${collection.id}`}>
+                      <ScanLine />
+                      {t("bulk_scan_button")}
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    {/* Plain link: the route answers with a CSV download. */}
+                    <a href={`/api/export?collection=${collection.id}`} download>
+                      <Download />
+                      {t("export_button")}
+                    </a>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href={`/collections/print?collection=${collection.id}`}>
+                      <Printer />
+                      {t("print_menu")}
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
           </>
         }
@@ -259,8 +317,9 @@ export function CollectionDetailClient({
                     title: i.movie_title,
                     poster: i.movie_poster,
                     customCover: i.custom_cover_path,
-                    watched: i.watched,
+                    watched: isWatched(i),
                     href: `/collections/${collection.id}/items/${i.id}`,
+                    onToggleWatched: isOwner && !togglingIds.has(i.tmdb_movie_id) ? () => toggleWatched(i) : undefined,
                   }))}
                 />
               );
@@ -273,12 +332,13 @@ export function CollectionDetailClient({
                   <PosterCorner position="bl">
                     <Badge variant="overlay">{item.type}</Badge>
                     {isSeries(item.tmdb_movie_id) && <Badge variant="overlay">{seasonsLabel(item.seasons)}</Badge>}
-                    {item.watched && (
+                    {!isOwner && isWatched(item) && (
                       <Badge variant="overlay" className="px-1.5" title={t("watched_label")}>
                         <Eye className="text-success" />
                       </Badge>
                     )}
                   </PosterCorner>
+
                   {isLoanOverdue(item) && (
                     <PosterCorner position="tl">
                       <Badge variant="destructive" className="bg-destructive text-destructive-foreground">
@@ -291,9 +351,22 @@ export function CollectionDetailClient({
                   <p className="line-clamp-2 text-sm font-medium leading-snug transition-colors group-hover:text-primary">
                     {item.movie_title}
                   </p>
-                  {item.editie && item.editie !== "Normaal" && <p className="text-xs text-muted-foreground">{item.editie}</p>}
+                  {(() => {
+                    const region = item.region ? (item.region === "Regiovrij" ? t("details_region_free") : t("details_region_value", item.region)) : null;
+                    const sub = [item.editie !== "Normaal" ? item.editie : null, item.cut, item.label, region].filter(Boolean).join(" · ");
+                    return sub ? <p className="line-clamp-1 text-xs text-muted-foreground">{sub}</p> : null;
+                  })()}
                 </div>
               </Link>
+              {isOwner && (
+                <PosterControl>
+                  <WatchedToggle
+                    watched={isWatched(item)}
+                    disabled={togglingIds.has(item.tmdb_movie_id)}
+                    onToggle={() => toggleWatched(item)}
+                  />
+                </PosterControl>
+              )}
               <PosterCorner position="tr">
                 <button
                   type="button"

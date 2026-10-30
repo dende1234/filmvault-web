@@ -6,6 +6,7 @@ import { useT } from "@/lib/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 import { Poster, PosterCorner } from "@/components/movie/poster";
 import { Badge } from "@/components/ui/badge";
+import { PosterControl, WatchedToggle } from "@/components/watched-toggle";
 
 export type BoxCardFilm = {
   key: string;
@@ -15,6 +16,8 @@ export type BoxCardFilm = {
   watched?: boolean;
   /** Link to this copy; omitted on the read-only public page. */
   href?: string;
+  /** Owner only: the "Bekeken" switch on the small card. */
+  onToggleWatched?: () => void;
 };
 
 const VISIBLE = 3;
@@ -79,7 +82,7 @@ export function BoxCard({
           const card = (
             <>
               <Poster path={film.poster} customCover={film.customCover} title={film.title} size="sm" hover={!!film.href}>
-                {film.watched && (
+                {!film.onToggleWatched && film.watched && (
                   <PosterCorner position="bl">
                     <Badge variant="overlay" className="px-1.5" title={t("watched_label")}>
                       <Eye className="text-success" />
@@ -91,13 +94,18 @@ export function BoxCard({
             </>
           );
           return (
-            <li key={film.key} className="min-w-0">
+            <li key={film.key} className="group relative min-w-0">
               {film.href ? (
-                <Link href={film.href} className="group flex flex-col gap-1.5 focus-visible:outline-none">
+                <Link href={film.href} className="flex flex-col gap-1.5 focus-visible:outline-none">
                   {card}
                 </Link>
               ) : (
                 <div className="flex flex-col gap-1.5">{card}</div>
+              )}
+              {film.onToggleWatched && (
+                <PosterControl>
+                  <WatchedToggle size="sm" watched={!!film.watched} onToggle={film.onToggleWatched} />
+                </PosterControl>
               )}
             </li>
           );

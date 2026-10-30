@@ -76,9 +76,19 @@ export function BarcodeScanButton({
   );
 }
 
-/** Mounted only while the dialog is open: starts the camera on mount and
- * always releases it on unmount. */
-function ScannerView({ onDetected, onCancel }: { onDetected: (barcode: string) => void; onCancel: () => void }) {
+/** Starts the camera on mount and always releases it on unmount. One shot by
+ * default (stops after the first valid code); `continuous` keeps scanning for
+ * a pile of discs, ignoring the same code for a few seconds so one case isn't
+ * counted twice. */
+export function ScannerView({
+  onDetected,
+  onCancel,
+  continuous = false,
+}: {
+  onDetected: (barcode: string) => void;
+  onCancel?: () => void;
+  continuous?: boolean;
+}) {
   const { t } = useT();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState<"denied" | "failed" | null>(null);
@@ -93,11 +103,16 @@ function ScannerView({ onDetected, onCancel }: { onDetected: (barcode: string) =
     let timer: ReturnType<typeof setInterval> | null = null;
     let zxingStop: (() => void) | null = null;
 
+    const recent = new Map<string, number>();
     function finish(raw: string) {
       const code = normalizeBarcode(raw);
       // A checksum match filters out partial/misread frames.
       if (stopped || !isValidEanUpc(code)) return;
-      stopped = true;
+      if (continuous) {
+        const now = Date.now();
+        if (now - (recent.get(code) ?? 0) < 3000) return;
+        recent.set(code, now);
+      } else stopped = true;
       navigator.vibrate?.(60);
       onDetectedRef.current(code);
     }
@@ -150,15 +165,17 @@ function ScannerView({ onDetected, onCancel }: { onDetected: (barcode: string) =
       zxingStop?.();
       stream?.getTracks().forEach((track) => track.stop());
     };
-  }, []);
+  }, [continuous]);
 
   if (error) {
     return (
       <div className="flex flex-col gap-3">
         <p className="text-sm text-destructive">{t(error === "denied" ? "scanner_denied" : "scanner_failed")}</p>
-        <Button variant="secondary" onClick={onCancel} className="w-fit">
-          {t("scanner_type_instead")}
-        </Button>
+        {onCancel && (
+          <Button variant="secondary" onClick={onCancel} className="w-fit">
+            {t("scanner_type_instead")}
+          </Button>
+        )}
       </div>
     );
   }
@@ -170,9 +187,11 @@ function ScannerView({ onDetected, onCancel }: { onDetected: (barcode: string) =
         {/* Aiming frame */}
         <div aria-hidden className="pointer-events-none absolute inset-x-[12%] top-1/2 h-1/3 -translate-y-1/2 rounded-lg border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
       </div>
-      <Button variant="ghost" onClick={onCancel} className="w-fit">
-        {t("scanner_type_instead")}
-      </Button>
+      {onCancel && (
+        <Button variant="ghost" onClick={onCancel} className="w-fit">
+          {t("scanner_type_instead")}
+        </Button>
+      )}
     </div>
   );
 }

@@ -78,6 +78,13 @@ export interface CollectionItem {
   seasons?: number[] | null;
   /** Own cover photo for this copy (custom_covers.sql), storage path. */
   custom_cover_path?: string | null;
+  /** Per-copy details (copy_details.sql): cut, ISO 639-1 language codes, label. */
+  cut?: string | null;
+  audio_languages?: string[] | null;
+  subtitle_languages?: string[] | null;
+  label?: string | null;
+  /** Region code (contributors_region.sql): "B", "2/4", "Regiovrij". */
+  region?: string | null;
   is_box: boolean;
   box_group_id: string | null;
   box_name: string | null;
@@ -129,6 +136,12 @@ export interface PendingBarcode {
   editie: string | null;
   /** Series only: season numbers in this release (series_support.sql). */
   seasons?: number[] | null;
+  /** Per-copy details carried to the collection on approval (copy_details.sql). */
+  cut?: string | null;
+  audio_languages?: string[] | null;
+  subtitle_languages?: string[] | null;
+  label?: string | null;
+  region?: string | null;
   submitted_by: string;
   submitted_at: string | null;
   collection_id: string;
@@ -150,6 +163,8 @@ export interface NewBarcodeInput {
   editie: string;
   /** Series only: season numbers in this release (series_support.sql). */
   seasons?: number[] | null;
+  /** Cut, languages and label to put on the copy (copy_details.sql). */
+  details?: import("@/lib/copy-details").CopyDetailsInput | null;
 }
 
 /** One film picked for a new box (client-only, mirrors BoxFilmInput). */
@@ -204,6 +219,8 @@ export interface WishlistItem {
   added_at: string | null;
   /** Series only: the wanted seasons (null = the whole series). */
   seasons?: number[] | null;
+  /** "Holy Grail": what you hunt most (collector_extras.sql). */
+  is_grail?: boolean;
 }
 
 /** Mirrors badges/BadgeId.kt exactly — id + i18n key pair, same 11 fixed
@@ -220,6 +237,13 @@ export const BADGE_IDS = [
   { id: "ten_friends", titleKey: "badge_ten_friends_title", descKey: "badge_ten_friends_desc" },
   { id: "first_review", titleKey: "badge_first_review_title", descKey: "badge_first_review_desc" },
   { id: "generous_lender", titleKey: "badge_generous_lender_title", descKey: "badge_generous_lender_desc" },
+  // Barcode contributors (contributors_region.sql widens the CHECK on user_badges).
+  { id: "first_barcode", titleKey: "badge_first_barcode_title", descKey: "badge_first_barcode_desc" },
+  { id: "ten_barcodes", titleKey: "badge_ten_barcodes_title", descKey: "badge_ten_barcodes_desc" },
+  { id: "fifty_barcodes", titleKey: "badge_fifty_barcodes_title", descKey: "badge_fifty_barcodes_desc" },
+  // Invites that led to a signup (invite_rewards.sql).
+  { id: "first_invite", titleKey: "badge_first_invite_title", descKey: "badge_first_invite_desc" },
+  { id: "five_invites", titleKey: "badge_five_invites_title", descKey: "badge_five_invites_desc" },
 ] as const;
 
 // --- Fase 3: Curated lijsten ---
@@ -358,6 +382,8 @@ export interface AdminReportUiItem {
 export interface PendingBarcodeUiItem {
   pending: PendingBarcode;
   targetCollectionNames: string[];
+  /** Who submitted it (profiles; admins can read every profile). */
+  submitter?: { id: string; name: string | null; email: string | null } | null;
 }
 
 /** One admin-approval card — either a single film, or a box's several film
@@ -433,4 +459,21 @@ export interface UserFeedback {
   screenshot_path: string | null;
   status: FeedbackStatus;
   admin_reply: string | null;
+}
+
+/** user_notifications (contributors_region.sql). */
+export interface UserNotification {
+  id: string;
+  kind: "barcode_approved" | "barcode_rejected";
+  payload: {
+    title?: string;
+    poster?: string | null;
+    barcode?: string;
+    isBox?: boolean;
+    tmdbMovieId?: number;
+    boxGroupId?: string | null;
+    collectionIds?: string[];
+  };
+  created_at: string;
+  read_at: string | null;
 }

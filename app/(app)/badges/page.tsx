@@ -1,5 +1,7 @@
 import { Award, Lock } from "lucide-react";
-import { checkAndAwardBadges, getEarnedBadges } from "@/actions/badges";
+import { checkAndAwardBadges, getContributorLeaderboard, getEarnedBadges } from "@/actions/badges";
+import { createClient } from "@/lib/supabase/server";
+import { ContributorLeaderboard } from "@/components/contributor-leaderboard";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
 import { BADGE_IDS } from "@/types/database";
@@ -16,6 +18,8 @@ export default async function BadgesPage() {
   const earned = await getEarnedBadges();
   const earnedByBadgeId = new Map(earned.map((b) => [b.badge_id, b]));
   const earnedCount = BADGE_IDS.filter((b) => earnedByBadgeId.has(b.id)).length;
+  const supabase = await createClient();
+  const [leaderboard, { data: auth }] = await Promise.all([getContributorLeaderboard().catch(() => null), supabase.auth.getUser()]);
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8">
@@ -64,6 +68,15 @@ export default async function BadgesPage() {
           );
         })}
       </div>
+
+      {leaderboard && (
+        <ContributorLeaderboard
+          month={leaderboard.month}
+          allTime={leaderboard.allTime}
+          mine={leaderboard.mine}
+          currentUserId={auth.user?.id ?? null}
+        />
+      )}
     </div>
   );
 }

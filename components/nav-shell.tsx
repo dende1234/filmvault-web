@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -24,6 +25,7 @@ import {
   BarChart3,
   Megaphone,
   ShieldQuestion,
+  Store,
   CalendarDays,
   Bookmark,
   Tags,
@@ -31,9 +33,12 @@ import {
   MoreHorizontal,
   TrendingUp,
   Eye,
+  Layers,
+  LifeBuoy,
   MessageSquareText,
   Inbox,
   ScanLine,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/locale-provider";
@@ -42,6 +47,10 @@ import type { Profile } from "@/types/database";
 import { Logo } from "@/components/brand/logo";
 import { Avatar } from "@/components/avatar";
 import { FeedbackDialog } from "@/components/feedback-dialog";
+import { ReelAssistant } from "@/components/help/reel-assistant";
+import { useLocalFlag } from "@/lib/use-local-flag";
+
+const REEL_HIDDEN_KEY = "fv_reel_hidden";
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -122,11 +131,14 @@ function TabLink({ href, icon: Icon, label }: { href: string; icon: typeof Film;
 export function NavShell({
   profile,
   feedbackNewCount = 0,
+  unreadNotifications = 0,
   children,
 }: {
   profile: Profile | null;
   /** New feedback items, shown on the admin menu (admins only, else 0). */
   feedbackNewCount?: number;
+  /** Unread notifications (e.g. a barcode you submitted was approved). */
+  unreadNotifications?: number;
   children: React.ReactNode;
 }) {
   const { t } = useT();
@@ -135,7 +147,14 @@ export function NavShell({
   const [open, setOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(() => pathname.startsWith("/admin"));
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [reelOpen, setReelOpen] = useState(false);
+  const [reelHidden, setReelHidden] = useLocalFlag(REEL_HIDDEN_KEY);
   const close = () => setOpen(false);
+
+  function setReelVisibility(hidden: boolean) {
+    setReelHidden(hidden);
+    if (hidden) toast(t("reel_hidden_toast"));
+  }
 
   const sidebar = (
     <nav className="flex h-full w-64 flex-col gap-0.5 overflow-y-auto border-r border-border bg-card/80 p-3 backdrop-blur">
@@ -154,12 +173,15 @@ export function NavShell({
       <NavLink href="/films" icon={Film} label={t("nav_films_series")} onNavigate={close} />
       <NavLink href="/watched" icon={Eye} label={t("nav_watched")} onNavigate={close} />
       <NavLink href="/collections" icon={LibraryBig} label={t("collections_label")} onNavigate={close} />
+      <NavLink href="/reeksen" icon={Layers} label={t("franchise_nav")} onNavigate={close} />
+      <NavLink href="/winkelmodus" icon={Store} label={t("shop_nav")} onNavigate={close} />
       <NavLink href="/lists" icon={ListChecks} label={t("nav_lists")} onNavigate={close} />
       <NavLink href="/recap" icon={CalendarDays} label={t("nav_yearly_recap")} onNavigate={close} />
       <NavLink href="/wishlist" icon={Bookmark} label={t("nav_wishlist")} onNavigate={close} />
 
       <SectionLabel>{t("nav_section_profile")}</SectionLabel>
       <NavLink href="/profile" icon={User} label={t("profile_title")} onNavigate={close} />
+      <NavLink href="/meldingen" icon={Bell} label={t("notifications_title")} onNavigate={close} count={unreadNotifications} />
       <NavLink href="/friends" icon={Users} label={t("nav_friends")} onNavigate={close} />
       <NavLink href="/badges" icon={Award} label={t("nav_badges")} onNavigate={close} />
       <NavLink href="/feed" icon={Rss} label={t("nav_feed")} onNavigate={close} />
@@ -221,6 +243,18 @@ export function NavShell({
           <MessageSquareText className="h-4 w-4" />
           {t("feedback_nav")}
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            close();
+            if (reelHidden) setReelVisibility(false);
+            setReelOpen(true);
+          }}
+          className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-elevated/60 hover:text-foreground"
+        >
+          <LifeBuoy className="h-4 w-4" />
+          {t("reel_nav")}
+        </button>
         <NavLink href="/my-feedback" icon={Inbox} label={t("feedback_my_nav")} onNavigate={close} />
         <NavLink href="/privacy" icon={ShieldQuestion} label={t("privacy_policy_link")} onNavigate={close} />
         <NavLink href="/about" icon={Info} label={t("nav_about")} onNavigate={close} />
@@ -244,7 +278,12 @@ export function NavShell({
   return (
     <div className="flex min-h-screen">
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
-      <div className="sticky top-0 hidden h-screen md:block">{sidebar}</div>
+      {profile && (
+        <div className="print:hidden">
+        <ReelAssistant open={reelOpen} onOpenChange={setReelOpen} hidden={reelHidden} onHide={() => setReelVisibility(true)} />
+        </div>
+      )}
+      <div className="sticky top-0 hidden h-screen md:block print:hidden">{sidebar}</div>
 
       {open && (
         <div className="fixed inset-0 z-50 md:hidden">
@@ -254,7 +293,7 @@ export function NavShell({
       )}
 
       <div className="flex min-h-screen min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border/60 bg-background/75 px-4 py-3 backdrop-blur-md md:hidden">
+        <header className="sticky top-0 z-30 flex items-center gap-3 border-b print:hidden border-border/60 bg-background/75 px-4 py-3 backdrop-blur-md md:hidden">
           <button
             onClick={() => setOpen(true)}
             aria-label={t("nav_menu_description")}
@@ -266,15 +305,29 @@ export function NavShell({
             <Logo markClassName="size-6" className="[&>span:last-child]:text-lg" />
           </Link>
           {profile && (
-            <Link href="/profile" className="ml-auto" aria-label={t("profile_title")}>
+            <Link
+              href="/meldingen"
+              className="relative ml-auto rounded-full p-1.5 text-muted-foreground hover:bg-elevated hover:text-foreground"
+              aria-label={unreadNotifications > 0 ? t("notifications_unread", unreadNotifications) : t("notifications_title")}
+            >
+              <Bell className="size-5" />
+              {unreadNotifications > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] font-semibold leading-4 text-primary-foreground tabular-nums">
+                  {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                </span>
+              )}
+            </Link>
+          )}
+          {profile && (
+            <Link href="/profile" aria-label={t("profile_title")}>
               <Avatar src={profile.avatar_url} name={profile.name} className="size-8" />
             </Link>
           )}
         </header>
 
-        <main className="flex-1 p-4 pb-24 md:p-8">{children}</main>
+        <main className="flex-1 p-4 pb-24 md:p-8 print:p-0">{children}</main>
 
-        <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-border/60 bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t print:hidden border-border/60 bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
           <TabLink href="/dashboard" icon={LayoutDashboard} label={t("nav_home")} />
           <TabLink href="/films" icon={Film} label={t("films_label")} />
           <TabLink href="/collections" icon={LibraryBig} label={t("collections_label")} />

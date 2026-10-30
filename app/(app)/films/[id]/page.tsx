@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { editionLabel } from "@/lib/edition-label";
 import { notFound } from "next/navigation";
-import { Check, Clock, Star } from "lucide-react";
+import { Check, ChevronRight, Clock, Layers, Star } from "lucide-react";
 import { getMovieDetailFull } from "@/lib/tmdb/server";
+import { getFranchiseForFilm } from "@/actions/franchises";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
 import { isReleased, profileUrl, type MovieDetailFullDto } from "@/types/tmdb";
@@ -54,10 +56,11 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
     notFound();
   }
 
-  const [onWishlist, collections, filmLog] = await Promise.all([
+  const [onWishlist, collections, filmLog, franchise] = await Promise.all([
     isOnWishlist(movie.id),
     getUserCollections(),
     getFilmLog(movie.id),
+    movie.belongs_to_collection ? getFranchiseForFilm(movie.belongs_to_collection.id).catch(() => null) : Promise.resolve(null),
   ]);
   const filmMeta = { tmdbMovieId: movie.id, title: movie.title, poster: movie.poster_path };
   const items = await getCollectionItemsForCollections(collections.map((c) => c.id));
@@ -125,6 +128,16 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
                   </Badge>
                 ))}
               </div>
+            )}
+
+            {franchise && (
+              <Link href={`/reeksen#reeks-${franchise.id}`} className="inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+                <Layers className="size-4 text-primary" aria-hidden />
+                {franchise.owned === franchise.parts.length
+                  ? format(dict.franchise_film_line_complete, franchise.name)
+                  : format(dict.franchise_film_line, franchise.name, franchise.owned, franchise.parts.length)}
+                <ChevronRight className="size-3.5" aria-hidden />
+              </Link>
             )}
 
             <div className="mt-1 flex flex-wrap gap-2">
@@ -200,7 +213,7 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
                 {ownedCopies.map((copy) => (
                   <Link key={copy.id} href={`/collections/${copy.collection_id}/items/${copy.id}`}>
                     <Badge variant="secondary" className="transition-colors hover:ring-primary/50">
-                      {copy.type} · {copy.editie}
+                      {copy.type} · {editionLabel(copy.editie, locale)}
                     </Badge>
                   </Link>
                 ))}

@@ -3,7 +3,12 @@
  * recognised in Dutch and English, including common exports (CLZ Movies,
  * Cine Case, spreadsheets). */
 
-export const IMPORT_FIELDS = ["title", "kind", "seasons", "year", "barcode", "format", "edition", "watched", "rating", "watchedOn", "box"] as const;
+// Order matters for the "contains" pass: subtitles before audio, so a header
+// like "Subtitle languages" isn't taken as audio.
+export const IMPORT_FIELDS = [
+  "title", "kind", "seasons", "year", "barcode", "format", "edition", "cut", "label", "region", "subtitles", "audio",
+  "watched", "rating", "watchedOn", "box",
+] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 export type ColumnMapping = Partial<Record<ImportField, number>>;
 
@@ -19,6 +24,12 @@ const HEADER_SYNONYMS: Record<ImportField, string[]> = {
   box: ["box", "boxset", "box set", "box naam", "box name", "collectie box", "set"],
   kind: ["soort", "film of serie", "film/serie", "kind", "categorie", "category", "content type", "titeltype", "title type"],
   seasons: ["seizoenen", "seizoen", "seasons", "season", "seizoen(en)", "volumes"],
+  cut: ["cut", "filmversie", "fassung", "schnittfassung", "film cut", "versie film"],
+  label: ["label", "uitgever", "publisher", "distributor", "distributeur", "verlag", "boutique label"],
+  // Not "code": that would match "barcode".
+  region: ["regio", "region", "regiocode", "region code", "regio code", "regionalcode", "ländercode", "zone"],
+  subtitles: ["ondertitels", "ondertiteling", "subtitles", "subtitle", "subs", "untertitel", "sous titres"],
+  audio: ["audio", "audiotalen", "audio languages", "audio language", "talen", "taal", "languages", "language", "sprache", "sprachen", "tonspur"],
 };
 
 function normHeader(h: string) {
@@ -30,7 +41,9 @@ function normHeader(h: string) {
 export function detectColumns(headers: string[]): ColumnMapping {
   const mapping: ColumnMapping = {};
   const used = new Set<number>();
-  const normalized = headers.map(normHeader);
+  // Link columns ("Letterboxd URI", "IMDb URL") are never data fields; without
+  // this, "box" would match inside "letterboxd".
+  const normalized = headers.map((h) => (/letterboxd|\buri\b|\burl\b|\blink\b/.test(normHeader(h)) ? "" : normHeader(h)));
   for (const pass of ["exact", "contains"] as const) {
     for (const field of IMPORT_FIELDS) {
       if (mapping[field] !== undefined) continue;

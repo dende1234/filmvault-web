@@ -34,6 +34,8 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: dict.meta_title, template: `%s · ${SITE_NAME}` },
     description: dict.meta_description,
     applicationName: SITE_NAME,
+    // Opened from the iPhone home screen: full screen, with our own title.
+    appleWebApp: { capable: true, title: SITE_NAME, statusBarStyle: "black-translucent" },
     openGraph: {
       title: SITE_NAME,
       description: dict.meta_og_description,

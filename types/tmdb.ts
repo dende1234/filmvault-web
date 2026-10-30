@@ -22,6 +22,18 @@ export interface MovieDetailDto extends MovieSummaryDto {
   budget: number;
   revenue: number;
   original_language: string | null;
+  /** The film series it is part of (TMDB "collection"), e.g. The Lord of the Rings. */
+  belongs_to_collection?: { id: number; name: string; poster_path: string | null; backdrop_path?: string | null } | null;
+}
+
+/** /collection/{id}: a film series and its parts. */
+export interface CollectionDto {
+  id: number;
+  name: string;
+  overview: string | null;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  parts: MovieSummaryDto[];
 }
 
 export interface MoviePageDto {

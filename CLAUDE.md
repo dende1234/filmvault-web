@@ -38,6 +38,8 @@ Next.js 16 (App Router) + React 19, Supabase (`@supabase/ssr`) for auth and data
 
 **i18n.** UI is Dutch-first (`nl`) with English (`en`). Strings live in `lib/i18n/nl.ts` and `lib/i18n/en.ts` (the `Dictionary` type is derived from `nl`, so add every key to both). Placeholders are `{0}`, `{1}` filled by `format()`. Server code resolves the locale with `getLocale()` (`lib/preferences.ts`: `fv_locale` cookie, else detected from Vercel country header + Accept-Language via `lib/locale-detect.ts`) and passes `getDictionary(locale)`; client components use `useT()` from `lib/i18n/locale-provider.tsx`. Some route segments are Dutch (`/gids`, `/nieuwsbrief`), as are some domain values (`Condition` = `"Nieuw" | "Gebruikt" | "Beschadigd"`, `editie`).
 
+**Reel (in-app help, no AI).** `components/help/reel-assistant.tsx` answers from the fixed bilingual knowledge base `lib/help/faq.ts`, matched by `lib/help/match.ts` (stopwords, stemming, synonyms, one-typo tolerance). New feature, moved button, or a "can't yet" that became possible? Update `lib/help/faq.ts` too. Unanswered questions show in `/admin/feedback?tab=help` (`help_questions.sql`, anonymous, 90 days).
+
 **Types.** `types/database.ts` is hand-written (not generated) and mirrors the Postgres columns in snake_case; `types/tmdb.ts` holds TMDB DTOs. Keep them in sync with the SQL when adding columns.
 
 **Images.** `next.config.ts` allows `image.tmdb.org` and the Supabase Storage public `covers` bucket (custom covers). It also sets security headers; `Permissions-Policy` must keep `camera=(self)` for the barcode scanner. No CSP on purpose.
