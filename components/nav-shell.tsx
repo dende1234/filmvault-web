@@ -44,6 +44,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/locale-provider";
 import { signOut } from "@/actions/auth";
+import { clearSnapshot } from "@/lib/shop-offline";
 import type { Profile } from "@/types/database";
 import { Logo } from "@/components/brand/logo";
 import { Avatar } from "@/components/avatar";
@@ -265,6 +266,7 @@ export function NavShell({
         <button
           onClick={() => {
             close();
+            clearSnapshot();
             signOut().then(() => {
               router.replace("/login");
               router.refresh();

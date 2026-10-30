@@ -1250,4 +1250,8 @@ export const en: Record<keyof typeof nl, string> = {
   compare_both: "Both ({0})",
   compare_none: "Nothing in this list.",
   compare_more: "Show more ({0})",
+  shop_offline: "No connection. Scans are answered from your collection as saved on this phone on {0}.",
+  shop_offline_no_snapshot: "No connection, and your collection isn't saved on this phone yet. Open shop mode once with a connection before you go into the shop.",
+  shop_offline_answer: "Determined offline from your saved collection.",
+  shop_offline_unknown: "Can't tell offline: not in your collection or on your wishlist. Check again later.",
 };

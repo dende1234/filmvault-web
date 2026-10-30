@@ -1253,4 +1253,8 @@ export const nl = {
   compare_both: "Allebei ({0})",
   compare_none: "Niets in deze lijst.",
   compare_more: "Meer tonen ({0})",
+  shop_offline: "Geen verbinding. Je scans worden beantwoord uit je collectie zoals die op {0} op deze telefoon is bewaard.",
+  shop_offline_no_snapshot: "Geen verbinding, en je collectie is nog niet op deze telefoon bewaard. Open de winkelmodus één keer met verbinding voordat je de winkel in gaat.",
+  shop_offline_answer: "Zonder verbinding bepaald uit je opgeslagen collectie.",
+  shop_offline_unknown: "Zonder verbinding niet te zeggen: niet in je collectie of op je verlanglijst. Check het later nog eens.",
 };
