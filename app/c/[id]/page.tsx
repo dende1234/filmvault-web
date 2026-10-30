@@ -11,6 +11,7 @@ import { Logo } from "@/components/brand/logo";
 import { Avatar } from "@/components/avatar";
 import { PageHeader } from "@/components/page-header";
 import { Poster, PosterCorner } from "@/components/movie/poster";
+import { CaseBand, hasCaseBand } from "@/components/movie/case-band";
 import { PosterGrid } from "@/components/movie/poster-grid";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -120,9 +121,10 @@ export default async function PublicCollectionPage({ params }: Props) {
             const item = entry.item;
             return (
             <div key={`${item.tmdb_movie_id}-${item.type}-${item.editie}-${i}`} className="flex flex-col gap-2">
-              <Poster path={item.movie_poster} customCover={item.custom_cover_path} title={item.movie_title} priority={i < 6}>
+              <Poster path={item.movie_poster} customCover={item.custom_cover_path} title={item.movie_title} priority={i < 6} className="@container">
+                {!item.custom_cover_path && <CaseBand type={item.type} />}
                 <PosterCorner position="bl">
-                  <Badge variant="overlay">{item.type}</Badge>
+                  {(item.custom_cover_path || !hasCaseBand(item.type)) && <Badge variant="overlay">{item.type}</Badge>}
                   {isSeries(item.tmdb_movie_id) && seasonsShort(item.seasons) && (
                     <Badge variant="overlay">{seasonsShort(item.seasons)!.label}</Badge>
                   )}

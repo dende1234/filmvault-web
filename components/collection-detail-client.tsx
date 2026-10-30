@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Download, Eye, Film, MoreHorizontal, Printer, ScanLine, SearchX, X } from "lucide-react";
+import { Disc3, Download, Eye, Film, Image as ImageIcon, MoreHorizontal, Printer, ScanLine, SearchX, X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { removeBoxFromCollection, removeCollectionItem } from "@/actions/collections";
@@ -16,6 +16,9 @@ import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { isSeries } from "@/lib/titles";
 import { formatShort, matchesFormat, singleFormats } from "@/lib/formats";
+import { compareTitles, shelfLetter } from "@/lib/sort-title";
+import { useLocalFlag } from "@/lib/use-local-flag";
+import { CaseBand, hasCaseBand } from "@/components/movie/case-band";
 import { useSeasonsLabel } from "@/components/seasons-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -47,6 +50,9 @@ function boxKey(item: CollectionItem): string | null {
   return item.box_group_id ?? `${item.box_name ?? ""}|${item.barcode}`;
 }
 
+const entryName = (e: Entry) => (e.kind === "item" ? e.item.movie_title : (e.items[0].box_name ?? e.items[0].movie_title));
+const ALPHABET = ["#", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
+
 export function CollectionDetailClient({
   collection,
   items,
@@ -68,6 +74,9 @@ export function CollectionDetailClient({
   const seasonsLabel = useSeasonsLabel();
   const hasSeries = items.some((i) => isSeries(i.tmdb_movie_id));
   const [sort, setSort] = useState<"name" | "added" | "rating">("name");
+  // Posters drawn as disc cases (format strip on top); per viewer, default on.
+  const [plainPosters, setPlainPosters] = useLocalFlag("fv_plain_posters");
+  const caseLook = !plainPosters;
   const [searchQuery, setSearchQuery] = useState("");
   const [pendingDelete, setPendingDelete] = useState<CollectionItem | null>(null);
   const [pendingBoxDelete, setPendingBoxDelete] = useState<CollectionItem[] | null>(null);
@@ -128,15 +137,110 @@ export function CollectionDetailClient({
       if (boxItems.some(matches)) entries.push({ kind: "box", key, items: boxItems });
     }
 
-    const name = (e: Entry) => (e.kind === "item" ? e.item.movie_title : (e.items[0].box_name ?? e.items[0].movie_title));
+    const name = entryName;
     const added = (e: Entry) => (e.kind === "item" ? [e.item] : e.items).reduce((max, i) => ((i.added_at ?? "") > max ? (i.added_at ?? "") : max), "");
     const rating = (e: Entry) => Math.max(...(e.kind === "item" ? [e.item] : e.items).map((i) => i.rating ?? 0));
-    if (sort === "name") entries.sort((a, b) => name(a).localeCompare(name(b)));
+    if (sort === "name") entries.sort((a, b) => compareTitles(name(a), name(b)));
     else if (sort === "added") entries.sort((a, b) => added(b).localeCompare(added(a)));
     else entries.sort((a, b) => rating(b) - rating(a));
     return entries;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- isWatched reads watchedOverride
   }, [items, typeFilter, kindFilter, boxFilter, watchedFilter, sort, searchQuery, watchedOverride]);
+
+  // Shelf letters (A–Z, "#") when sorted by name, like a collector's app.
+  const letterGroups = useMemo(() => {
+    const groups: { letter: string; entries: Entry[] }[] = [];
+    for (const e of filtered) {
+      const letter = shelfLetter(entryName(e));
+      const last = groups[groups.length - 1];
+      if (last?.letter === letter) last.entries.push(e);
+      else groups.push({ letter, entries: [e] });
+    }
+    return groups;
+  }, [filtered]);
+
+  const renderEntry = (entry: Entry) => {
+            if (entry.kind === "box") {
+              const first = entry.items[0];
+              const films = [...entry.items].sort((a, b) => a.movie_title.localeCompare(b.movie_title));
+              return (
+                <BoxCard
+                  key={`box-${entry.key}`}
+                  name={first.box_name ?? first.movie_title}
+                  type={first.type}
+                  editie={first.editie}
+                  href={first.box_group_id ? `/collections/${collection.id}/boxes/${first.box_group_id}` : undefined}
+                  onRemove={isOwner ? () => setPendingBoxDelete(entry.items) : undefined}
+                  films={films.map((i) => ({
+                    key: i.id,
+                    title: i.movie_title,
+                    poster: i.movie_poster,
+                    customCover: i.custom_cover_path,
+                    watched: isWatched(i),
+                    href: `/collections/${collection.id}/items/${i.id}`,
+                    onToggleWatched: isOwner && !togglingIds.has(i.tmdb_movie_id) ? () => toggleWatched(i) : undefined,
+                  }))}
+                />
+              );
+            }
+            const item = entry.item;
+            return (
+            <div key={item.id} className="group relative flex flex-col gap-2 @container">
+              <Link href={`/collections/${collection.id}/items/${item.id}`} className="flex flex-col gap-2 focus-visible:outline-none">
+                <Poster path={item.movie_poster} customCover={item.custom_cover_path} title={item.movie_title} hover className="@container">
+                  {caseLook && !item.custom_cover_path && <CaseBand type={item.type} />}
+                  <PosterCorner position="bl">
+                    {!(caseLook && !item.custom_cover_path && hasCaseBand(item.type)) && <Badge variant="overlay">{formatShort(item.type)}</Badge>}
+                    {isSeries(item.tmdb_movie_id) && <Badge variant="overlay">{seasonsLabel(item.seasons)}</Badge>}
+                    {!isOwner && isWatched(item) && (
+                      <Badge variant="overlay" className="px-1.5" title={t("watched_label")}>
+                        <Eye className="text-success" />
+                      </Badge>
+                    )}
+                  </PosterCorner>
+
+                  {isLoanOverdue(item) && (
+                    <PosterCorner position="tl" className={caseLook ? "top-[12%]" : undefined}>
+                      <Badge variant="destructive" className="bg-destructive text-destructive-foreground">
+                        {t("collection_item_loan_overdue_short", item.loaned_to ?? "")}
+                      </Badge>
+                    </PosterCorner>
+                  )}
+                </Poster>
+                <div className="min-w-0">
+                  <p className="line-clamp-2 text-sm font-medium leading-snug transition-colors group-hover:text-primary">
+                    {item.movie_title}
+                  </p>
+                  {(() => {
+                    const region = item.region ? (item.region === "Regiovrij" ? t("details_region_free") : t("details_region_value", item.region)) : null;
+                    const sub = [item.editie !== "Normaal" ? item.editie : null, item.cut, item.label, region].filter(Boolean).join(" · ");
+                    return sub ? <p className="line-clamp-1 text-xs text-muted-foreground">{sub}</p> : null;
+                  })()}
+                </div>
+              </Link>
+              {isOwner && (
+                <PosterControl>
+                  <WatchedToggle
+                    watched={isWatched(item)}
+                    disabled={togglingIds.has(item.tmdb_movie_id)}
+                    onToggle={() => toggleWatched(item)}
+                  />
+                </PosterControl>
+              )}
+              {/* Below the case strip (9% of a 2:3 poster = 13.5% of its width). */}
+              <PosterCorner position="tr" className={caseLook && !item.custom_cover_path ? "top-[calc(13.5cqw+6px)]" : undefined}>
+                <button
+                  type="button"
+                  onClick={() => setPendingDelete(item)}
+                  className="rounded-full bg-black/70 p-1.5 text-white backdrop-blur-sm transition-opacity hover:bg-destructive focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                  aria-label={t("action_delete")}
+                >
+                  <X className="size-3.5" />
+                </button>
+              </PosterCorner>
+            </div>
+            );
+  };
 
   async function handleBoxDelete() {
     if (!pendingBoxDelete) return;
@@ -287,6 +391,18 @@ export function CollectionDetailClient({
                 <SelectItem value="rating">{t("sort_rating")}</SelectItem>
               </SelectContent>
             </Select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-10"
+              onClick={() => setPlainPosters(!plainPosters)}
+              aria-pressed={caseLook}
+              title={t(caseLook ? "collection_view_posters" : "collection_view_cases")}
+            >
+              {caseLook ? <ImageIcon /> : <Disc3 />}
+              {t(caseLook ? "collection_view_posters" : "collection_view_cases")}
+            </Button>
           </div>
         </div>
       )}
@@ -301,88 +417,40 @@ export function CollectionDetailClient({
       ) : filtered.length === 0 ? (
         <EmptyState icon={SearchX} title={t("collection_detail_no_matches")} />
       ) : (
-        <PosterGrid>
-          {filtered.map((entry) => {
-            if (entry.kind === "box") {
-              const first = entry.items[0];
-              const films = [...entry.items].sort((a, b) => a.movie_title.localeCompare(b.movie_title));
-              return (
-                <BoxCard
-                  key={`box-${entry.key}`}
-                  name={first.box_name ?? first.movie_title}
-                  type={first.type}
-                  editie={first.editie}
-                  href={first.box_group_id ? `/collections/${collection.id}/boxes/${first.box_group_id}` : undefined}
-                  onRemove={isOwner ? () => setPendingBoxDelete(entry.items) : undefined}
-                  films={films.map((i) => ({
-                    key: i.id,
-                    title: i.movie_title,
-                    poster: i.movie_poster,
-                    customCover: i.custom_cover_path,
-                    watched: isWatched(i),
-                    href: `/collections/${collection.id}/items/${i.id}`,
-                    onToggleWatched: isOwner && !togglingIds.has(i.tmdb_movie_id) ? () => toggleWatched(i) : undefined,
-                  }))}
-                />
-              );
-            }
-            const item = entry.item;
-            return (
-            <div key={item.id} className="group relative flex flex-col gap-2">
-              <Link href={`/collections/${collection.id}/items/${item.id}`} className="flex flex-col gap-2 focus-visible:outline-none">
-                <Poster path={item.movie_poster} customCover={item.custom_cover_path} title={item.movie_title} hover>
-                  <PosterCorner position="bl">
-                    <Badge variant="overlay">{formatShort(item.type)}</Badge>
-                    {isSeries(item.tmdb_movie_id) && <Badge variant="overlay">{seasonsLabel(item.seasons)}</Badge>}
-                    {!isOwner && isWatched(item) && (
-                      <Badge variant="overlay" className="px-1.5" title={t("watched_label")}>
-                        <Eye className="text-success" />
-                      </Badge>
-                    )}
-                  </PosterCorner>
-
-                  {isLoanOverdue(item) && (
-                    <PosterCorner position="tl">
-                      <Badge variant="destructive" className="bg-destructive text-destructive-foreground">
-                        {t("collection_item_loan_overdue_short", item.loaned_to ?? "")}
-                      </Badge>
-                    </PosterCorner>
-                  )}
-                </Poster>
-                <div className="min-w-0">
-                  <p className="line-clamp-2 text-sm font-medium leading-snug transition-colors group-hover:text-primary">
-                    {item.movie_title}
-                  </p>
-                  {(() => {
-                    const region = item.region ? (item.region === "Regiovrij" ? t("details_region_free") : t("details_region_value", item.region)) : null;
-                    const sub = [item.editie !== "Normaal" ? item.editie : null, item.cut, item.label, region].filter(Boolean).join(" · ");
-                    return sub ? <p className="line-clamp-1 text-xs text-muted-foreground">{sub}</p> : null;
-                  })()}
-                </div>
-              </Link>
-              {isOwner && (
-                <PosterControl>
-                  <WatchedToggle
-                    watched={isWatched(item)}
-                    disabled={togglingIds.has(item.tmdb_movie_id)}
-                    onToggle={() => toggleWatched(item)}
-                  />
-                </PosterControl>
+        <div className="flex flex-col gap-8">
+          {sort === "name" && letterGroups.length > 3 && (
+            <nav aria-label={t("collection_letters_nav")} className="scrollbar-none -mx-4 -mb-2 flex gap-1 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0">
+              {ALPHABET.map((letter) => {
+                const present = letterGroups.some((g) => g.letter === letter);
+                return present ? (
+                  <a
+                    key={letter}
+                    href={`#letter-${letter === "#" ? "0" : letter}`}
+                    className="flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-semibold text-foreground hover:bg-elevated hover:text-primary"
+                  >
+                    {letter}
+                  </a>
+                ) : (
+                  <span key={letter} className="flex size-7 shrink-0 items-center justify-center text-xs text-muted-foreground/40" aria-hidden>
+                    {letter}
+                  </span>
+                );
+              })}
+            </nav>
+          )}
+          {(sort === "name" ? letterGroups : [{ letter: "", entries: filtered }]).map((group) => (
+            <section key={group.letter || "all"} id={group.letter ? `letter-${group.letter === "#" ? "0" : group.letter}` : undefined} className="flex scroll-mt-44 flex-col gap-4">
+              {group.letter && (
+                <h2 className="flex items-center gap-4 font-display text-xl font-semibold text-muted-foreground">
+                  <span className="h-px flex-1 bg-border" aria-hidden />
+                  {group.letter}
+                  <span className="h-px flex-1 bg-border" aria-hidden />
+                </h2>
               )}
-              <PosterCorner position="tr">
-                <button
-                  type="button"
-                  onClick={() => setPendingDelete(item)}
-                  className="rounded-full bg-black/70 p-1.5 text-white backdrop-blur-sm transition-opacity hover:bg-destructive focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
-                  aria-label={t("action_delete")}
-                >
-                  <X className="size-3.5" />
-                </button>
-              </PosterCorner>
-            </div>
-            );
-          })}
-        </PosterGrid>
+              <PosterGrid dense={caseLook}>{group.entries.map(renderEntry)}</PosterGrid>
+            </section>
+          ))}
+        </div>
       )}
 
       <Dialog open={!!pendingBoxDelete} onOpenChange={(open) => !open && setPendingBoxDelete(null)}>

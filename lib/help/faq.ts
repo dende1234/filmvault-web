@@ -223,8 +223,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Kan ik mijn collectie filteren of sorteren?", en: "Can I filter or sort my collection?" },
     a: {
-      nl: "Ja, in een collectie: zoeken, filteren op formaat, films/series, bekeken, en op boxen of losse films, en sorteren op naam, nieuwste of rating.",
-      en: "Yes, in a collection: search, filter by format, films/series, watched, and boxes or single films, and sort by name, newest or rating.",
+      nl: "Ja, in een collectie: zoeken, filteren op formaat, films/series, bekeken, en op boxen of losse films, en sorteren op naam, nieuwste of rating. Op naam krijg je letterkoppen (\"The\" en \"De\" tellen niet mee). Met de knop **Hoesjes / Posters** kies je of je films als disc-hoes met formaatrand of als gewone poster ziet.",
+      en: "Yes, in a collection: search, filter by format, films/series, watched, and boxes or single films, and sort by name, newest or rating. By name you get letter headings (\"The\" doesn't count). The **Cases / Posters** button switches between disc cases with a format strip and plain posters.",
     },
     keywords: { nl: ["filteren", "sorteren", "zoeken in collectie", "alleen boxen"], en: ["filter", "sort", "search collection", "only boxes"] },
     pages: ["/collections"],

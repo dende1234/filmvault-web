@@ -334,6 +334,9 @@ export const en: Record<keyof typeof nl, string> = {
   collections_sort_newest: "Newest first",
 
   collection_detail_error_load: "Could not load collection",
+  collection_view_cases: "Cases",
+  collection_view_posters: "Posters",
+  collection_letters_nav: "Jump to letter",
   collection_detail_empty: "This collection doesn't contain any movies yet.",
   collection_detail_empty_description: "Add your first film: search it by title and pick the format.",
   collection_detail_no_matches: "No films match these filters",

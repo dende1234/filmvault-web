@@ -336,6 +336,9 @@ export const nl = {
   collections_sort_newest: "Nieuwste eerst",
 
   collection_detail_error_load: "Kon collectie niet laden",
+  collection_view_cases: "Hoesjes",
+  collection_view_posters: "Posters",
+  collection_letters_nav: "Spring naar letter",
   collection_detail_empty: "Deze collectie bevat nog geen films.",
   collection_detail_empty_description: "Voeg je eerste film toe: zoek hem op titel en kies het formaat.",
   collection_detail_no_matches: "Geen films gevonden met deze filters",

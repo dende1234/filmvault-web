@@ -70,7 +70,16 @@ export function Poster({
 }
 
 /** Corner positions for badges inside <Poster>. */
-export function PosterCorner({ position, children }: { position: "tl" | "tr" | "bl" | "br"; children: React.ReactNode }) {
+export function PosterCorner({
+  position,
+  className,
+  children,
+}: {
+  position: "tl" | "tr" | "bl" | "br";
+  /** E.g. move a top badge below a CaseBand strip. */
+  className?: string;
+  children: React.ReactNode;
+}) {
   const pos = { tl: "left-1.5 top-1.5", tr: "right-1.5 top-1.5", bl: "bottom-1.5 left-1.5", br: "bottom-1.5 right-1.5" }[position];
-  return <div className={cn("absolute z-10 flex gap-1", pos)}>{children}</div>;
+  return <div className={cn("absolute z-10 flex gap-1", pos, className)}>{children}</div>;
 }
