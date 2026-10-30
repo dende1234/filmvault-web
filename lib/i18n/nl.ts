@@ -1398,4 +1398,10 @@ export const nl = {
   quality_move_not_ready: "Verhuizen kan pas als admin_move_barcode.sql in Supabase gedraaid is.",
   quality_move_error: "Verhuizen is mislukt",
   admin_log_action_barcode_move: "Barcode verhuisd",
+  admin_trusted_label: "Inzendingen automatisch goedkeuren",
+  admin_trusted_hint: "Losse uitgaven van dit lid worden direct goedgekeurd (boxen niet). Alleen voor bijdragers die je vertrouwt; het komt in het logboek.",
+  admin_trusted_error: "Aanpassen is mislukt",
+  admin_trusted_not_ready: "Automatisch goedkeuren kan pas als auto_approve.sql in Supabase gedraaid is.",
+  admin_log_action_user_trust_on: "Automatisch goedkeuren aan",
+  admin_log_action_user_trust_off: "Automatisch goedkeuren uit",
 };

@@ -14,6 +14,8 @@ export type AdminAction =
   | "user_admin_on"
   | "user_admin_off"
   | "user_delete"
+  | "user_trust_on"
+  | "user_trust_off"
   | "announcement_send"
   | "help_answer_save"
   | "help_answer_delete";

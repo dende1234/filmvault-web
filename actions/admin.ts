@@ -312,3 +312,24 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
     feedback: (feedback.data ?? []) as AdminUserDetail["feedback"],
   };
 }
+
+/** Trusted contributors (auto_approve.sql): their single-release
+ * submissions are approved right away. null = SQL hasn't run. */
+export async function getTrusted(userId: string): Promise<boolean | null> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("trusted_contributors").select("user_id").eq("user_id", userId).maybeSingle();
+  if (error) return null;
+  return !!data;
+}
+
+export async function setTrusted(userId: string, trusted: boolean): Promise<void> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = trusted
+    ? await supabase.from("trusted_contributors").upsert({ user_id: userId })
+    : await supabase.from("trusted_contributors").delete().eq("user_id", userId);
+  if (error) throw error;
+  await logAdminAction(trusted ? "user_trust_on" : "user_trust_off", { type: "user", id: userId });
+  revalidatePath(`/admin/users/${userId}`);
+}

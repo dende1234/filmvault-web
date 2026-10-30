@@ -1395,4 +1395,10 @@ export const en: Record<keyof typeof nl, string> = {
   quality_move_not_ready: "Moving works once admin_move_barcode.sql has run in Supabase.",
   quality_move_error: "Moving failed",
   admin_log_action_barcode_move: "Barcode moved",
+  admin_trusted_label: "Approve submissions automatically",
+  admin_trusted_hint: "Single releases from this member are approved right away (boxes are not). Only for contributors you trust; it's logged.",
+  admin_trusted_error: "Changing it failed",
+  admin_trusted_not_ready: "Auto-approval works once auto_approve.sql has run in Supabase.",
+  admin_log_action_user_trust_on: "Auto-approval on",
+  admin_log_action_user_trust_off: "Auto-approval off",
 };
