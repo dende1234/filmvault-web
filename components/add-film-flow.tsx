@@ -6,7 +6,7 @@ import { Film, Package, Plus, ScanLine, Store } from "lucide-react";
 import { useHasCamera } from "@/lib/use-has-camera";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
-import { lookupScannedBarcode, type ScannedBarcodeResult } from "@/actions/collections";
+import { lookupScannedBarcode, type ScannedBarcodeResult } from "@/actions/barcodes";
 import { suggestTitlesForBarcode, type BarcodeSuggestion } from "@/actions/barcode-suggest";
 import { Poster } from "@/components/movie/poster";
 import type { MovieSummaryDto } from "@/types/tmdb";

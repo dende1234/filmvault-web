@@ -8,17 +8,7 @@ import { Captions, Check, Eye, Plus, Volume2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { editionLabel } from "@/lib/edition-label";
-import {
-  removeCollectionItem,
-  updateCollectionItemCondition,
-  updateCollectionItemFavorite,
-  updateCollectionItemLoan,
-  updateCollectionItemNote,
-  updateCollectionItemSeasons,
-  updateCollectionItemRating,
-  updateCollectionItemTags,
-  updateCollectionItemWatched,
-} from "@/actions/collections";
+import { removeCollectionItem, updateCollectionItemCondition, updateCollectionItemFavorite, updateCollectionItemLoan, updateCollectionItemNote, updateCollectionItemSeasons, updateCollectionItemRating, updateCollectionItemTags, updateCollectionItemWatched } from "@/actions/collections";
 import { isLoanOverdue, type Collection, type CollectionItem, type Condition, type FilmLog, type FilmViewing } from "@/types/database";
 import { setFilmRating, setFilmReview, setFilmWatched } from "@/actions/watched";
 import { LogFilmDialog } from "@/components/watched/log-film-dialog";

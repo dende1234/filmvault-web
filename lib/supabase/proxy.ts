@@ -13,7 +13,7 @@ const ALWAYS_ACCESSIBLE_PATHS = ["/privacy", "/gids", "/c/", "/feedback", "/nieu
 // label such as "invite-1a2b3c4d" or "facebook", never an identifier.
 const SOURCE_COOKIE = "fv_src";
 // Same names as lib/preferences.ts (not imported: that module pulls in
-// next/headers, which doesn't belong in middleware).
+// next/headers, which doesn't belong in the proxy).
 const LOCALE_COOKIE = "fv_locale";
 const LOCALE_CHECKED_COOKIE = "fv_lc";
 const SOURCE_MAX_AGE = 60 * 60 * 24 * 30;

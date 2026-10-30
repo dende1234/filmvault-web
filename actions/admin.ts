@@ -8,20 +8,22 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/require-admin";
-import { adminRegisterBarcode, approvePendingBarcode, findBarcodesByCode } from "@/actions/collections";
+import { findBarcodesByCode } from "@/actions/barcodes";
+import { adminRegisterBarcode, approvePendingBarcode } from "@/actions/approvals";
 import { getTitleDetail, searchMovies, searchTv } from "@/lib/tmdb/server";
 import { BarcodeAlreadyRegisteredError } from "@/lib/errors";
 import { isValidEanUpc, normalizeBarcode } from "@/lib/barcode";
 import { getLocale } from "@/lib/preferences";
 import type { AdminProfile, AdminStats, Barcode, PendingBarcode } from "@/types/database";
 import type { MovieSummaryDto } from "@/types/tmdb";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 
 export async function getAllProfiles(): Promise<AdminProfile[]> {
   await requireAdmin();
   const supabase = await createClient();
-  const { data, error } = await supabase.from("profiles").select("id, name, email, avatar_url, is_admin, created_at");
-  if (error) throw error;
-  return data as AdminProfile[];
+  return fetchAll<AdminProfile>((from, to) =>
+    supabase.from("profiles").select("id, name, email, avatar_url, is_admin, created_at").order("created_at").range(from, to),
+  );
 }
 
 export async function setUserAdminStatus(targetUserId: string, isAdmin: boolean): Promise<void> {

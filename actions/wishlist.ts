@@ -5,24 +5,18 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireUserId } from "@/lib/auth";
 import type { WishlistItem } from "@/types/database";
-
-async function requireUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("not authenticated");
-  return user.id;
-}
+import { fetchAll } from "@/lib/supabase/fetch-all";
 
 export async function getWishlist(): Promise<WishlistItem[]> {
   const supabase = await createClient();
   const userId = await requireUserId();
-  const { data, error } = await supabase.from("wishlist_items").select("*").eq("user_id", userId);
-  if (error) throw error;
+  const data = await fetchAll<WishlistItem>((from, to) =>
+    supabase.from("wishlist_items").select("*").eq("user_id", userId).order("id").range(from, to),
+  );
   // Holy Grails first, then newest.
-  return (data as WishlistItem[]).sort(
+  return data.sort(
     (a, b) => Number(!!b.is_grail) - Number(!!a.is_grail) || (b.added_at ?? "").localeCompare(a.added_at ?? ""),
   );
 }

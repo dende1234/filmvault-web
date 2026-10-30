@@ -7,6 +7,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/require-admin";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 
 function isMissing(error: { code?: string } | null) {
   return !!error && ["PGRST202", "PGRST205", "42P01", "42883"].includes(error.code ?? "");
@@ -50,19 +51,18 @@ export async function rateHelpQuestion(id: string, helpful: boolean) {
 export async function getHelpQuestions(): Promise<HelpQuestionRow[] | null> {
   await requireAdmin();
   const supabase = await createClient();
-  const rows: HelpQuestionRow[] = [];
-  for (let from = 0; from < 10000; from += 1000) {
-    const { data, error } = await supabase
-      .from("help_questions")
-      .select("id, created_at, question, matched_id, helpful, locale, page")
-      .order("created_at", { ascending: false })
-      .range(from, from + 999);
-    if (error) {
-      if (isMissing(error)) return null;
-      throw error;
-    }
-    rows.push(...((data ?? []) as HelpQuestionRow[]));
-    if (!data || data.length < 1000) break;
+  try {
+    return await fetchAll<HelpQuestionRow>(
+      (from, to) =>
+        supabase
+          .from("help_questions")
+          .select("id, created_at, question, matched_id, helpful, locale, page")
+          .order("created_at", { ascending: false })
+          .range(from, to),
+      10000,
+    );
+  } catch (error) {
+    if (isMissing(error as { code?: string })) return null;
+    throw error;
   }
-  return rows;
 }

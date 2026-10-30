@@ -9,12 +9,7 @@ import { useT } from "@/lib/i18n/locale-provider";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { useHasCamera } from "@/lib/use-has-camera";
 import { normalizeBarcode } from "@/lib/barcode";
-import {
-  addExistingBarcodesToCollections,
-  addKnownBoxToCollections,
-  lookupScannedBarcode,
-  type ScannedBarcodeResult,
-} from "@/actions/collections";
+import { addExistingBarcodesToCollections, addKnownBoxToCollections, lookupScannedBarcode, type ScannedBarcodeResult } from "@/actions/barcodes";
 import { removeFromWishlistIfCovered } from "@/actions/wishlist";
 import type { Collection } from "@/types/database";
 import { cn } from "@/lib/utils";

@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
-import { approvePendingBarcode, approvePendingBox, rejectPendingBarcode } from "@/actions/collections";
+import { approvePendingBarcode, approvePendingBox, rejectPendingBarcode } from "@/actions/approvals";
 import { adminApprovePendingWithChanges } from "@/actions/admin";
 import { getEdities, getMediaTypes } from "@/actions/media-types";
 import type { PendingBarcode, PendingBarcodeCardItem } from "@/types/database";

@@ -9,17 +9,13 @@
 // copy lands in the collection later, the DB trigger copies them onto it.
 
 import { createClient } from "@/lib/supabase/server";
+import { requireUserId } from "@/lib/auth";
 import { getLocale } from "@/lib/preferences";
 import { getTitleDetail, getTvDetail, searchMovies, searchTv } from "@/lib/tmdb/server";
 import { parseTitleId } from "@/lib/titles";
 import { normalizeBarcode } from "@/lib/barcode";
 import { detailsColumns, type CopyDetailsInput } from "@/lib/copy-details";
-import {
-  addBarcodesToCollections,
-  addKnownBoxToCollections,
-  addNewBoxAsPending,
-  getBarcodesForMovie,
-} from "@/actions/collections";
+import { addBarcodesToCollections, addKnownBoxToCollections, addNewBoxAsPending, getBarcodesForMovie } from "@/actions/barcodes";
 import { addViewing, setFilmRating } from "@/actions/watched";
 import { addToWishlist } from "@/actions/wishlist";
 import type { Barcode } from "@/types/database";
@@ -27,15 +23,6 @@ import type { MovieSummaryDto } from "@/types/tmdb";
 
 const MAX_BATCH = 25;
 const SEARCH_CONCURRENCY = 5;
-
-async function requireUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("not authenticated");
-  return user.id;
-}
 
 export type ImportFilm = { tmdbId: number; title: string; poster: string | null; year: string | null };
 

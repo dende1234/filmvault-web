@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 export const metadata = { title: "Aangemeld voor de nieuwsbrief", robots: { index: false } };
 
 /** Where Brevo's double opt-in link lands after confirming. Public
- * (middleware ALWAYS_ACCESSIBLE_PATHS). */
+ * (proxy ALWAYS_ACCESSIBLE_PATHS). */
 export default async function NewsletterConfirmedPage() {
   const dict = getDictionary(await getLocale());
   return (

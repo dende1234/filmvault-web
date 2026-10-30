@@ -47,3 +47,9 @@ export function parseSeasons(text: string, total?: number | null): number[] | nu
   const list = normalizeSeasons(out);
   return list.length ? list : null;
 }
+
+/** `seasons` only for a series with seasons, so film writes never send the
+ * column (keeps films working before series_support.sql has run). */
+export function seasonsField(seasons: number[] | null | undefined) {
+  return seasons && seasons.length > 0 ? { seasons } : {};
+}

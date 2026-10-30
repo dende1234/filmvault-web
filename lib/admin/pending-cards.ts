@@ -1,8 +1,5 @@
-import {
-  getCollectionsByIds,
-  getPendingBarcodeCollectionLinks,
-  getPendingBarcodes,
-} from "@/actions/collections";
+import { getCollectionsByIds } from "@/actions/collections";
+import { getPendingBarcodeCollectionLinks, getPendingBarcodes } from "@/actions/approvals";
 import { createClient } from "@/lib/supabase/server";
 import type { PendingBarcodeCardItem, PendingBarcodeUiItem } from "@/types/database";
 

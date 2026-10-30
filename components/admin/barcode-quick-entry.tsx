@@ -13,7 +13,7 @@ import {
   adminRegisterBarcodeWithConflictTitle,
   type KnownBarcodeEntry,
 } from "@/actions/admin";
-import { deleteBarcode } from "@/actions/collections";
+import { deleteBarcode } from "@/actions/approvals";
 import { posterUrl, type MovieSummaryDto } from "@/types/tmdb";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

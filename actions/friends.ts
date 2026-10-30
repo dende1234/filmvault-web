@@ -5,16 +5,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireUserId } from "@/lib/auth";
 import type { FriendRequest, FriendRequestWithProfile, ProfileSearchResult } from "@/types/database";
-
-async function requireUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("not authenticated");
-  return user.id;
-}
 
 export async function searchProfiles(query: string): Promise<ProfileSearchResult[]> {
   const trimmed = query.trim();

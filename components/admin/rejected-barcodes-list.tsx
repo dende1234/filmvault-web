@@ -8,7 +8,7 @@ import { RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { editionLabel } from "@/lib/edition-label";
-import { restoreRejectedBarcodes } from "@/actions/collections";
+import { restoreRejectedBarcodes } from "@/actions/approvals";
 import type { PendingBarcodeCardItem } from "@/types/database";
 import { posterUrl } from "@/types/tmdb";
 import { Badge } from "@/components/ui/badge";

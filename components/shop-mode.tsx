@@ -7,7 +7,7 @@ import { useT } from "@/lib/i18n/locale-provider";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { useHasCamera } from "@/lib/use-has-camera";
 import { normalizeBarcode } from "@/lib/barcode";
-import { getOwnedCopiesOfTitle, lookupScannedBarcode, type OwnedCopy, type ScannedBarcodeResult } from "@/actions/collections";
+import { getOwnedCopiesOfTitle, lookupScannedBarcode, type OwnedCopy, type ScannedBarcodeResult } from "@/actions/barcodes";
 import { addToWishlist, getWishlistStatus } from "@/actions/wishlist";
 import { suggestTitlesForBarcode, type BarcodeSuggestion } from "@/actions/barcode-suggest";
 import { cn } from "@/lib/utils";

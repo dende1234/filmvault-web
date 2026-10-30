@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import type { CollectionItem } from "@/types/database";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 
 export type OwnCopy = { item: CollectionItem; collections: string[]; collectionIds: string[] };
 
@@ -25,21 +26,18 @@ export async function getOwnCopies(only?: string | null): Promise<
   if (only && (cols ?? []).length === 0) return "not_found";
   const names = new Map((cols ?? []).map((c: { id: string; name: string }) => [c.id, c.name]));
 
-  const rows: CollectionItem[] = [];
-  if (names.size > 0) {
-    // Page through: a big collection can exceed one response.
-    for (let from = 0; ; from += 1000) {
-      const { data, error } = await supabase
-        .from("collection_items")
-        .select("*")
-        .in("collection_id", Array.from(names.keys()))
-        .order("movie_title")
-        .range(from, from + 999);
-      if (error) throw error;
-      rows.push(...((data ?? []) as CollectionItem[]));
-      if (!data || data.length < 1000) break;
-    }
-  }
+  const rows =
+    names.size > 0
+      ? await fetchAll<CollectionItem>((from, to) =>
+          supabase
+            .from("collection_items")
+            .select("*")
+            .in("collection_id", Array.from(names.keys()))
+            .order("movie_title")
+            .order("id")
+            .range(from, to),
+        )
+      : [];
 
   const copies = new Map<string, OwnCopy>();
   for (const item of rows) {

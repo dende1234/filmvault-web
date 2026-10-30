@@ -25,8 +25,8 @@ const DEMO_RELEASES = [
   { type: "Blu-ray", editie: "Steelbook", watched: true },
 ];
 
-// Public landing page. Logged-in visitors never see it: the auth middleware
-// (lib/supabase/middleware.ts) sends them from "/" straight to /dashboard.
+// Public landing page. Logged-in visitors never see it: the auth proxy
+// (lib/supabase/proxy.ts) sends them from "/" straight to /dashboard.
 export default async function LandingPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
@@ -164,7 +164,7 @@ export default async function LandingPage() {
         </section>
       )}
 
-      {/* Signed-in users never see "/" (middleware redirects them), so this is always the visitor form. */}
+      {/* Signed-in users never see "/" (the proxy redirects them), so this is always the visitor form. */}
       <div className="mx-auto w-full max-w-3xl px-4 pb-16 md:px-8">
         <NewsletterSignup signedIn={false} />
       </div>

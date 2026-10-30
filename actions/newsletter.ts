@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/require-admin";
 import { ipHash } from "@/lib/ip-hash";
 import { SITE_URL } from "@/lib/site";
 import { isNewsletterConfigured, startDoubleOptIn, upsertMember } from "@/lib/newsletter";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 const MIN_FILL_MS = 2000;
@@ -54,8 +55,9 @@ export async function adminSyncNewsletter(): Promise<{ synced: number; failed: n
   await requireAdmin();
   if (!isNewsletterConfigured()) return { synced: 0, failed: 0, configured: false };
   const supabase = await createClient();
-  const { data, error } = await supabase.from("profiles").select("email, name").eq("newsletter_opt_in", true);
-  if (error) throw error;
+  const data = await fetchAll<{ email: string | null; name: string | null }>((from, to) =>
+    supabase.from("profiles").select("email, name").eq("newsletter_opt_in", true).order("id").range(from, to),
+  );
   let synced = 0;
   let failed = 0;
   for (const row of data ?? []) {

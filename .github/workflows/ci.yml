@@ -19,6 +19,8 @@ jobs:
 
       - run: npm run lint
 
+      - run: npm test
+
       # Dummy values — nothing here needs to reach a real Supabase/TMDB
       # project, just to make sure the build itself (types, routes,
       # Server Actions) compiles cleanly.
