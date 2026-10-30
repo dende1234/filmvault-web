@@ -55,6 +55,8 @@ export const MIGRATIONS: Migration[] = [
   { file: "trade_list.sql", probe: { kind: "column", table: "collection_items", column: "for_trade" } },
   // Third round.
   { file: "indexes.sql", probe: null, note: "index" },
+  { file: "protect_admin_flag.sql", probe: null, note: "trigger" },
+  { file: "rls_report.sql", probe: { kind: "rpc", fn: "admin_rls_report" } },
   { file: "announcements.sql", probe: { kind: "table", table: "announcements" } },
   { file: "notification_prefs.sql", probe: { kind: "column", table: "profiles", column: "notify_prefs" } },
   { file: "feature_flags.sql", probe: { kind: "table", table: "feature_flags" } },

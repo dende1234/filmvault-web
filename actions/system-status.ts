@@ -47,3 +47,15 @@ export async function getSystemStatus(): Promise<{ migrations: MigrationStatus[]
   ];
   return { migrations, settings };
 }
+
+export type RlsRow = { table_name: string; rls_enabled: boolean; policies: number };
+
+/** Tables in the public schema and their RLS state (rls_report.sql); null
+ * before that file has run. */
+export async function getRlsReport(): Promise<RlsRow[] | null> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_rls_report");
+  if (error) return null;
+  return data as RlsRow[];
+}

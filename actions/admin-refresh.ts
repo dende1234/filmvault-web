@@ -2,14 +2,13 @@
 
 import { requireAdmin } from "@/lib/require-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { fetchAll } from "@/lib/supabase/fetch-all";
-import { logAdminAction } from "@/lib/admin/log";
 import { getTitleDetail } from "@/lib/tmdb/server";
+import { logAdminAction } from "@/lib/admin/log";
 
 const BATCH = 25;
 const TABLES = ["collection_items", "wishlist_items"] as const;
 
-export type RefreshResult = { error: "no_service_key" | null; next: number | null; total: number; checked: number; updated: number };
+export type RefreshResult = { error: "no_service_key" | null; next: number | null; checked: number; updated: number };
 
 /** Brings posters (and empty titles) of every title in members' collections
  * and wishlists in line with TMDB, BATCH titles per call so each call stays
@@ -18,17 +17,17 @@ export type RefreshResult = { error: "no_service_key" | null; next: number | nul
 export async function refreshTitlesBatch(after: number | null): Promise<RefreshResult> {
   await requireAdmin();
   const admin = createAdminClient();
-  if (!admin) return { error: "no_service_key", next: null, total: 0, checked: 0, updated: 0 };
+  if (!admin) return { error: "no_service_key", next: null, checked: 0, updated: 0 };
 
+  // The next BATCH distinct title ids after `after`, from both tables.
   const ids = new Set<number>();
   for (const table of TABLES) {
-    const rows = await fetchAll<{ tmdb_movie_id: number }>((from, to) =>
-      admin.from(table).select("tmdb_movie_id").order("id").range(from, to),
-    ).catch(() => []);
-    for (const r of rows) if (r.tmdb_movie_id) ids.add(r.tmdb_movie_id);
+    let q = admin.from(table).select("tmdb_movie_id").order("tmdb_movie_id").limit(2000);
+    if (after !== null) q = q.gt("tmdb_movie_id", after);
+    const { data } = await q;
+    for (const r of (data ?? []) as { tmdb_movie_id: number }[]) if (r.tmdb_movie_id) ids.add(r.tmdb_movie_id);
   }
-  const sorted = [...ids].sort((a, b) => a - b);
-  const batch = sorted.filter((id) => after === null || id > after).slice(0, BATCH);
+  const batch = [...ids].sort((a, b) => a - b).slice(0, BATCH);
 
   let updated = 0;
   await Promise.all(
@@ -55,7 +54,12 @@ export async function refreshTitlesBatch(after: number | null): Promise<RefreshR
     }),
   );
 
-  const next = batch.length === BATCH && sorted.at(-1) !== batch.at(-1) ? batch.at(-1)! : null;
-  if (next === null) await logAdminAction("titles_refresh", undefined, { titles: sorted.length });
-  return { error: null, next, total: sorted.length, checked: sorted.findIndex((v) => v === batch.at(-1)) + 1 || sorted.length, updated };
+  const next = batch.length === BATCH ? batch[BATCH - 1] : null;
+  return { error: null, next, checked: batch.length, updated };
+}
+
+/** Called once when a full refresh run has finished, for /admin/log. */
+export async function logTitlesRefresh(checked: number, updated: number): Promise<void> {
+  await requireAdmin();
+  await logAdminAction("titles_refresh", undefined, { titles: checked, rows: updated });
 }

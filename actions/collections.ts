@@ -15,6 +15,7 @@ import { isMissingError } from "@/lib/admin/migrations";
 import { isSeries } from "@/lib/titles";
 import { purchaseColumns } from "@/lib/purchase";
 import type { Collection, CollectionItem, Condition, PublicCollection } from "@/types/database";
+import { bulkPatchSchema, restoreRowSchema } from "@/lib/validation";
 
 export async function getUserCollections(): Promise<Collection[]> {
   const supabase = await createClient();
@@ -522,8 +523,11 @@ export async function bulkEditCopies(
   patch: BulkPatch,
 ): Promise<{ error: "not_ready" | "not_found" | null; removed?: CollectionItem[] }> {
   const userId = await requireUserId();
+  const checked = bulkPatchSchema.safeParse(patch);
+  if (!checked.success) return { error: "not_found" };
+  patch = checked.data;
   const supabase = await createClient();
-  const groups = Array.from(new Set(itemGroupIds)).slice(0, BULK_MAX);
+  const groups = Array.from(new Set(itemGroupIds.filter((g) => typeof g === "string"))).slice(0, BULK_MAX);
   const { data: own } = await supabase.from("collections").select("id").eq("user_id", userId);
   const ownIds = (own ?? []).map((c: { id: string }) => c.id);
   if (!ownIds.includes(fromCollectionId) || groups.length === 0) return { error: "not_found" };
@@ -597,7 +601,11 @@ export async function restoreCopies(rows: CollectionItem[]): Promise<void> {
   const supabase = await createClient();
   const { data: own } = await supabase.from("collections").select("id").eq("user_id", userId);
   const ownIds = new Set((own ?? []).map((c: { id: string }) => c.id));
-  const safe = rows.filter((r) => ownIds.has(r.collection_id)).slice(0, BULK_MAX);
+  const safe = rows
+    .slice(0, BULK_MAX)
+    .map((r) => restoreRowSchema.safeParse(r))
+    .flatMap((r) => (r.success ? [r.data] : []))
+    .filter((r) => ownIds.has(r.collection_id));
   if (safe.length === 0) return;
   const { error } = await supabase.from("collection_items").upsert(safe as unknown as Record<string, unknown>[], { onConflict: "id", ignoreDuplicates: true });
   if (error) throw error;

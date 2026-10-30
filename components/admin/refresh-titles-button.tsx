@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { RefreshCw } from "lucide-react";
 import { useT } from "@/lib/i18n/locale-provider";
-import { refreshTitlesBatch } from "@/actions/admin-refresh";
+import { logTitlesRefresh, refreshTitlesBatch } from "@/actions/admin-refresh";
 import { Button } from "@/components/ui/button";
 
 /** Walks every title in members' collections and wishlists in batches and
@@ -12,12 +12,13 @@ import { Button } from "@/components/ui/button";
 export function RefreshTitlesButton() {
   const { t } = useT();
   const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState<{ checked: number; total: number; updated: number } | null>(null);
+  const [progress, setProgress] = useState<{ checked: number; updated: number } | null>(null);
 
   async function run() {
     setRunning(true);
     let after: number | null = null;
     let updated = 0;
+    let checked = 0;
     try {
       do {
         const r = await refreshTitlesBatch(after);
@@ -26,9 +27,11 @@ export function RefreshTitlesButton() {
           return;
         }
         updated += r.updated;
-        setProgress({ checked: r.checked, total: r.total, updated });
+        checked += r.checked;
+        setProgress({ checked, updated });
         after = r.next;
       } while (after !== null);
+      await logTitlesRefresh(checked, updated).catch(() => {});
       toast.success(t("admin_refresh_done", updated));
     } catch {
       toast.error(t("admin_refresh_error"));
@@ -45,7 +48,7 @@ export function RefreshTitlesButton() {
       </Button>
       {progress && (
         <p className="text-xs text-muted-foreground" aria-live="polite">
-          {t("admin_refresh_progress", progress.checked, progress.total, progress.updated)}
+          {t("admin_refresh_progress", progress.checked, progress.updated)}
         </p>
       )}
     </div>

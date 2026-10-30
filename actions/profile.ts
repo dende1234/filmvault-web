@@ -6,6 +6,7 @@ import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingError } from "@/lib/admin/migrations";
 import { NOTIFY_KINDS, type NotifyPrefs } from "@/lib/notify-prefs";
+import { profileUpdateSchema } from "@/lib/validation";
 import { requireUserId } from "@/lib/auth";
 import { removeMember, upsertMember } from "@/lib/newsletter";
 import { THEME_COOKIE, LOCALE_COOKIE, SOURCE_COOKIE, type ThemePreference } from "@/lib/preferences";
@@ -148,7 +149,10 @@ export async function updateProfile(update: {
   } = await supabase.auth.getUser();
   if (!user) return { error: "not authenticated" };
 
-  const { error } = await supabase.from("profiles").update(update).eq("id", user.id);
+  // Only the editable fields: never trust the shape a caller sends.
+  const parsed = profileUpdateSchema.safeParse(update);
+  if (!parsed.success) return { error: "invalid" };
+  const { error } = await supabase.from("profiles").update(parsed.data).eq("id", user.id);
   revalidatePath("/profile");
   return { error: error?.message ?? null };
 }
