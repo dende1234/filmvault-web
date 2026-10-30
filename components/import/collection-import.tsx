@@ -28,6 +28,7 @@ import {
   primaryTitle,
   splitBoxTitle,
 } from "@/lib/import-mapping";
+import { parsePrice, type PurchaseInput } from "@/lib/purchase";
 import { extractCut, extractLabel, normalizeCut, normalizeRegion, parseLanguages } from "@/lib/copy-details";
 import { importBatch, matchImportRows, type ImportFilm, type ImportItem, type ImportResult, type ImportRowMatch, type ImportStatus } from "@/actions/import";
 import { createCollection } from "@/actions/collections";
@@ -75,6 +76,8 @@ type ParsedRow = {
   region: string | null;
   audio: string[] | null;
   subtitles: string[] | null;
+  /** Purchase details (only kept for a copy that goes straight into the collection). */
+  purchase: PurchaseInput | null;
   /** Letterboxd watchlist row: goes to the wishlist. */
   toWishlist: boolean;
 };
@@ -226,6 +229,11 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
         region: normalizeRegion(cell(r, "region")) ?? normalizeRegion(cell(r, "edition")),
         audio: parseLanguages(cell(r, "audio")),
         subtitles: parseLanguages(cell(r, "subtitles")),
+        purchase: {
+          price: parsePrice(cell(r, "price")),
+          date: normalizeDate(cell(r, "purchaseDate")),
+          shop: cell(r, "shop").trim().slice(0, 80) || null,
+        },
         toWishlist: letterboxd === "watchlist",
       };
       if (box) {
@@ -367,6 +375,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
           rating: r.rating,
           watchedOn: r.watchedOn,
           details: { cut: r.cut, label: r.label, region: r.region, audioLanguages: r.audio, subtitleLanguages: r.subtitles },
+          purchase: r.purchase,
           ...(r.toWishlist ? { toWishlist: true, barcode: null } : {}),
         });
       } else {

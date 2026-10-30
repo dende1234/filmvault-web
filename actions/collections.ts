@@ -13,6 +13,7 @@ import { cleanLanguages } from "@/lib/copy-details";
 import { fetchAll } from "@/lib/supabase/fetch-all";
 import { isMissingError } from "@/lib/admin/migrations";
 import { isSeries } from "@/lib/titles";
+import { purchaseColumns } from "@/lib/purchase";
 import type { Collection, CollectionItem, Condition, PublicCollection } from "@/types/database";
 
 export async function getUserCollections(): Promise<Collection[]> {
@@ -209,6 +210,30 @@ export async function updateCollectionItemDetails(
     .eq("item_group_id", itemGroupId);
   if (error?.code === "PGRST204") return { error: "not_ready" };
   if (error?.code === "23514") return { error: "invalid" };
+  if (error) throw error;
+  revalidatePath("/collections", "layout");
+  return { error: null };
+}
+
+/** Price, date and shop of a copy (every collection it is in).
+ * "not_ready" until purchase_details.sql has run. */
+export async function updateCollectionItemPurchase(
+  itemGroupId: string,
+  purchase: { price: number | null; date: string | null; shop: string | null },
+): Promise<{ error: "not_ready" | "invalid" | null }> {
+  await requireUserId();
+  const cols = purchaseColumns(purchase);
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("collection_items")
+    .update({
+      purchase_price: cols.purchase_price ?? null,
+      purchase_date: cols.purchase_date ?? null,
+      purchase_shop: cols.purchase_shop ?? null,
+    })
+    .eq("item_group_id", itemGroupId);
+  if (isMissingError(error)) return { error: "not_ready" };
+  if (error?.code === "23514" || error?.code === "22P02") return { error: "invalid" };
   if (error) throw error;
   revalidatePath("/collections", "layout");
   return { error: null };

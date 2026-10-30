@@ -7,6 +7,7 @@ import { posterUrl } from "@/types/tmdb";
 import { coverUrl } from "@/lib/covers";
 import { isSeries } from "@/lib/titles";
 import { PrintButton } from "@/components/print-button";
+import { formatPrice, totalValue } from "@/lib/purchase";
 
 /** One line on the list: a single copy, or a box with its films. */
 type Line = { key: string; head: OwnCopy; films: OwnCopy[] };
@@ -54,6 +55,8 @@ export function PrintCollection({
   const scope = collection ? (names.get(collection) ?? "") : dict.print_all_collections;
   const showCollection = !collection && names.size > 1;
   const today = new Date().toLocaleDateString(locale === "en" ? "en-GB" : "nl-NL", { day: "numeric", month: "long", year: "numeric" });
+  const value = totalValue(copies.map((c) => c.item));
+  const lineValue = (l: Line) => totalValue((l.films.length ? l.films : [l.head]).map((c) => c.item));
   const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale === "en" ? "en-GB" : "nl-NL") : "");
 
   return (
@@ -84,6 +87,14 @@ export function PrintCollection({
             .map(([f, n]) => `${n}× ${f}`)
             .join(", ")}
         </p>
+        {value.priced > 0 && (
+          <p className="text-sm font-medium">
+            {format(dict.print_total_value, formatPrice(value.total, locale))}
+            {value.priced < lines.length && (
+              <span className="font-normal text-muted-foreground print:text-black/70"> · {format(dict.print_total_value_partial, value.priced)}</span>
+            )}
+          </p>
+        )}
       </header>
 
       {lines.length === 0 ? (
@@ -100,6 +111,7 @@ export function PrintCollection({
               <th className="py-2 pr-3 font-medium">{dict.print_col_barcode}</th>
               <th className="py-2 pr-3 font-medium">{dict.print_col_condition}</th>
               {showCollection && <th className="py-2 pr-3 font-medium">{dict.print_col_collection}</th>}
+              {value.priced > 0 && <th className="py-2 pr-3 text-right font-medium">{dict.print_col_price}</th>}
               <th className="py-2 font-medium">{dict.print_col_added}</th>
             </tr>
           </thead>
@@ -137,6 +149,11 @@ export function PrintCollection({
                   <td className="py-1.5 pr-3 font-mono text-xs whitespace-nowrap">{it.barcode ?? ""}</td>
                   <td className="py-1.5 pr-3">{it.condition ?? ""}</td>
                   {showCollection && <td className="py-1.5 pr-3">{head.collections.join(", ")}</td>}
+                  {value.priced > 0 && (
+                    <td className="py-1.5 pr-3 text-right whitespace-nowrap tabular-nums">
+                      {lineValue({ key, head, films }).priced > 0 ? formatPrice(lineValue({ key, head, films }).total, locale) : ""}
+                    </td>
+                  )}
                   <td className="py-1.5 whitespace-nowrap">{date(it.added_at)}</td>
                 </tr>
               );

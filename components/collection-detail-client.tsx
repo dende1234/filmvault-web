@@ -12,6 +12,7 @@ import { isLoanOverdue, type Collection, type CollectionItem } from "@/types/dat
 import { Poster, PosterCorner } from "@/components/movie/poster";
 import { PosterGrid } from "@/components/movie/poster-grid";
 import { PageHeader } from "@/components/page-header";
+import { formatPrice, totalValue } from "@/lib/purchase";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { isSeries } from "@/lib/titles";
@@ -57,7 +58,8 @@ export function CollectionDetailClient({
   isOwner: boolean;
   shareUrl: string;
 }) {
-  const { t } = useT();
+  const { t, locale } = useT();
+  const value = useMemo(() => totalValue(items), [items]);
   const router = useRouter();
   const [typeFilter, setTypeFilter] = useState<string>(ALL);
   const [watchedFilter, setWatchedFilter] = useState<"all" | "watched" | "not_watched">("all");
@@ -172,6 +174,7 @@ export function CollectionDetailClient({
         description={
           <>
             {t("collections_film_count", items.length)}
+            {isOwner && value.priced > 0 && <> · {t("collection_value", formatPrice(value.total, locale))}</>}
             {collection.description && <> · {collection.description}</>}
           </>
         }

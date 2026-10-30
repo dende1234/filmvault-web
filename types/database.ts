@@ -85,6 +85,10 @@ export interface CollectionItem {
   label?: string | null;
   /** Region code (contributors_region.sql): "B", "2/4", "Regiovrij". */
   region?: string | null;
+  /** Purchase details (purchase_details.sql). numeric comes back as a number. */
+  purchase_price?: number | null;
+  purchase_date?: string | null;
+  purchase_shop?: string | null;
   is_box: boolean;
   box_group_id: string | null;
   box_name: string | null;

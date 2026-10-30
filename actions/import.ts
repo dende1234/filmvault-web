@@ -15,6 +15,7 @@ import { getTitleDetail, getTvDetail, searchMovies, searchTv } from "@/lib/tmdb/
 import { parseTitleId } from "@/lib/titles";
 import { normalizeBarcode } from "@/lib/barcode";
 import { detailsColumns, type CopyDetailsInput } from "@/lib/copy-details";
+import { purchaseColumns, type PurchaseInput } from "@/lib/purchase";
 import { addBarcodesToCollections, addKnownBoxToCollections, addNewBoxAsPending, getBarcodesForMovie } from "@/actions/barcodes";
 import { addViewing, setFilmRating } from "@/actions/watched";
 import { addToWishlist } from "@/actions/wishlist";
@@ -127,6 +128,8 @@ export type ImportItem =
       completeSeries?: boolean;
       /** Cut, languages and label from the spreadsheet. */
       details?: CopyDetailsInput | null;
+      /** Price, date and shop: only stored on a copy that goes straight in. */
+      purchase?: PurchaseInput | null;
       /** A Letterboxd watchlist row: goes to the wishlist, not a collection. */
       toWishlist?: boolean;
     } & Viewing)
@@ -231,14 +234,19 @@ export async function importBatch(collectionId: string | null, items: ImportItem
           status = knownForFilm ? (unchanged.has(cid) ? "already" : "added") : "pending";
           // A known barcode went straight into the collection: put the details on that copy.
           // (A pending one carries them on pending_barcodes until approval.)
-          const details = detailsColumns(item.details);
-          if (knownForFilm && Object.keys(details).length > 0) {
-            await supabase
-              .from("collection_items")
-              .update(details)
-              .eq("collection_id", cid)
-              .eq("barcode", barcode)
-              .eq("tmdb_movie_id", item.film.tmdbId);
+          // Purchase details have no place on pending_barcodes, so only here.
+          // Two updates: purchase columns may not exist yet (purchase_details.sql)
+          // and must not take the other details down with them.
+          if (knownForFilm) {
+            for (const cols of [detailsColumns(item.details), purchaseColumns(item.purchase)]) {
+              if (Object.keys(cols).length === 0) continue;
+              await supabase
+                .from("collection_items")
+                .update(cols)
+                .eq("collection_id", cid)
+                .eq("barcode", barcode)
+                .eq("tmdb_movie_id", item.film.tmdbId);
+            }
           }
         }
         await logViewing(item.film, item);

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  detectColumns,
   detectRatingScale,
   normalizeEdition,
   normalizeFormat,
@@ -21,6 +22,19 @@ describe("normalizeFormat / normalizeEdition", () => {
     expect(normalizeFormat("laserdisc", TYPES)).toBeNull();
     expect(normalizeFormat("", TYPES)).toBeNull();
     expect(normalizeEdition("steelbook", ["Normaal", "Steelbook"])).toBe("Steelbook");
+  });
+});
+
+describe("detectColumns", () => {
+  it("finds purchase columns next to the others", () => {
+    expect(detectColumns(["Titel", "Aankoopprijs", "Winkel", "Aankoopdatum", "Datum bekeken", "Barcode"])).toEqual({
+      title: 0,
+      price: 1,
+      shop: 2,
+      purchaseDate: 3,
+      watchedOn: 4,
+      barcode: 5,
+    });
   });
 });
 

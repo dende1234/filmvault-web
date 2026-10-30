@@ -7,7 +7,7 @@
 // like "Subtitle languages" isn't taken as audio.
 export const IMPORT_FIELDS = [
   "title", "kind", "seasons", "year", "barcode", "format", "edition", "cut", "label", "region", "subtitles", "audio",
-  "watched", "rating", "watchedOn", "box",
+  "watched", "rating", "purchaseDate", "watchedOn", "box", "price", "shop",
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 export type ColumnMapping = Partial<Record<ImportField, number>>;
@@ -29,6 +29,9 @@ const HEADER_SYNONYMS: Record<ImportField, string[]> = {
   // Not "code": that would match "barcode".
   region: ["regio", "region", "regiocode", "region code", "regio code", "regionalcode", "ländercode", "zone"],
   subtitles: ["ondertitels", "ondertiteling", "subtitles", "subtitle", "subs", "untertitel", "sous titres"],
+  price: ["aankoopprijs", "prijs", "price", "purchase price", "betaald", "paid", "kosten", "cost", "kaufpreis", "preis"],
+  purchaseDate: ["aankoopdatum", "gekocht op", "koopdatum", "purchase date", "date purchased", "bought on", "kaufdatum"],
+  shop: ["winkel", "gekocht bij", "aankoopplaats", "shop", "store", "purchased at", "bought at", "retailer", "händler", "laden"],
   audio: ["audio", "audiotalen", "audio languages", "audio language", "talen", "taal", "languages", "language", "sprache", "sprachen", "tonspur"],
 };
 
