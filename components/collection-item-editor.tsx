@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { undoToast } from "@/lib/undo-toast";
 import {
   Dialog,
   DialogContent,
@@ -245,9 +246,10 @@ export function CollectionItemEditor({
   async function handleDelete() {
     setIsDeleting(true);
     try {
-      await removeCollectionItem(item.id);
+      const removed = await removeCollectionItem(item.id);
       router.replace(`/collections/${item.collection_id}`);
       router.refresh();
+      undoToast(t("undo_removed"), t("undo_action"), removed ? [removed] : [], () => router.refresh(), t("undo_error"));
     } catch {
       toast.error(t("collection_item_remove_error"));
       setIsDeleting(false);
