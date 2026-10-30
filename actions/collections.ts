@@ -442,3 +442,13 @@ export async function getDashboardData(collectionIds: string[]): Promise<Dashboa
     surprise: unwatched.map(({ id, collection_id }) => ({ id, collection_id })),
   };
 }
+
+/** /statistieken: every copy you own (all collections). */
+export async function getMyStatsRows(): Promise<import("@/lib/collection-stats").StatsRow[]> {
+  const userId = await requireUserId();
+  const supabase = await createClient();
+  const { data: cols } = await supabase.from("collections").select("id").eq("user_id", userId);
+  const ids = (cols ?? []).map((c: { id: string }) => c.id);
+  if (ids.length === 0) return [];
+  return fetchAll((from, to) => supabase.from("collection_items").select("*").in("collection_id", ids).order("id").range(from, to));
+}

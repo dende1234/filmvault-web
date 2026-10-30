@@ -37,6 +37,7 @@ import {
   Inbox,
   ScanLine,
   ScanBarcode,
+  PieChart,
   Search,
   ClipboardCheck,
   ScrollText,
@@ -193,6 +194,7 @@ export function NavShell({
       <NavLink href="/scannen" icon={ScanBarcode} label={t("nav_scan")} onNavigate={close} />
       <NavLink href="/wishlist" icon={Bookmark} label={t("nav_wishlist")} onNavigate={close} />
       <NavLink href="/watched" icon={Eye} label={t("nav_watched")} onNavigate={close} />
+      <NavLink href="/statistieken" icon={PieChart} label={t("stats_title")} onNavigate={close} />
 
       <SectionLabel>{t("nav_section_discover")}</SectionLabel>
       <NavLink href="/films" icon={Film} label={t("nav_films_series")} onNavigate={close} />
