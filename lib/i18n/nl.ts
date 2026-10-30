@@ -1486,4 +1486,6 @@ export const nl = {
   smart_not_ready: "Slimme collecties zijn nog niet beschikbaar: smart_collections.sql moet nog in Supabase gedraaid worden.",
   smart_invalid: "Geef een naam en minstens één voorwaarde.",
   smart_error: "Opslaan is mislukt",
+  scanner_photo: "Barcode uit foto",
+  scanner_photo_none: "Geen barcode gevonden op de foto. Probeer een scherpere foto, recht van voren, of typ de cijfers in.",
 };

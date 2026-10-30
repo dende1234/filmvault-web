@@ -1483,4 +1483,6 @@ export const en: Record<keyof typeof nl, string> = {
   smart_not_ready: "Smart collections aren't available yet: smart_collections.sql still has to run in Supabase.",
   smart_invalid: "Give a name and at least one condition.",
   smart_error: "Saving failed",
+  scanner_photo: "Barcode from photo",
+  scanner_photo_none: "No barcode found in the photo. Try a sharper photo, straight on, or type the digits.",
 };
