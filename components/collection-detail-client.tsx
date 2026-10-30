@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/page-header";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { isSeries } from "@/lib/titles";
+import { formatShort, matchesFormat, singleFormats } from "@/lib/formats";
 import { useSeasonsLabel } from "@/components/seasons-picker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -103,7 +104,7 @@ export function CollectionDetailClient({
   const filtered = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     const matches = (i: CollectionItem) =>
-      (typeFilter === ALL || i.type === typeFilter) &&
+      (typeFilter === ALL || matchesFormat(i.type, typeFilter)) &&
       (kindFilter !== "movie" || !isSeries(i.tmdb_movie_id)) &&
       (kindFilter !== "tv" || isSeries(i.tmdb_movie_id)) &&
       (watchedFilter !== "watched" || isWatched(i)) &&
@@ -256,7 +257,8 @@ export function CollectionDetailClient({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={ALL}>{t("filter_all_types")}</SelectItem>
-                {mediaTypes.map((type) => (
+                {/* Single formats only: "Blu-ray" also finds "4K Ultra HD + Blu-ray". */}
+                {singleFormats(mediaTypes).map((type) => (
                   <SelectItem key={type} value={type}>
                     {type}
                   </SelectItem>
@@ -330,7 +332,7 @@ export function CollectionDetailClient({
               <Link href={`/collections/${collection.id}/items/${item.id}`} className="flex flex-col gap-2 focus-visible:outline-none">
                 <Poster path={item.movie_poster} customCover={item.custom_cover_path} title={item.movie_title} hover>
                   <PosterCorner position="bl">
-                    <Badge variant="overlay">{item.type}</Badge>
+                    <Badge variant="overlay">{formatShort(item.type)}</Badge>
                     {isSeries(item.tmdb_movie_id) && <Badge variant="overlay">{seasonsLabel(item.seasons)}</Badge>}
                     {!isOwner && isWatched(item) && (
                       <Badge variant="overlay" className="px-1.5" title={t("watched_label")}>

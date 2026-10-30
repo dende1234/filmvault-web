@@ -125,6 +125,17 @@ export const HELP_ENTRIES: HelpEntry[] = [
     keywords: { nl: ["steelbook", "editie", "speciale editie", "limited", "formaat", "4k"], en: ["steelbook", "edition", "special edition", "limited", "format"] },
   },
   {
+    id: "combo-format",
+    category: "copy",
+    possible: true,
+    q: { nl: "Hoe leg ik een combi-uitgave vast, zoals 4K + Blu-ray in één hoes?", en: "How do I record a combo release, like 4K + Blu-ray in one case?" },
+    a: {
+      nl: "Kies als formaat de combi-uitgave, bijvoorbeeld **4K Ultra HD + Blu-ray**: dan is het één exemplaar. Bij een film in je collectie kan dat onder **Details van dit exemplaar → Formaat**. Filteren op Blu-ray of 4K vindt hem allebei. Stond de Blu-ray ook als los exemplaar? Verwijder dat dan.",
+      en: "Pick the combo release as the format, for example **4K Ultra HD + Blu-ray**: then it is one copy. For a film in your collection, do it under **Details of this copy → Format**. Filtering on Blu-ray or 4K finds it either way. Was the Blu-ray also a separate copy? Then remove that one.",
+    },
+    keywords: { nl: ["combi", "combi-uitgave", "4k en blu-ray", "beide schijven", "multidisc", "zelfde hoes", "combo"], en: ["combo", "combo pack", "4k and blu-ray", "both discs", "multi disc", "same case"] },
+  },
+  {
     id: "custom-cover",
     category: "copy",
     possible: true,

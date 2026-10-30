@@ -3,6 +3,8 @@
  * recognised in Dutch and English, including common exports (CLZ Movies,
  * Cine Case, spreadsheets). */
 
+import { comboFor } from "@/lib/formats";
+
 // Order matters for the "contains" pass: subtitles before audio, so a header
 // like "Subtitle languages" isn't taken as audio.
 export const IMPORT_FIELDS = [
@@ -73,16 +75,34 @@ const FORMAT_SYNONYMS: [RegExp, string][] = [
   [/vhs/i, "VHS"],
 ];
 
-/** Maps free text ("Bluray", "4K UHD", "dvd") to a known media type name. */
+function singleFormat(text: string): string | null {
+  for (const [re, name] of FORMAT_SYNONYMS) if (re.test(text)) return name;
+  return null;
+}
+
+/** Maps free text ("Bluray", "4K UHD", "dvd") to a known media type name.
+ * Formats joined by "+", "&", "/", "," or "and"/"en" ("4K + Blu-ray",
+ * "UHD/BD + Digital") map to that combo type when it exists; "4K Ultra HD
+ * Blu-ray" without a separator is a 4K disc, not a combo. */
 export function normalizeFormat(value: string, known: string[]): string | null {
   const v = value.trim();
   if (!v) return null;
   const exact = known.find((k) => k.toLowerCase() === v.toLowerCase());
   if (exact) return exact;
-  for (const [re, name] of FORMAT_SYNONYMS) {
-    if (re.test(v)) return known.find((k) => k.toLowerCase() === name.toLowerCase()) ?? null;
+  const parts = Array.from(
+    new Set(
+      v
+        .split(/\s*(?:\+|&|\/|,|\band\b|\ben\b)\s*/i)
+        .map(singleFormat)
+        .filter((p): p is string => p !== null),
+    ),
+  );
+  if (parts.length > 1) {
+    const combo = comboFor(parts, known);
+    if (combo) return combo;
   }
-  return null;
+  const first = parts[0] ?? singleFormat(v);
+  return first ? (known.find((k) => k.toLowerCase() === first.toLowerCase()) ?? null) : null;
 }
 
 const EDITION_SYNONYMS: [RegExp, string][] = [

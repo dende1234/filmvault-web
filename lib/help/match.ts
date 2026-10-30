@@ -64,6 +64,8 @@ const SYNONYMS: Record<string, string> = {
   winkel: "shop", winkelen: "shop", winkelmodus: "shop", shop: "shop", store: "shop", shopping: "shop",
   // print
   print: "print", printen: "print", afdrukken: "print", pdf: "print",
+  // combo releases
+  combi: "combo", combo: "combo", multidisc: "combo",
   // box
   box: "box", boxset: "box", verzamelbox: "box", trilogie: "box", trilogy: "box", collectiebox: "box",
   // collection

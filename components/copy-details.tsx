@@ -1,12 +1,14 @@
 "use client";
 
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { CUTS, LABELS, LANGUAGES, languageName, regionsFor } from "@/lib/copy-details";
 import { updateCollectionItemDetails } from "@/actions/collections";
+import { getMediaTypes } from "@/actions/media-types";
+import { isCombo } from "@/lib/formats";
 import type { CollectionItem } from "@/types/database";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,8 +66,9 @@ function LanguagePicker({ id, label, value, onChange }: { id: string; label: str
   );
 }
 
-/** "Details van dit exemplaar": cut, audio/subtitle languages and label.
- * Apply to the whole copy (every collection it is in). */
+/** "Details van dit exemplaar": format (a combo like "4K Ultra HD + Blu-ray"
+ * for one case with both discs), cut, region, audio/subtitle languages and
+ * label. Apply to the whole copy (every collection it is in). */
 export function CopyDetails({ item }: { item: CollectionItem }) {
   const { t } = useT();
   const router = useRouter();
@@ -77,16 +80,25 @@ export function CopyDetails({ item }: { item: CollectionItem }) {
   const [label, setLabel] = useState(item.label ?? "");
   const [audio, setAudio] = useState<string[]>(item.audio_languages ?? []);
   const [subs, setSubs] = useState<string[]>(item.subtitle_languages ?? []);
+  const [type, setType] = useState(item.type);
+  const [formats, setFormats] = useState<string[]>([item.type]);
+  useEffect(() => {
+    getMediaTypes()
+      .then((list) => setFormats(list.includes(item.type) ? list : [item.type, ...list]))
+      .catch(() => {});
+  }, [item.type]);
+  const typeChanged = type !== item.type;
   const initialRegion = item.region ?? "";
   const [region, setRegion] = useState(initialRegion || NONE);
   const regionValue = region === NONE ? "" : region;
-  const regionOptions = Array.from(new Set([...regionsFor(item.type), ...(initialRegion ? [initialRegion] : [])]));
-  const is4k = /4k|uhd/i.test(item.type);
+  const regionOptions = Array.from(new Set([...regionsFor(type), ...(initialRegion ? [initialRegion] : [])]));
+  const is4k = /4k|uhd/i.test(type);
   const [saving, setSaving] = useState(false);
 
   const cut = cutChoice === NONE ? "" : cutChoice === OTHER ? cutOther.trim() : cutChoice;
   const regionChanged = regionValue !== initialRegion;
   const changed =
+    typeChanged ||
     regionChanged ||
     cut !== initialCut ||
     label.trim() !== (item.label ?? "") ||
@@ -103,6 +115,7 @@ export function CopyDetails({ item }: { item: CollectionItem }) {
         subtitleLanguages: subs,
         // Only sent when changed, so the rest also saves before contributors_region.sql has run.
         ...(regionChanged ? { region: regionValue || null } : {}),
+        ...(typeChanged ? { type } : {}),
       });
       if (result.error === "not_ready") toast.error(t("details_not_ready"));
       else if (result.error) toast.error(t("details_error"));
@@ -119,6 +132,22 @@ export function CopyDetails({ item }: { item: CollectionItem }) {
 
   return (
     <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2 sm:w-1/2 sm:pr-2">
+        <Label htmlFor={`${baseId}-format`}>{t("details_format")}</Label>
+        <Select value={type} onValueChange={setType}>
+          <SelectTrigger id={`${baseId}-format`}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {formats.map((f) => (
+              <SelectItem key={f} value={f}>
+                {f}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground">{t(isCombo(type) && typeChanged ? "details_format_combo_merge" : "details_format_hint")}</p>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-2">
           <Label htmlFor={`${baseId}-cut`}>{t("details_cut")}</Label>

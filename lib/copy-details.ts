@@ -8,9 +8,10 @@ export const REGION_FREE = "Regiovrij";
 export const BLURAY_REGIONS = ["A", "B", "C", "A/B", "B/C", "A/C", "A/B/C", REGION_FREE];
 export const DVD_REGIONS = ["1", "2", "3", "4", "5", "6", "2/4", "1/2", REGION_FREE];
 
-/** The region choices that fit a media type name ("Blu-ray", "DVD", "4K Ultra HD"). */
+/** The region choices that fit a media type name ("Blu-ray", "DVD", "4K Ultra HD").
+ * A combo with a Blu-ray or 4K disc ("Blu-ray + DVD") takes the Blu-ray regions. */
 export function regionsFor(type: string): string[] {
-  if (/dvd/i.test(type)) return DVD_REGIONS;
+  if (/dvd/i.test(type) && !/blu.?ray|4k|uhd/i.test(type)) return DVD_REGIONS;
   return BLURAY_REGIONS;
 }
 

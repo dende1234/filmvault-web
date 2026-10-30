@@ -207,6 +207,8 @@ export async function updateCollectionItemDetails(
     audioLanguages: string[] | null;
     subtitleLanguages: string[] | null;
     region?: string | null;
+    /** The copy's format, e.g. "4K Ultra HD + Blu-ray" for a combo release; only when changed. */
+    type?: string;
   },
 ): Promise<{ error: "not_ready" | "invalid" | null }> {
   const cut = details.cut?.trim().slice(0, 60) || null;
@@ -222,12 +224,14 @@ export async function updateCollectionItemDetails(
       cut,
       label,
       ...regionField,
+      ...(details.type ? { type: details.type.trim().slice(0, 60) } : {}),
       audio_languages: cleanLanguages(details.audioLanguages)?.slice(0, 20) ?? null,
       subtitle_languages: cleanLanguages(details.subtitleLanguages)?.slice(0, 40) ?? null,
     })
     .eq("item_group_id", itemGroupId);
   if (error?.code === "PGRST204") return { error: "not_ready" };
-  if (error?.code === "23514") return { error: "invalid" };
+  // 23514 = check, 23503 = a format that isn't in media_types (foreign key).
+  if (error?.code === "23514" || error?.code === "23503") return { error: "invalid" };
   if (error) throw error;
   revalidatePath("/collections", "layout");
   return { error: null };
