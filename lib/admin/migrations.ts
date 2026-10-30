@@ -45,6 +45,7 @@ export const MIGRATIONS: Migration[] = [
   { file: "admin_log.sql", probe: { kind: "table", table: "admin_log" } },
   { file: "admin_users.sql", probe: null, note: "function" },
   { file: "admin_quality.sql", probe: null, note: "function" },
+  { file: "app_errors.sql", probe: { kind: "table", table: "app_errors" } },
   { file: "trade_list.sql", probe: { kind: "column", table: "collection_items", column: "for_trade" } },
 ];
 

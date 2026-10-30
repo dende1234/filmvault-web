@@ -1384,4 +1384,8 @@ export const en: Record<keyof typeof nl, string> = {
   releases_owned: "In your collection",
   releases_empty: "No releases found for this month.",
   releases_source: "Source: TMDB (release type 'physical'). Not every release is listed, and dates may still change.",
+  admin_errors_title: "Recent errors",
+  admin_errors_count: "{0} latest",
+  admin_errors_not_ready: "Errors are stored once app_errors.sql has run in Supabase.",
+  admin_errors_none: "No errors in the past 30 days.",
 };

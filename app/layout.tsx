@@ -7,6 +7,7 @@ import { getDictionary } from "@/lib/i18n/dictionary";
 import { LocaleProvider } from "@/lib/i18n/locale-provider";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
+import { ErrorReporter } from "@/components/error-reporter";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,6 +68,7 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${themeClass} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-foreground">
+        <ErrorReporter />
         <LocaleProvider dict={dict} locale={locale}>
           {children}
           <Toaster richColors position="top-center" />

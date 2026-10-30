@@ -1387,4 +1387,8 @@ export const nl = {
   releases_owned: "In je collectie",
   releases_empty: "Geen releases gevonden voor deze maand.",
   releases_source: "Bron: TMDB (releasetype 'fysiek'). Niet elke uitgave staat erin, en data kunnen nog verschuiven.",
+  admin_errors_title: "Recente fouten",
+  admin_errors_count: "{0} laatste",
+  admin_errors_not_ready: "Fouten worden pas bewaard als app_errors.sql in Supabase gedraaid is.",
+  admin_errors_none: "Geen fouten in de afgelopen 30 dagen.",
 };

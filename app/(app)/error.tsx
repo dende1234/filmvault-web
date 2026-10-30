@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { Clapperboard, RotateCcw } from "lucide-react";
 import { useT } from "@/lib/i18n/locale-provider";
+import { reportClientError } from "@/actions/errors";
 import { Button } from "@/components/ui/button";
 
 export default function AppError({ error, unstable_retry }: { error: Error & { digest?: string }; unstable_retry: () => void }) {
@@ -11,6 +12,7 @@ export default function AppError({ error, unstable_retry }: { error: Error & { d
 
   useEffect(() => {
     console.error(error);
+    reportClientError({ message: error.stack ?? error.message, digest: error.digest, path: location.pathname, userAgent: navigator.userAgent }).catch(() => {});
   }, [error]);
 
   return (
