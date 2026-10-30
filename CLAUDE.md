@@ -18,7 +18,7 @@ npm run db:types   # supabase gen types → types/supabase.generated.ts (needs t
 
 CI (`.github/workflows/ci.yml`, Node 22) runs `npm ci`, `npm run lint`, `npm test`, `npm run build` and the public e2e tests (pages render, signed-out redirect, axe finds no serious accessibility issues) with dummy env values. Tests cover pure functions only (no database); keep new parsing/matching logic in plain `lib/` modules so it can be tested.
 
-Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `TMDB_API_KEY` (required to build/run); optional: `NEXT_PUBLIC_SITE_URL`, `BREVO_API_KEY`/`BREVO_LIST_ID`/`BREVO_DOI_TEMPLATE_ID` (newsletter), `FEEDBACK_SALT` (IP hashing), `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `ANTHROPIC_API_KEY` (admin shelf scan, `lib/ai/shelf-scan.ts`; runtime only).
+Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `TMDB_API_KEY` (required to build/run); optional: `NEXT_PUBLIC_SITE_URL`, `BREVO_API_KEY`/`BREVO_LIST_ID`/`BREVO_DOI_TEMPLATE_ID` (newsletter), `FEEDBACK_SALT` (IP hashing), `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `ANTHROPIC_API_KEY` (admin shelf scan, `lib/ai/shelf-scan.ts`; runtime only). Background jobs and push: `SUPABASE_SERVICE_ROLE_KEY` (`lib/supabase/admin.ts`, bypasses RLS — only for code that decides itself whose data it touches), `CRON_SECRET` (Vercel Cron, `vercel.json` → `app/api/cron/*`, excluded from the proxy), `BREVO_SENDER_EMAIL`/`BREVO_SENDER_NAME` (transactional mail, `lib/email.ts`), `NEXT_PUBLIC_VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`/`VAPID_SUBJECT` (web push, `lib/push.ts`, `public/sw.js`). `/admin/status` shows which are set.
 
 ## Stack
 
@@ -43,6 +43,8 @@ Next.js 16 (App Router) + React 19, Supabase (`@supabase/ssr`) for auth and data
 **i18n.** UI is Dutch-first (`nl`) with English (`en`). Strings live in `lib/i18n/nl.ts` and `lib/i18n/en.ts` (the `Dictionary` type is derived from `nl`, so add every key to both). Placeholders are `{0}`, `{1}` filled by `format()`. Server code resolves the locale with `getLocale()` (`lib/preferences.ts`: `fv_locale` cookie, else detected from Vercel country header + Accept-Language via `lib/locale-detect.ts`) and passes `getDictionary(locale)`; client components use `useT()` from `lib/i18n/locale-provider.tsx`. Some route segments are Dutch (`/gids`, `/nieuwsbrief`), as are some domain values (`Condition` = `"Nieuw" | "Gebruikt" | "Beschadigd"`, `editie`).
 
 **Reel (in-app help, no AI).** `components/help/reel-assistant.tsx` answers from the fixed bilingual knowledge base `lib/help/faq.ts`, matched by `lib/help/match.ts` (stopwords, stemming, synonyms, one-typo tolerance). New feature, moved button, or a "can't yet" that became possible? Update `lib/help/faq.ts` too. Unanswered questions show in `/admin/feedback?tab=help` (`help_questions.sql`, anonymous, 90 days).
+
+**Errors and limits.** Server errors are stored by `instrumentation.ts` (`onRequestError`) and browser errors by `components/error-reporter.tsx`, both through `lib/report-error.ts` into `app_errors` (shown on `/admin/status`). Expensive or external work (shelf scan, import matching, barcode suggestions) asks `withinLimit()` (`lib/rate-limit.ts`) first; add new heavy actions to `LIMITS` there.
 
 **Types.** `types/database.ts` is hand-written (not generated) and mirrors the Postgres columns in snake_case; `types/tmdb.ts` holds TMDB DTOs. Keep them in sync with the SQL when adding columns.
 
