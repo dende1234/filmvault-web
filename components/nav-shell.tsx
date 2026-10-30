@@ -38,6 +38,7 @@ import {
   MessageSquareText,
   Inbox,
   ScanLine,
+  Activity,
   Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -202,6 +203,7 @@ export function NavShell({
           </button>
           {adminOpen && (
             <>
+              <NavLink href="/admin/status" icon={Activity} label={t("admin_status_label")} onNavigate={close} />
               <NavLink href="/admin/pending-barcodes" icon={FileCheck} label={t("pending_approvals_label")} onNavigate={close} />
               <NavLink href="/admin/add-film" icon={FilePlus} label={t("admin_add_film_label")} onNavigate={close} />
               <NavLink href="/admin/scan-shelf" icon={ScanLine} label={t("admin_shelf_scan_label")} onNavigate={close} />
