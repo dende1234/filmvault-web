@@ -1378,4 +1378,13 @@ export const nl = {
   trade_error: "Opslaan is mislukt",
   compare_trades: "Te koop/ruil ({0})",
   compare_on_your_wishlist: "op je verlanglijst",
+  releases_title: "Releasekalender",
+  releases_subtitle: "Dvd-, Blu-ray- en 4K-releases in {0} per maand. Titels op je verlanglijst staan bovenaan.",
+  releases_country_nl: "Nederland",
+  releases_country_be: "België",
+  releases_from_wishlist: "Binnenkort van je verlanglijst",
+  releases_on_wishlist: "Verlanglijst",
+  releases_owned: "In je collectie",
+  releases_empty: "Geen releases gevonden voor deze maand.",
+  releases_source: "Bron: TMDB (releasetype 'fysiek'). Niet elke uitgave staat erin, en data kunnen nog verschuiven.",
 };

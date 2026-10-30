@@ -1,5 +1,5 @@
 import "server-only";
-import type { CollectionDto, GenreDto, MovieDetailDto, MovieDetailFullDto, MoviePageDto, TvDetailDto, TvDetailFullDto, TvSummaryDto } from "@/types/tmdb";
+import type { CollectionDto, GenreDto, ReleaseDatesDto, MovieDetailDto, MovieDetailFullDto, MoviePageDto, TvDetailDto, TvDetailFullDto, TvSummaryDto } from "@/types/tmdb";
 import { tvToSummary } from "@/types/tmdb";
 import { parseTitleId } from "@/lib/titles";
 
@@ -79,6 +79,31 @@ export async function getMovieDetailFull(movieId: number, language = "nl"): Prom
     append_to_response: "credits,videos,recommendations,release_dates,watch/providers",
     include_video_language: `${language},en,null`,
   });
+}
+
+const DAY = 24 * 3600;
+
+/** Films with a physical (DVD/Blu-ray/4K: TMDB release type 5) release in a
+ * country between two dates (YYYY-MM-DD), most popular first. */
+export async function discoverPhysicalReleases(country: string, from: string, to: string, page: number, language = "nl"): Promise<MoviePageDto> {
+  return tmdbGet(
+    "/discover/movie",
+    {
+      language: tmdbLocale(language),
+      region: country,
+      with_release_type: 5,
+      "release_date.gte": from,
+      "release_date.lte": to,
+      sort_by: "popularity.desc",
+      page,
+    },
+    DAY,
+  );
+}
+
+/** Per-country release dates of a film (for the exact physical date). */
+export async function getReleaseDates(movieId: number): Promise<ReleaseDatesDto> {
+  return tmdbGet(`/movie/${movieId}/release_dates`, {}, DAY);
 }
 
 /** Weekly trending films — the poster wall on the public landing page. */

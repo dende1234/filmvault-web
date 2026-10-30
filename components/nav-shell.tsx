@@ -37,6 +37,7 @@ import {
   Inbox,
   ScanLine,
   ScanBarcode,
+  CalendarClock,
   PieChart,
   Search,
   ClipboardCheck,
@@ -200,6 +201,7 @@ export function NavShell({
       <NavLink href="/films" icon={Film} label={t("nav_films_series")} onNavigate={close} />
       <NavLink href="/reeksen" icon={Layers} label={t("franchise_nav")} onNavigate={close} />
       <NavLink href="/upgrades" icon={Sparkles} label={t("upgrades_nav")} onNavigate={close} />
+      <NavLink href="/releases" icon={CalendarClock} label={t("releases_title")} onNavigate={close} />
       <NavLink href="/lists" icon={ListChecks} label={t("nav_lists")} onNavigate={close} />
       <NavLink href="/recap" icon={CalendarDays} label={t("nav_yearly_recap")} onNavigate={close} />
 

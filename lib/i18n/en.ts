@@ -1375,4 +1375,13 @@ export const en: Record<keyof typeof nl, string> = {
   trade_error: "Saving failed",
   compare_trades: "For sale/trade ({0})",
   compare_on_your_wishlist: "on your wishlist",
+  releases_title: "Release calendar",
+  releases_subtitle: "DVD, Blu-ray and 4K releases in {0} per month. Titles on your wishlist come first.",
+  releases_country_nl: "the Netherlands",
+  releases_country_be: "Belgium",
+  releases_from_wishlist: "Coming soon from your wishlist",
+  releases_on_wishlist: "Wishlist",
+  releases_owned: "In your collection",
+  releases_empty: "No releases found for this month.",
+  releases_source: "Source: TMDB (release type 'physical'). Not every release is listed, and dates may still change.",
 };
