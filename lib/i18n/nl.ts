@@ -1293,4 +1293,12 @@ export const nl = {
   admin_user_sub_rejected: "{0} afgewezen",
   admin_user_none: "Nog niets.",
   admin_user_feedback: "Feedback van dit lid",
+  pending_approve_selected: "{0} geselecteerde goedkeuren",
+  pending_reject_selected: "{0} geselecteerde afwijzen",
+  pending_select_all: "Alles selecteren",
+  pending_select_none: "Selectie wissen",
+  pending_select_card: "Selecteren",
+  pending_trusted: "Vertrouwde bijdrager",
+  pending_submitter_stats: "{0} goedgekeurd, {1} afgewezen",
+  pending_conflict: "Deze barcode staat al bij een andere titel:",
 };

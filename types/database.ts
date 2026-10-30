@@ -388,6 +388,10 @@ export interface PendingBarcodeUiItem {
   targetCollectionNames: string[];
   /** Who submitted it (profiles; admins can read every profile). */
   submitter?: { id: string; name: string | null; email: string | null } | null;
+  /** The submitter's track record: trusted = many approved, none rejected. */
+  submitterStats?: { approved: number; rejected: number; trusted: boolean } | null;
+  /** The same barcode is already registered for OTHER titles (not a box). */
+  conflicts?: number[];
 }
 
 /** One admin-approval card — either a single film, or a box's several film

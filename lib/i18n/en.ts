@@ -1290,4 +1290,12 @@ export const en: Record<keyof typeof nl, string> = {
   admin_user_sub_rejected: "{0} rejected",
   admin_user_none: "Nothing yet.",
   admin_user_feedback: "Feedback from this member",
+  pending_approve_selected: "Approve {0} selected",
+  pending_reject_selected: "Reject {0} selected",
+  pending_select_all: "Select all",
+  pending_select_none: "Clear selection",
+  pending_select_card: "Select",
+  pending_trusted: "Trusted contributor",
+  pending_submitter_stats: "{0} approved, {1} rejected",
+  pending_conflict: "This barcode is already registered for another title:",
 };

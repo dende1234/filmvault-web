@@ -17,7 +17,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { MovieSearchPickerDialog } from "@/components/movie-search-picker-dialog";
 import { MediaTypeEditieSelects } from "@/components/admin/media-type-editie-selects";
-import { isSeries } from "@/lib/titles";
+import { isSeries, titleHref } from "@/lib/titles";
+import { cn } from "@/lib/utils";
+import { AlertTriangle, ShieldCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useSeasonsLabel } from "@/components/seasons-picker";
 
 function matches(card: PendingBarcodeCardItem, query: string): boolean {
@@ -124,6 +128,7 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
   const [query, setQuery] = useState("");
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<PendingBarcode | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const seasonsLabel = useSeasonsLabel();
 
   // Server re-renders (router.refresh / revalidatePath) hand us fresh cards —
@@ -171,12 +176,26 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
     }
   }
 
+  // With a selection: only the selected cards; otherwise everything shown.
+  const targets = () => (selected.size > 0 ? filtered.filter((c) => selected.has(c.id)) : filtered);
+
   async function approveAll() {
-    for (const card of filtered) await approve(card);
+    for (const card of targets()) await approve(card);
+    setSelected(new Set());
   }
 
   async function rejectAll() {
-    for (const card of filtered) await reject(card);
+    for (const card of targets()) await reject(card);
+    setSelected(new Set());
+  }
+
+  function toggleSelected(id: string, on: boolean) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
   }
 
   return (
@@ -184,13 +203,22 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
       {cards.length > 0 && (
         <>
           <SearchInput placeholder={t("pending_barcodes_search_label")} value={query} onValueChange={setQuery} />
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" size="sm" onClick={approveAll} disabled={filtered.length === 0}>
-              {t("pending_barcodes_approve_all_button")}
+              {selected.size > 0 ? t("pending_approve_selected", selected.size) : t("pending_barcodes_approve_all_button")}
             </Button>
             <Button variant="outline" size="sm" onClick={rejectAll} disabled={filtered.length === 0}>
-              {t("pending_barcodes_reject_all_button")}
+              {selected.size > 0 ? t("pending_reject_selected", selected.size) : t("pending_barcodes_reject_all_button")}
             </Button>
+            {selected.size > 0 ? (
+              <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+                {t("pending_select_none")}
+              </Button>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => setSelected(new Set(filtered.map((c) => c.id)))}>
+                {t("pending_select_all")}
+              </Button>
+            )}
           </div>
         </>
       )}
@@ -205,9 +233,17 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
             const poster = posterUrl(first.movie_poster, "w200");
             const targetCollectionNames = card.kind === "single" ? card.item.targetCollectionNames : card.items[0].targetCollectionNames;
             const submitter = card.kind === "single" ? card.item.submitter : card.items[0].submitter;
+            const stats = card.kind === "single" ? card.item.submitterStats : card.items[0].submitterStats;
+            const conflicts = card.kind === "single" ? (card.item.conflicts ?? []) : [];
             return (
-              <Card key={card.id}>
+              <Card key={card.id} className={cn(selected.has(card.id) && "border-primary/60")}>
                 <CardContent className="flex gap-3 pt-5">
+                  <Checkbox
+                    checked={selected.has(card.id)}
+                    onCheckedChange={(v) => toggleSelected(card.id, v === true)}
+                    aria-label={t("pending_select_card")}
+                    className="mt-1"
+                  />
                   <div className="relative h-20 w-14 flex-none overflow-hidden rounded-md bg-muted">
                     {poster && <Image src={poster} alt="" fill className="object-cover" />}
                   </div>
@@ -257,6 +293,33 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
                           t("pending_barcode_submitter_unknown")
                         )}
                         {first.submitted_at && <> · {submittedAt.format(new Date(first.submitted_at))}</>}
+                        {stats && (
+                          <span className="ml-1.5 inline-flex items-center gap-1.5 align-middle">
+                            {stats.trusted && (
+                              <Badge variant="success" className="gap-1">
+                                <ShieldCheck className="size-3" aria-hidden />
+                                {t("pending_trusted")}
+                              </Badge>
+                            )}
+                            <span>{t("pending_submitter_stats", stats.approved, stats.rejected)}</span>
+                          </span>
+                        )}
+                      </p>
+                    )}
+                    {conflicts.length > 0 && (
+                      <p className="mt-1 flex items-start gap-1.5 rounded-md bg-warning/10 px-2 py-1 text-xs text-warning">
+                        <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                        <span>
+                          {t("pending_conflict")}{" "}
+                          {conflicts.map((id, i) => (
+                            <span key={id}>
+                              {i > 0 && ", "}
+                              <Link href={titleHref(id)} className="underline" target="_blank">
+                                {isSeries(id) ? t("picker_kind_series") : "TMDB"} #{Math.abs(id)}
+                              </Link>
+                            </span>
+                          ))}
+                        </span>
                       </p>
                     )}
                     {targetCollectionNames.length > 0 && (
