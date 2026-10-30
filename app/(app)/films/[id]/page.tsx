@@ -22,6 +22,8 @@ import { MovieCard } from "@/components/movie-card";
 import { Avatar } from "@/components/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WatchProviders } from "@/components/movie/watch-providers";
+import { watchCountry as getWatchCountry } from "@/lib/watch-country";
 
 /** Prefer an official YouTube trailer, then any trailer, then a teaser. */
 function pickTrailer(movie: MovieDetailFullDto) {
@@ -48,6 +50,7 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
 
   const locale = await getLocale();
   const dict = getDictionary(locale);
+  const watchCountry = await getWatchCountry();
 
   let movie: MovieDetailFullDto;
   try {
@@ -159,6 +162,7 @@ export default async function FilmDetailPage({ params }: { params: Promise<{ id:
 
       <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-[1fr_20rem]">
         <div className="flex min-w-0 flex-col gap-10">
+          <WatchProviders providers={movie["watch/providers"]} country={watchCountry} dict={dict} locale={locale} />
           {movie.overview && (
             <section className="flex flex-col gap-3">
               <h2 className="font-display text-xl font-semibold tracking-tight">{dict.movie_overview_title}</h2>

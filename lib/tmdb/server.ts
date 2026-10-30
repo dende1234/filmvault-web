@@ -76,7 +76,7 @@ export async function getTmdbCollection(collectionId: number, language = "nl"): 
 export async function getMovieDetailFull(movieId: number, language = "nl"): Promise<MovieDetailFullDto> {
   return tmdbGet(`/movie/${movieId}`, {
     language: tmdbLocale(language),
-    append_to_response: "credits,videos,recommendations,release_dates",
+    append_to_response: "credits,videos,recommendations,release_dates,watch/providers",
     include_video_language: `${language},en,null`,
   });
 }
@@ -132,7 +132,7 @@ export async function getTvDetail(tvId: number, language = "nl"): Promise<TvDeta
 export async function getTvDetailFull(tvId: number, language = "nl"): Promise<TvDetailFullDto> {
   return tmdbGet(`/tv/${tvId}`, {
     language: tmdbLocale(language),
-    append_to_response: "aggregate_credits,videos,recommendations,content_ratings",
+    append_to_response: "aggregate_credits,videos,recommendations,content_ratings,watch/providers",
     include_video_language: `${language},en,null`,
   });
 }

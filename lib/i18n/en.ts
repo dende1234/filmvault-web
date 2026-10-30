@@ -1232,4 +1232,9 @@ export const en: Record<keyof typeof nl, string> = {
   public_wishlist_empty: "This wishlist is still empty.",
   public_wishlist_cta_title: "Keep track of your own films?",
   public_wishlist_cta_description: "With Filmory you record your DVDs, Blu-rays and 4K discs, and share your own wishlist.",
+  watch_title: "Watch in {0}",
+  watch_flatrate: "Stream",
+  watch_rent: "Rent",
+  watch_buy: "Buy",
+  watch_attribution: "Data by JustWatch via TMDB. Click for all providers.",
 };

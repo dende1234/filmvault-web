@@ -1235,4 +1235,9 @@ export const nl = {
   public_wishlist_empty: "Deze verlanglijst is nog leeg.",
   public_wishlist_cta_title: "Zelf je films bijhouden?",
   public_wishlist_cta_description: "Met Filmory leg je je dvd's, Blu-rays en 4K's vast, en deel je je eigen verlanglijst.",
+  watch_title: "Te zien in {0}",
+  watch_flatrate: "Streamen",
+  watch_rent: "Huren",
+  watch_buy: "Kopen",
+  watch_attribution: "Gegevens van JustWatch via TMDB. Klik voor alle aanbieders.",
 };
