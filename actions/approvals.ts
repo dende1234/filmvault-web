@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { BarcodeAlreadyRegisteredError } from "@/lib/errors";
 import { requireAdmin } from "@/lib/require-admin";
+import { logAdminAction } from "@/lib/admin/log";
 import { isMissingError } from "@/lib/admin/migrations";
 import { detailsColumns } from "@/lib/copy-details";
 import { seasonsField } from "@/lib/seasons";
@@ -34,6 +35,7 @@ export async function restoreRejectedBarcodes(ids: string[]): Promise<void> {
   const supabase = await createClient();
   const { error } = await supabase.from("pending_barcodes").update({ status: "pending" }).in("id", ids).eq("status", "rejected");
   if (error) throw error;
+  await logAdminAction("barcode_restore", { type: "pending_barcode", id: ids.join(",") }, { count: ids.length });
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
 }
@@ -80,6 +82,7 @@ export async function adminRegisterBarcode(
     }
     throw error;
   }
+  await logAdminAction("barcode_register", { type: "barcode", id: barcode }, { tmdbMovieId, type, editie });
   return data.id as string;
 }
 
@@ -91,13 +94,16 @@ export async function updateBarcodeDetails(barcodeId: string, type: string, edit
   const supabase = await createClient();
   const { error } = await supabase.from("barcodes").update({ type, editie }).eq("id", barcodeId);
   if (error) throw error;
+  await logAdminAction("barcode_update", { type: "barcode", id: barcodeId }, { type, editie });
 }
 
 export async function deleteBarcode(barcodeId: string): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
+  const { data: gone } = await supabase.from("barcodes").select("barcode, tmdb_movie_id, type, editie").eq("id", barcodeId).maybeSingle();
   const { error } = await supabase.from("barcodes").delete().eq("id", barcodeId);
   if (error) throw error;
+  await logAdminAction("barcode_delete", { type: "barcode", id: barcodeId }, gone ?? {});
 }
 
 async function getPendingBarcodeById(supabase: Awaited<ReturnType<typeof createClient>>, id: string): Promise<PendingBarcode> {
@@ -128,7 +134,10 @@ export async function approvePendingBarcode(pendingFromClient: PendingBarcode): 
   await requireAdmin();
   const supabase = await createClient();
   const { error: rpcError } = await supabase.rpc("approve_pending_barcode", { p_id: pendingFromClient.id });
-  if (!rpcError) return afterApproval();
+  if (!rpcError) {
+    await logAdminAction("barcode_approve", { type: "pending_barcode", id: pendingFromClient.id }, { barcode: pendingFromClient.barcode, title: pendingFromClient.movie_title });
+    return afterApproval();
+  }
   if (!isMissingError(rpcError)) throw rpcError;
 
   // Only the id is trusted from the client — the row's contents are re-read.
@@ -180,6 +189,7 @@ export async function approvePendingBarcode(pendingFromClient: PendingBarcode): 
     );
     if (error) throw error;
   }
+  await logAdminAction("barcode_approve", { type: "pending_barcode", id: pending.id }, { barcode: pending.barcode, title: pending.movie_title });
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
 }
@@ -190,6 +200,7 @@ export async function rejectPendingBarcode(id: string): Promise<void> {
   await getPendingBarcodeById(supabase, id); // must still be pending
   const { error } = await supabase.from("pending_barcodes").update({ status: "rejected" }).eq("id", id);
   if (error) throw error;
+  await logAdminAction("barcode_reject", { type: "pending_barcode", id });
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
 }
@@ -204,7 +215,10 @@ export async function approvePendingBox(pendingRowsFromClient: PendingBarcode[])
   await requireAdmin();
   const supabase = await createClient();
   const { error: rpcError } = await supabase.rpc("approve_pending_box", { p_ids: pendingRowsFromClient.map((r) => r.id) });
-  if (!rpcError) return afterApproval();
+  if (!rpcError) {
+    await logAdminAction("box_approve", { type: "pending_barcode", id: pendingRowsFromClient.map((r) => r.id).join(",") }, { barcode: pendingRowsFromClient[0]?.barcode, box: pendingRowsFromClient[0]?.box_name });
+    return afterApproval();
+  }
   if (!isMissingError(rpcError)) throw rpcError;
 
   // Only the ids are trusted from the client — the rows' contents are re-read.
@@ -262,6 +276,7 @@ export async function approvePendingBox(pendingRowsFromClient: PendingBarcode[])
     const { error } = await supabase.from("collection_items").insert(inserts);
     if (error) throw error;
   }
+  await logAdminAction("box_approve", { type: "pending_barcode", id: pendingRows.map((r) => r.id).join(",") }, { barcode: first.barcode, box: boxName });
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
 }

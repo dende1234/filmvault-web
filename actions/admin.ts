@@ -8,6 +8,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/require-admin";
+import { logAdminAction } from "@/lib/admin/log";
 import { findBarcodesByCode } from "@/actions/barcodes";
 import { adminRegisterBarcode, approvePendingBarcode } from "@/actions/approvals";
 import { getTitleDetail, searchMovies, searchTv } from "@/lib/tmdb/server";
@@ -34,6 +35,7 @@ export async function setUserAdminStatus(targetUserId: string, isAdmin: boolean)
     new_is_admin: isAdmin,
   });
   if (error) throw error;
+  await logAdminAction(isAdmin ? "user_admin_on" : "user_admin_off", { type: "user", id: targetUserId });
   revalidatePath("/admin/users");
 }
 
@@ -50,6 +52,7 @@ export async function sendAnnouncement(title: string, body: string): Promise<voi
   const supabase = await createClient();
   const { error } = await supabase.functions.invoke("send-announcement", { body: { title, body } });
   if (error) throw error;
+  await logAdminAction("announcement_send", undefined, { title });
 }
 
 /** Deletes ANOTHER user's account and all their data — via a separate
@@ -59,8 +62,10 @@ export async function sendAnnouncement(title: string, body: string): Promise<voi
 export async function deleteUserAccount(targetUserId: string): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
+  const { data: who } = await supabase.from("profiles").select("name, email").eq("id", targetUserId).maybeSingle();
   const { error } = await supabase.functions.invoke("admin-delete-user", { body: { target_user_id: targetUserId } });
   if (error) throw error;
+  await logAdminAction("user_delete", { type: "user", id: targetUserId }, who ?? {});
   revalidatePath("/admin/users");
 }
 
@@ -228,6 +233,7 @@ export async function adminApprovePendingWithChanges(
   if (updateError) throw updateError;
 
   await approvePendingBarcode({ ...pending, ...changes });
+  await logAdminAction("barcode_approve_with_changes", { type: "pending_barcode", id: pendingId }, { tmdbMovieId, type, editie });
 }
 
 export type GrowthStats = {
