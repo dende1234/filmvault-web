@@ -51,6 +51,7 @@ export const MIGRATIONS: Migration[] = [
   { file: "auto_approve.sql", probe: { kind: "table", table: "trusted_contributors" } },
   { file: "moderation.sql", probe: { kind: "table", table: "blocked_members" } },
   { file: "email_digest.sql", probe: { kind: "column", table: "profiles", column: "email_digest" } },
+  { file: "push_subscriptions.sql", probe: { kind: "table", table: "push_subscriptions" } },
   { file: "trade_list.sql", probe: { kind: "column", table: "collection_items", column: "for_trade" } },
 ];
 

@@ -1427,4 +1427,12 @@ export const nl = {
   digest_off: "Wekelijkse samenvatting uitgezet",
   digest_error: "Opslaan is mislukt",
   digest_not_ready: "De samenvatting is nog niet beschikbaar: email_digest.sql moet nog in Supabase gedraaid worden.",
+  push_title: "Pushmeldingen",
+  push_label: "Pushmeldingen op dit apparaat: als je barcode is goedgekeurd of als iemand vrienden wil worden.",
+  push_unsupported: "Pushmeldingen zijn op dit apparaat niet beschikbaar. Op een iPhone werkt het als je Filmory eerst op je beginscherm zet.",
+  push_denied: "Meldingen zijn geblokkeerd in je browser. Sta ze toe in de instellingen van je browser.",
+  push_on: "Pushmeldingen aan op dit apparaat",
+  push_off: "Pushmeldingen uit op dit apparaat",
+  push_error: "Pushmeldingen aanzetten is mislukt",
+  push_not_ready: "Pushmeldingen zijn nog niet beschikbaar: push_subscriptions.sql moet nog in Supabase gedraaid worden.",
 };

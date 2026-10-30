@@ -1424,4 +1424,12 @@ export const en: Record<keyof typeof nl, string> = {
   digest_off: "Weekly summary switched off",
   digest_error: "Saving failed",
   digest_not_ready: "The summary isn't available yet: email_digest.sql still has to run in Supabase.",
+  push_title: "Push notifications",
+  push_label: "Push notifications on this device: when your barcode is approved or someone wants to be friends.",
+  push_unsupported: "Push notifications aren't available on this device. On an iPhone it works once Filmory is on your home screen.",
+  push_denied: "Notifications are blocked in your browser. Allow them in your browser settings.",
+  push_on: "Push notifications on for this device",
+  push_off: "Push notifications off for this device",
+  push_error: "Switching push notifications on failed",
+  push_not_ready: "Push notifications aren't available yet: push_subscriptions.sql still has to run in Supabase.",
 };

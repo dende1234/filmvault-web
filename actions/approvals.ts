@@ -9,6 +9,8 @@ import { createClient } from "@/lib/supabase/server";
 import { BarcodeAlreadyRegisteredError } from "@/lib/errors";
 import { requireAdmin } from "@/lib/require-admin";
 import { logAdminAction } from "@/lib/admin/log";
+import { after } from "next/server";
+import { sendPushToUser } from "@/lib/push";
 import { isMissingError } from "@/lib/admin/migrations";
 import { detailsColumns } from "@/lib/copy-details";
 import { seasonsField } from "@/lib/seasons";
@@ -117,6 +119,27 @@ async function barcodeAlreadyExists(supabase: Awaited<ReturnType<typeof createCl
   return (data ?? []).length > 0;
 }
 
+/** Push to the submitter(s) once the review is done (lib/push.ts). Runs
+ * after the response, so a slow push service never delays the admin. */
+async function notifySubmitters(supabase: Awaited<ReturnType<typeof createClient>>, ids: string[], approved: boolean) {
+  const { data } = await supabase.from("pending_barcodes").select("submitted_by, movie_title, is_box, box_name").in("id", ids);
+  const rows = (data ?? []) as { submitted_by: string; movie_title: string; is_box: boolean; box_name: string | null }[];
+  const first = rows[0];
+  if (!first?.submitted_by) return;
+  const title = first.is_box ? (first.box_name ?? first.movie_title) : first.movie_title;
+  after(() =>
+    sendPushToUser(first.submitted_by, {
+      nl: approved
+        ? { title: "Barcode goedgekeurd", body: `${title} staat nu in je collectie.` }
+        : { title: "Barcode niet goedgekeurd", body: `Je inzending voor ${title} is niet goedgekeurd.` },
+      en: approved
+        ? { title: "Barcode approved", body: `${title} is now in your collection.` }
+        : { title: "Barcode not approved", body: `Your submission for ${title} was not approved.` },
+      url: "/meldingen",
+    }),
+  );
+}
+
 function afterApproval() {
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
@@ -135,6 +158,7 @@ export async function approvePendingBarcode(pendingFromClient: PendingBarcode): 
   const supabase = await createClient();
   const { error: rpcError } = await supabase.rpc("approve_pending_barcode", { p_id: pendingFromClient.id });
   if (!rpcError) {
+    await notifySubmitters(supabase, [pendingFromClient.id], true);
     await logAdminAction("barcode_approve", { type: "pending_barcode", id: pendingFromClient.id }, { barcode: pendingFromClient.barcode, title: pendingFromClient.movie_title });
     return afterApproval();
   }
@@ -189,6 +213,7 @@ export async function approvePendingBarcode(pendingFromClient: PendingBarcode): 
     );
     if (error) throw error;
   }
+  await notifySubmitters(supabase, [pending.id], true);
   await logAdminAction("barcode_approve", { type: "pending_barcode", id: pending.id }, { barcode: pending.barcode, title: pending.movie_title });
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
@@ -200,6 +225,7 @@ export async function rejectPendingBarcode(id: string): Promise<void> {
   await getPendingBarcodeById(supabase, id); // must still be pending
   const { error } = await supabase.from("pending_barcodes").update({ status: "rejected" }).eq("id", id);
   if (error) throw error;
+  await notifySubmitters(supabase, [id], false);
   await logAdminAction("barcode_reject", { type: "pending_barcode", id });
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
@@ -216,6 +242,7 @@ export async function approvePendingBox(pendingRowsFromClient: PendingBarcode[])
   const supabase = await createClient();
   const { error: rpcError } = await supabase.rpc("approve_pending_box", { p_ids: pendingRowsFromClient.map((r) => r.id) });
   if (!rpcError) {
+    await notifySubmitters(supabase, pendingRowsFromClient.map((r) => r.id), true);
     await logAdminAction("box_approve", { type: "pending_barcode", id: pendingRowsFromClient.map((r) => r.id).join(",") }, { barcode: pendingRowsFromClient[0]?.barcode, box: pendingRowsFromClient[0]?.box_name });
     return afterApproval();
   }
@@ -276,6 +303,7 @@ export async function approvePendingBox(pendingRowsFromClient: PendingBarcode[])
     const { error } = await supabase.from("collection_items").insert(inserts);
     if (error) throw error;
   }
+  await notifySubmitters(supabase, pendingRows.map((r) => r.id), true);
   await logAdminAction("box_approve", { type: "pending_barcode", id: pendingRows.map((r) => r.id).join(",") }, { barcode: first.barcode, box: boxName });
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");

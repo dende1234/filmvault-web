@@ -7,6 +7,7 @@ import { useT } from "@/lib/i18n/locale-provider";
 import { Avatar } from "@/components/avatar";
 import { NewsletterToggle } from "@/components/newsletter-toggle";
 import { EmailDigestToggle } from "@/components/email-digest-toggle";
+import { PushToggle } from "@/components/push-toggle";
 import { updateProfile, setThemePreference, setLocale, deleteAccount } from "@/actions/profile";
 import { signOut } from "@/actions/auth";
 import type { Profile, ThemePreference } from "@/types/database";
@@ -149,6 +150,10 @@ export function ProfileForm({ profile }: { profile: Profile }) {
           <div className="border-t border-border/60 pt-4">
             <p className="mb-2 text-sm font-medium">{t("digest_title")}</p>
             <EmailDigestToggle initial={profile.email_digest === true} />
+          </div>
+          <div className="border-t border-border/60 pt-4">
+            <p className="mb-2 text-sm font-medium">{t("push_title")}</p>
+            <PushToggle />
           </div>
         </CardContent>
       </Card>
