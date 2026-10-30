@@ -16,6 +16,10 @@ export type AdminAction =
   | "user_delete"
   | "user_trust_on"
   | "user_trust_off"
+  | "user_block"
+  | "user_unblock"
+  | "post_delete"
+  | "comment_delete"
   | "announcement_send"
   | "help_answer_save"
   | "help_answer_delete";
