@@ -1240,4 +1240,10 @@ export const nl = {
   watch_rent: "Huren",
   watch_buy: "Kopen",
   watch_attribution: "Gegevens van JustWatch via TMDB. Klik voor alle aanbieders.",
+  upgrades_nav: "Upgrade-tips",
+  upgrades_title: "Upgrade-tips",
+  upgrades_count: "{0} titels ook in betere kwaliteit verkrijgbaar",
+  upgrades_description: "Films en series die je op dvd of Blu-ray hebt, terwijl er ook een Blu-ray- of 4K-uitgave bekend is. Zet ze op je verlanglijst om er in de winkel op te letten.",
+  upgrades_empty_title: "Geen upgrade-tips",
+  upgrades_empty_description: "Je hebt alles al in de beste bekende kwaliteit, of de filmlijst kent nog geen betere uitgave.",
 };

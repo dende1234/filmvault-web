@@ -1237,4 +1237,10 @@ export const en: Record<keyof typeof nl, string> = {
   watch_rent: "Rent",
   watch_buy: "Buy",
   watch_attribution: "Data by JustWatch via TMDB. Click for all providers.",
+  upgrades_nav: "Upgrade tips",
+  upgrades_title: "Upgrade tips",
+  upgrades_count: "{0} titles also available in better quality",
+  upgrades_description: "Films and series you own on DVD or Blu-ray while a Blu-ray or 4K release is known. Put them on your wishlist to look out for them in shops.",
+  upgrades_empty_title: "No upgrade tips",
+  upgrades_empty_description: "You already own everything in the best known quality, or the film list doesn't know a better release yet.",
 };
