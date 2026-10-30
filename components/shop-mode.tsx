@@ -7,10 +7,12 @@ import { useT } from "@/lib/i18n/locale-provider";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { useHasCamera } from "@/lib/use-has-camera";
 import { normalizeBarcode } from "@/lib/barcode";
-import { getOwnedCopiesOfTitle, lookupScannedBarcode, type OwnedCopy, type ScannedBarcodeResult } from "@/actions/collections";
+import { getOwnedCopiesOfTitle, lookupScannedBarcode, type OwnedCopy, type ScannedBarcodeResult } from "@/actions/barcodes";
 import { addToWishlist, getWishlistStatus } from "@/actions/wishlist";
 import { suggestTitlesForBarcode, type BarcodeSuggestion } from "@/actions/barcode-suggest";
 import { cn } from "@/lib/utils";
+import { getShopSnapshot } from "@/actions/shop";
+import { loadSnapshot, lookupOffline, saveSnapshot, type ShopSnapshot } from "@/lib/shop-offline";
 import { ScannerView } from "@/components/barcode-scanner";
 import { PageHeader } from "@/components/page-header";
 import { Poster } from "@/components/movie/poster";
@@ -37,6 +39,8 @@ export type Check = {
   result?: Known;
   /** Unknown barcode: what an external barcode database suggests. */
   suggestions?: BarcodeSuggestion[];
+  /** Answered from the saved snapshot (no connection). */
+  offline?: boolean;
 };
 
 const STATUS: Record<Status, { icon: typeof CheckCircle2; title: keyof Dictionary; hint: keyof Dictionary; tone: string; text: string; vibrate: number[] }> = {
@@ -71,6 +75,39 @@ export function ShopMode() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [adding, setAdding] = useState<Known | null>(null);
   const nextKey = useRef(1);
+  // Saved on this phone while online, so scanning keeps working without signal.
+  const snapshot = useRef<ShopSnapshot | null>(null);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [online, setOnline] = useState(true);
+
+  useEffect(() => {
+    snapshot.current = loadSnapshot();
+    setSavedAt(snapshot.current?.savedAt ?? null);
+    const update = () => setOnline(navigator.onLine);
+    update();
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    if (navigator.onLine) {
+      getShopSnapshot()
+        .then((s) => {
+          snapshot.current = s;
+          saveSnapshot(s);
+          setSavedAt(s.savedAt);
+        })
+        .catch(() => {});
+    }
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, []);
+
+  function answerOffline(key: number, code: string) {
+    const snap = snapshot.current;
+    if (!snap) return finish(key, { status: "error" });
+    const a = lookupOffline(snap, code);
+    finish(key, a.status === "unknown" ? { status: "unknown", offline: true } : { status: a.status, name: a.name, poster: a.poster, isBox: a.isBox, ids: a.ids, offline: true });
+  }
 
   // Keep the screen on while shopping; re-acquire when the tab comes back.
   useEffect(() => {
@@ -112,6 +149,7 @@ export function ShopMode() {
     const code = normalizeBarcode(raw);
     if (!code) return;
     const key = begin(code);
+    if (typeof navigator !== "undefined" && !navigator.onLine) return answerOffline(key, code);
     try {
       const result = await lookupScannedBarcode(code);
       if (result.kind === "none") {
@@ -136,7 +174,9 @@ export function ShopMode() {
         result,
       });
     } catch {
-      finish(key, { status: "error" });
+      // Lost the connection mid-scan: answer from the saved snapshot.
+      if (snapshot.current) answerOffline(key, code);
+      else finish(key, { status: "error" });
     }
   }
 
@@ -174,6 +214,11 @@ export function ShopMode() {
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={t("shop_title")} description={t("shop_description")} />
+      {!online && (
+        <p className="rounded-lg border border-warning/50 bg-warning/10 px-3 py-2 text-sm text-warning" role="status">
+          {savedAt ? t("shop_offline", new Date(savedAt).toLocaleString()) : t("shop_offline_no_snapshot")}
+        </p>
+      )}
 
       <div className="flex flex-col gap-3 rounded-card border border-border/70 bg-card/70 p-4">
         {hasCamera &&
@@ -313,10 +358,14 @@ export function ResultCard({
               </p>
             ))}
             {c.alsoWished && <p className="text-xs font-medium text-primary">{t("shop_also_wished")}</p>}
+            {c.offline && <p className="text-xs text-muted-foreground">{t("shop_offline_answer")}</p>}
           </div>
         </div>
       ) : (
-        <p className="font-mono text-sm text-foreground">{c.label}</p>
+        <div className="flex flex-col gap-1">
+          <p className="font-mono text-sm text-foreground">{c.label}</p>
+          {c.offline && <p className="text-xs text-muted-foreground">{t("shop_offline_unknown")}</p>}
+        </div>
       )}
       <div className="flex flex-wrap gap-2">
         {c.result && (
@@ -331,12 +380,13 @@ export function ResultCard({
           </Button>
         )}
         {c.status === "unknown" &&
+          !c.offline &&
           c.suggestions?.map((m) => (
             <Button key={m.id} size="sm" onClick={() => onPick?.(m)}>
               {t("shop_suggest_pick", m.year ? `${m.title} (${m.year})` : m.title)}
             </Button>
           ))}
-        {c.status === "unknown" && (
+        {c.status === "unknown" && !c.offline && (
           <Button size="sm" variant="secondary" onClick={onSearch}>
             <Search />
             {t("shop_search_title")}

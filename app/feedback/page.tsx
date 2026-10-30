@@ -7,7 +7,7 @@ import { FeedbackForm } from "@/components/feedback-form";
 
 export const metadata = { title: "Feedback" };
 
-/** Public feedback page: reachable signed in or not (middleware
+/** Public feedback page: reachable signed in or not (proxy
  * ALWAYS_ACCESSIBLE_PATHS), so visitors who get stuck at sign-up can still
  * tell us. Signed-in users get the screenshot option and a link to their list. */
 export default async function FeedbackPage({ searchParams }: { searchParams: Promise<{ from?: string }> }) {

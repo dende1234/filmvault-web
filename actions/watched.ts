@@ -7,17 +7,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireUserId } from "@/lib/auth";
 import { createPost } from "@/actions/posts";
 import type { DiaryEntry, FilmLog, FilmMeta, FilmViewing, WatchedFilmItem } from "@/types/database";
-
-async function requireUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("not authenticated");
-  return user.id;
-}
+import { fetchAll } from "@/lib/supabase/fetch-all";
 
 function revalidateFilm(tmdbMovieId: number) {
   revalidatePath("/watched");
@@ -119,20 +112,26 @@ function byDateDesc(a: FilmViewing, b: FilmViewing) {
 export async function getWatchedOverview(): Promise<{ available: boolean; films: WatchedFilmItem[]; diary: DiaryEntry[] }> {
   const supabase = await createClient();
   const userId = await requireUserId();
-  const [logsRes, viewingsRes, collectionsRes] = await Promise.all([
-    supabase.from("film_logs").select("*").eq("user_id", userId),
-    supabase.from("film_viewings").select("*").eq("user_id", userId),
-    supabase.from("collections").select("id").eq("user_id", userId),
-  ]);
-  if (logsRes.error || viewingsRes.error) return { available: false, films: [], diary: [] };
-
-  const logs = logsRes.data as FilmLog[];
-  const viewings = (viewingsRes.data as FilmViewing[]).sort(byDateDesc);
-  const collectionIds = (collectionsRes.data ?? []).map((c) => c.id as string);
+  let logs: FilmLog[];
+  let viewings: FilmViewing[];
+  try {
+    // A Letterboxd import easily brings more than one page of logs.
+    [logs, viewings] = await Promise.all([
+      fetchAll<FilmLog>((from, to) => supabase.from("film_logs").select("*").eq("user_id", userId).order("id").range(from, to)),
+      fetchAll<FilmViewing>((from, to) => supabase.from("film_viewings").select("*").eq("user_id", userId).order("id").range(from, to)),
+    ]);
+  } catch {
+    return { available: false, films: [], diary: [] };
+  }
+  viewings.sort(byDateDesc);
+  const { data: cols } = await supabase.from("collections").select("id").eq("user_id", userId);
+  const collectionIds = (cols ?? []).map((c) => c.id as string);
   const owned = new Set<number>();
   if (collectionIds.length > 0) {
-    const { data } = await supabase.from("collection_items").select("tmdb_movie_id").in("collection_id", collectionIds);
-    (data ?? []).forEach((r) => owned.add(r.tmdb_movie_id as number));
+    const rows = await fetchAll<{ tmdb_movie_id: number }>((from, to) =>
+      supabase.from("collection_items").select("tmdb_movie_id").in("collection_id", collectionIds).order("id").range(from, to),
+    );
+    rows.forEach((r) => owned.add(r.tmdb_movie_id));
   }
 
   const byMovie = new Map<number, FilmViewing[]>();

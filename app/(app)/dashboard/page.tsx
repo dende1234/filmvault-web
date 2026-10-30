@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { Eye, EyeOff, Film, LibraryBig, Play } from "lucide-react";
-import { getUserCollections, getCollectionItemsForCollections } from "@/actions/collections";
+import { getUserCollections, getDashboardData } from "@/actions/collections";
 import { getOrCreateProfile } from "@/actions/profile";
+import { createLoanReminders } from "@/actions/notifications";
 import { getFollowingCount } from "@/actions/follows";
 import { getAcceptedFriendIds } from "@/actions/friends";
 import { SITE_URL } from "@/lib/site";
-import { isSeries } from "@/lib/titles";
 import { getTitleDetail } from "@/lib/tmdb/server";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
@@ -26,13 +26,6 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 
 export const metadata = { title: "Dashboard" };
-
-/** Stable "film of the day": same pick all day, rotates daily. */
-function pickOfTheDay<T>(list: T[], now: Date): T | null {
-  if (list.length === 0) return null;
-  const day = Math.floor(now.getTime() / 86_400_000);
-  return list[day % list.length];
-}
 
 function itemHref(item: CollectionItem) {
   return `/collections/${item.collection_id}/items/${item.id}`;
@@ -61,25 +54,13 @@ function ItemPoster({ item }: { item: CollectionItem }) {
 export default async function DashboardPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  const [collections, profile] = await Promise.all([getUserCollections(), getOrCreateProfile()]);
-  const rawItems = await getCollectionItemsForCollections(collections.map((c) => c.id));
-
+  const [collections, profile] = await Promise.all([getUserCollections(), getOrCreateProfile(), createLoanReminders()]);
   // Same physical film can span multiple collections (shared item_group_id) —
-  // dedupe so it's counted/shown once, mirrors DashboardViewModel.kt exactly.
-  const seen = new Set<string>();
-  const items = rawItems.filter((item) => {
-    if (seen.has(item.item_group_id)) return false;
-    seen.add(item.item_group_id);
-    return true;
-  });
+  // counted/shown once, mirrors DashboardViewModel.kt.
+  const stats = await getDashboardData(collections.map((c) => c.id));
+  const watchedPct = stats.titles > 0 ? Math.round((stats.watched / stats.titles) * 100) : 0;
 
-  const byNewest = [...items].sort((a, b) => (b.added_at ?? "").localeCompare(a.added_at ?? ""));
-  const unwatched = byNewest.filter((i) => !i.watched);
-  const watchedCount = items.length - unwatched.length;
-  const seriesCount = items.filter((i) => isSeries(i.tmdb_movie_id)).length;
-  const watchedPct = items.length > 0 ? Math.round((watchedCount / items.length) * 100) : 0;
-
-  const featured = pickOfTheDay(unwatched, new Date()) ?? byNewest[0] ?? null;
+  const featured = stats.pick ?? stats.recent[0] ?? null;
   const featuredMovie = featured ? await getTitleDetail(featured.tmdb_movie_id, locale).catch(() => null) : null;
   const [followingCount, friendIds] = profile
     ? await Promise.all([getFollowingCount(profile.id).catch(() => 0), getAcceptedFriendIds(profile.id).catch(() => [])])
@@ -117,7 +98,7 @@ export default async function DashboardPage() {
                     {dict.dashboard_view_button}
                   </Link>
                 </Button>
-                <SurpriseMeButton unwatchedItems={unwatched} />
+                <SurpriseMeButton unwatchedItems={stats.surprise} />
               </div>
             </div>
           </div>
@@ -129,7 +110,7 @@ export default async function DashboardPage() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
         <OnboardingChecklist
           hasCollection={collections.length > 0}
-          hasFilm={items.length > 0}
+          hasFilm={stats.titles > 0}
           hasConnection={followingCount > 0 || friendIds.length > 0}
           hasName={!!profile?.name?.trim()}
           inviteUrl={inviteUrl}
@@ -142,15 +123,15 @@ export default async function DashboardPage() {
           <StatTile
             icon={Film}
             label={dict.dashboard_titles_label}
-            value={items.length}
-            hint={seriesCount > 0 ? <p className="text-xs text-muted-foreground">{format(dict.dashboard_titles_series_hint, seriesCount)}</p> : undefined}
+            value={stats.titles}
+            hint={stats.series > 0 ? <p className="text-xs text-muted-foreground">{format(dict.dashboard_titles_series_hint, stats.series)}</p> : undefined}
           />
           <StatTile
             icon={Eye}
             label={dict.watched_label}
-            value={watchedCount}
+            value={stats.watched}
             hint={
-              items.length > 0 && (
+              stats.titles > 0 && (
                 <div className="flex flex-col gap-1.5">
                   <Progress value={watchedPct} label={format(dict.dashboard_watched_progress, watchedPct)} />
                   <p className="text-xs text-muted-foreground">{format(dict.dashboard_watched_progress, watchedPct)}</p>
@@ -158,7 +139,7 @@ export default async function DashboardPage() {
               )
             }
           />
-          <StatTile icon={EyeOff} label={dict.not_watched_label} value={unwatched.length} />
+          <StatTile icon={EyeOff} label={dict.not_watched_label} value={stats.unwatched} />
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -167,7 +148,7 @@ export default async function DashboardPage() {
           <InviteButton url={inviteUrl} variant="ghost" />
         </div>
 
-        {items.length === 0 ? (
+        {stats.titles === 0 ? (
           <EmptyState
             icon={Film}
             title={dict.dashboard_empty_title}
@@ -177,15 +158,15 @@ export default async function DashboardPage() {
         ) : (
           <>
             <PosterRail title={dict.dashboard_recent_title}>
-              {byNewest.slice(0, 15).map((item) => (
+              {stats.recent.map((item) => (
                 <RailItem key={item.id}>
                   <ItemPoster item={item} />
                 </RailItem>
               ))}
             </PosterRail>
-            {unwatched.length > 0 && (
+            {stats.unwatchedRecent.length > 0 && (
               <PosterRail title={dict.dashboard_unwatched_title}>
-                {unwatched.slice(0, 15).map((item) => (
+                {stats.unwatchedRecent.map((item) => (
                   <RailItem key={item.id}>
                     <ItemPoster item={item} />
                   </RailItem>

@@ -13,7 +13,7 @@ export function SurpriseMeButton({
   unwatchedItems,
   variant = "secondary",
 }: {
-  unwatchedItems: CollectionItem[];
+  unwatchedItems: Pick<CollectionItem, "id" | "collection_id">[];
   variant?: "secondary" | "outline";
 }) {
   const router = useRouter();

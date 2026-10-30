@@ -6,15 +6,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-
-async function requireUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("not authenticated");
-  return user.id;
-}
+import { requireUserId } from "@/lib/auth";
 
 export async function isFollowing(followeeId: string): Promise<boolean> {
   const supabase = await createClient();

@@ -6,14 +6,14 @@ const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/privacy"];
 // Unlike login/register, these stay reachable regardless of auth state —
 // no redirect either way (a logged-in user must still be able to read the
 // privacy policy from their account, not get bounced back to /dashboard).
-const ALWAYS_ACCESSIBLE_PATHS = ["/privacy", "/gids", "/c/", "/feedback", "/nieuwsbrief"];
+const ALWAYS_ACCESSIBLE_PATHS = ["/privacy", "/gids", "/c/", "/v/", "/feedback", "/nieuwsbrief"];
 
 // First-party acquisition source, kept 30 days and recorded once on signup
 // (actions/profile.ts). Not a tracking cookie: it holds only a campaign
 // label such as "invite-1a2b3c4d" or "facebook", never an identifier.
 const SOURCE_COOKIE = "fv_src";
 // Same names as lib/preferences.ts (not imported: that module pulls in
-// next/headers, which doesn't belong in middleware).
+// next/headers, which doesn't belong in the proxy).
 const LOCALE_COOKIE = "fv_locale";
 const LOCALE_CHECKED_COOKIE = "fv_lc";
 const SOURCE_MAX_AGE = 60 * 60 * 24 * 30;

@@ -1,12 +1,24 @@
 import { HELP_ENTRIES } from "@/lib/help/faq";
-import type { HelpQuestionRow } from "@/actions/help";
+import type { HelpAnswerRow, HelpQuestionRow } from "@/actions/help";
+import { HelpAnswerButton, HelpAnswersList } from "@/components/admin/help-answers";
 import type { Dictionary } from "@/lib/i18n/dictionary";
 import { format } from "@/lib/i18n/dictionary";
 import { Card, CardContent } from "@/components/ui/card";
 
 /** What Reel couldn't answer and which answers didn't help: the to-do list
  * for lib/help/faq.ts. Rows are anonymous and at most 90 days old. */
-export function AdminHelpQuestions({ rows, dict, locale }: { rows: HelpQuestionRow[]; dict: Dictionary; locale: string }) {
+export function AdminHelpQuestions({
+  rows,
+  answers,
+  dict,
+  locale,
+}: {
+  rows: HelpQuestionRow[];
+  /** Answers managed here (help_answers.sql); null before that has run. */
+  answers: HelpAnswerRow[] | null;
+  dict: Dictionary;
+  locale: string;
+}) {
   const unanswered = new Map<string, { text: string; count: number; last: string }>();
   const perEntry = new Map<string, { asked: number; yes: number; no: number }>();
   let rated = 0;
@@ -33,7 +45,13 @@ export function AdminHelpQuestions({ rows, dict, locale }: { rows: HelpQuestionR
   const pct = (n: number, d: number) => (d === 0 ? "–" : `${Math.round((n / d) * 100)}%`);
   const topUnanswered = Array.from(unanswered.values()).sort((a, b) => b.count - a.count || b.last.localeCompare(a.last)).slice(0, 50);
   const entries = Array.from(perEntry.entries())
-    .map(([id, s]) => ({ id, ...s, title: HELP_ENTRIES.find((e) => e.id === id)?.q[locale === "en" ? "en" : "nl"] ?? id }))
+    .map(([id, s]) => ({ id, ...s, title:
+        HELP_ENTRIES.find((e) => e.id === id)?.q[locale === "en" ? "en" : "nl"] ??
+        (() => {
+          const a = answers?.find((x) => `db-${x.id}` === id);
+          return a ? (locale === "en" ? a.question_en : a.question_nl) : id;
+        })(),
+    }))
     .sort((a, b) => b.no - a.no || b.asked - a.asked);
   const date = (iso: string) => new Date(iso).toLocaleDateString(locale === "en" ? "en-GB" : "nl-NL", { day: "numeric", month: "short" });
 
@@ -56,15 +74,24 @@ export function AdminHelpQuestions({ rows, dict, locale }: { rows: HelpQuestionR
               {topUnanswered.map((q) => (
                 <div key={q.text + q.last} className="flex items-start justify-between gap-4 px-4 py-2.5 text-sm">
                   <span className="min-w-0 break-words">{q.text}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
-                    {q.count > 1 && <strong className="mr-2 text-foreground">{q.count}×</strong>}
+                  <span className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground tabular-nums">
+                    {q.count > 1 && <strong className="text-foreground">{q.count}×</strong>}
                     {date(q.last)}
+                    {answers !== null && <HelpAnswerButton question={q.text} variant="ghost" />}
                   </span>
                 </div>
               ))}
             </CardContent>
           </Card>
         )}
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-display text-xl font-semibold tracking-tight">{dict.help_answers_title}</h2>
+          {answers !== null && <HelpAnswerButton variant="default" />}
+        </div>
+        {answers === null ? <p className="text-sm text-muted-foreground">{dict.help_answer_not_ready}</p> : <HelpAnswersList rows={answers} />}
       </section>
 
       <section className="flex flex-col gap-3">

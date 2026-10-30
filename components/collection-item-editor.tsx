@@ -8,17 +8,7 @@ import { Captions, Check, Eye, Plus, Volume2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { editionLabel } from "@/lib/edition-label";
-import {
-  removeCollectionItem,
-  updateCollectionItemCondition,
-  updateCollectionItemFavorite,
-  updateCollectionItemLoan,
-  updateCollectionItemNote,
-  updateCollectionItemSeasons,
-  updateCollectionItemRating,
-  updateCollectionItemTags,
-  updateCollectionItemWatched,
-} from "@/actions/collections";
+import { removeCollectionItem, updateCollectionItemCondition, updateCollectionItemFavorite, updateCollectionItemLoan, updateCollectionItemNote, updateCollectionItemSeasons, updateCollectionItemRating, updateCollectionItemTags, updateCollectionItemWatched } from "@/actions/collections";
 import { isLoanOverdue, type Collection, type CollectionItem, type Condition, type FilmLog, type FilmViewing } from "@/types/database";
 import { setFilmRating, setFilmReview, setFilmWatched } from "@/actions/watched";
 import { LogFilmDialog } from "@/components/watched/log-film-dialog";
@@ -28,6 +18,7 @@ import { SeasonsPicker, useSeasonsLabel } from "@/components/seasons-picker";
 import { CoverUpload } from "@/components/cover-upload";
 import { CopyCollections } from "@/components/copy-collections";
 import { CopyDetails } from "@/components/copy-details";
+import { PurchaseDetails } from "@/components/purchase-details";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import type { MovieDetailDto } from "@/types/tmdb";
@@ -331,6 +322,16 @@ export function CollectionItemEditor({
             key={[initial.cut, initial.label, initial.region, initial.audio_languages?.join(","), initial.subtitle_languages?.join(",")].join("|")}
             item={initial}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("purchase_title")}</CardTitle>
+          <p className="text-xs text-muted-foreground">{t("purchase_hint")}</p>
+        </CardHeader>
+        <CardContent>
+          <PurchaseDetails key={[initial.purchase_price, initial.purchase_date, initial.purchase_shop].join("|")} item={initial} />
         </CardContent>
       </Card>
 

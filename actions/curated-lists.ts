@@ -5,17 +5,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { requireUserId } from "@/lib/auth";
 import { getUserCollections, getCollectionItemsForCollections } from "@/actions/collections";
 import type { CuratedList, CuratedListItem, CuratedListUiItem } from "@/types/database";
-
-async function requireUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("not authenticated");
-  return user.id;
-}
 
 export async function getList(listId: string): Promise<CuratedList | null> {
   const supabase = await createClient();

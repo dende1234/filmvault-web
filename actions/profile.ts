@@ -65,7 +65,7 @@ export async function getOrCreateProfile(): Promise<Profile | null> {
 }
 
 /** Best-effort "signup" growth event with the first-party source cookie set
- * by the middleware (?ref= / ?utm_source=). Failures are swallowed: metrics
+ * by the proxy (?ref= / ?utm_source=). Failures are swallowed: metrics
  * must never break sign-up (e.g. before growth_tracking.sql has run). */
 async function logSignupEvent(userId: string) {
   try {

@@ -85,6 +85,10 @@ export interface CollectionItem {
   label?: string | null;
   /** Region code (contributors_region.sql): "B", "2/4", "Regiovrij". */
   region?: string | null;
+  /** Purchase details (purchase_details.sql). numeric comes back as a number. */
+  purchase_price?: number | null;
+  purchase_date?: string | null;
+  purchase_shop?: string | null;
   is_box: boolean;
   box_group_id: string | null;
   box_name: string | null;
@@ -384,6 +388,10 @@ export interface PendingBarcodeUiItem {
   targetCollectionNames: string[];
   /** Who submitted it (profiles; admins can read every profile). */
   submitter?: { id: string; name: string | null; email: string | null } | null;
+  /** The submitter's track record: trusted = many approved, none rejected. */
+  submitterStats?: { approved: number; rejected: number; trusted: boolean } | null;
+  /** The same barcode is already registered for OTHER titles (not a box). */
+  conflicts?: number[];
 }
 
 /** One admin-approval card — either a single film, or a box's several film
@@ -464,9 +472,14 @@ export interface UserFeedback {
 /** user_notifications (contributors_region.sql). */
 export interface UserNotification {
   id: string;
-  kind: "barcode_approved" | "barcode_rejected";
+  kind: "barcode_approved" | "barcode_rejected" | "loan_reminder";
   payload: {
     title?: string;
+    /** loan_reminder (loan_reminders.sql) */
+    loanedTo?: string;
+    loanedAt?: string;
+    collectionId?: string;
+    itemId?: string;
     poster?: string | null;
     barcode?: string;
     isBox?: boolean;

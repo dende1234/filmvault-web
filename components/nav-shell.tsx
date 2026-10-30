@@ -10,7 +10,6 @@ import {
   LibraryBig,
   LogOut,
   Menu,
-  User,
   Info,
   X,
   Users,
@@ -25,7 +24,6 @@ import {
   BarChart3,
   Megaphone,
   ShieldQuestion,
-  Store,
   CalendarDays,
   Bookmark,
   Tags,
@@ -37,11 +35,18 @@ import {
   LifeBuoy,
   MessageSquareText,
   Inbox,
+  ScanLine,
+  ScanBarcode,
+  ClipboardCheck,
+  ScrollText,
+  Sparkles,
+  Activity,
   Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n/locale-provider";
 import { signOut } from "@/actions/auth";
+import { clearSnapshot } from "@/lib/shop-offline";
 import type { Profile } from "@/types/database";
 import { Logo } from "@/components/brand/logo";
 import { Avatar } from "@/components/avatar";
@@ -168,22 +173,24 @@ export function NavShell({
 
       <NavLink href="/dashboard" icon={LayoutDashboard} label={t("dashboard_title")} onNavigate={close} />
 
-      <SectionLabel>{t("nav_section_films")}</SectionLabel>
-      <NavLink href="/films" icon={Film} label={t("nav_films_series")} onNavigate={close} />
-      <NavLink href="/watched" icon={Eye} label={t("nav_watched")} onNavigate={close} />
+      <SectionLabel>{t("nav_section_collection")}</SectionLabel>
       <NavLink href="/collections" icon={LibraryBig} label={t("collections_label")} onNavigate={close} />
+      <NavLink href="/scannen" icon={ScanBarcode} label={t("nav_scan")} onNavigate={close} />
+      <NavLink href="/wishlist" icon={Bookmark} label={t("nav_wishlist")} onNavigate={close} />
+      <NavLink href="/watched" icon={Eye} label={t("nav_watched")} onNavigate={close} />
+
+      <SectionLabel>{t("nav_section_discover")}</SectionLabel>
+      <NavLink href="/films" icon={Film} label={t("nav_films_series")} onNavigate={close} />
       <NavLink href="/reeksen" icon={Layers} label={t("franchise_nav")} onNavigate={close} />
-      <NavLink href="/winkelmodus" icon={Store} label={t("shop_nav")} onNavigate={close} />
+      <NavLink href="/upgrades" icon={Sparkles} label={t("upgrades_nav")} onNavigate={close} />
       <NavLink href="/lists" icon={ListChecks} label={t("nav_lists")} onNavigate={close} />
       <NavLink href="/recap" icon={CalendarDays} label={t("nav_yearly_recap")} onNavigate={close} />
-      <NavLink href="/wishlist" icon={Bookmark} label={t("nav_wishlist")} onNavigate={close} />
 
-      <SectionLabel>{t("nav_section_profile")}</SectionLabel>
-      <NavLink href="/profile" icon={User} label={t("profile_title")} onNavigate={close} />
-      <NavLink href="/meldingen" icon={Bell} label={t("notifications_title")} onNavigate={close} count={unreadNotifications} />
+      <SectionLabel>{t("nav_section_social")}</SectionLabel>
+      <NavLink href="/feed" icon={Rss} label={t("nav_feed")} onNavigate={close} />
       <NavLink href="/friends" icon={Users} label={t("nav_friends")} onNavigate={close} />
       <NavLink href="/badges" icon={Award} label={t("nav_badges")} onNavigate={close} />
-      <NavLink href="/feed" icon={Rss} label={t("nav_feed")} onNavigate={close} />
+      <NavLink href="/meldingen" icon={Bell} label={t("notifications_title")} onNavigate={close} count={unreadNotifications} />
 
       {profile?.is_admin && (
         <>
@@ -201,13 +208,17 @@ export function NavShell({
           </button>
           {adminOpen && (
             <>
+              <NavLink href="/admin/status" icon={Activity} label={t("admin_status_label")} onNavigate={close} />
               <NavLink href="/admin/pending-barcodes" icon={FileCheck} label={t("pending_approvals_label")} onNavigate={close} />
               <NavLink href="/admin/add-film" icon={FilePlus} label={t("admin_add_film_label")} onNavigate={close} />
+              <NavLink href="/admin/scan-shelf" icon={ScanLine} label={t("admin_shelf_scan_label")} onNavigate={close} />
               <NavLink href="/admin/manage-films" icon={Pencil} label={t("admin_manage_films_label")} onNavigate={close} />
+              <NavLink href="/admin/quality" icon={ClipboardCheck} label={t("admin_quality_label")} onNavigate={close} />
               <NavLink href="/admin/manage-types" icon={Tags} label={t("admin_manage_types_label")} onNavigate={close} />
               <NavLink href="/admin/users" icon={ShieldCheck} label={t("admin_users_label")} onNavigate={close} />
               <NavLink href="/admin/reports" icon={Flag} label={t("admin_reports_label")} onNavigate={close} />
               <NavLink href="/admin/feedback" icon={Inbox} label={t("admin_feedback_title")} onNavigate={close} count={feedbackNewCount} />
+              <NavLink href="/admin/log" icon={ScrollText} label={t("admin_log_label")} onNavigate={close} />
               <NavLink href="/admin/stats" icon={BarChart3} label={t("admin_stats_label")} onNavigate={close} />
               <NavLink href="/admin/growth" icon={TrendingUp} label={t("admin_growth_label")} onNavigate={close} />
               <NavLink href="/admin/announcement" icon={Megaphone} label={t("admin_announcement_label")} onNavigate={close} />
@@ -259,6 +270,7 @@ export function NavShell({
         <button
           onClick={() => {
             close();
+            clearSnapshot();
             signOut().then(() => {
               router.replace("/login");
               router.refresh();
@@ -327,8 +339,8 @@ export function NavShell({
 
         <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t print:hidden border-border/60 bg-background/85 pb-[env(safe-area-inset-bottom)] backdrop-blur-md md:hidden">
           <TabLink href="/dashboard" icon={LayoutDashboard} label={t("nav_home")} />
-          <TabLink href="/films" icon={Film} label={t("films_label")} />
           <TabLink href="/collections" icon={LibraryBig} label={t("collections_label")} />
+          <TabLink href="/scannen" icon={ScanBarcode} label={t("nav_scan")} />
           <TabLink href="/wishlist" icon={Bookmark} label={t("nav_wishlist")} />
           <button
             type="button"

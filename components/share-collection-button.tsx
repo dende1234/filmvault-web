@@ -5,16 +5,35 @@ import { Copy, Globe, Lock, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { setCollectionPublic } from "@/actions/collections";
+import { setWishlistPublic } from "@/actions/wishlist";
+import type { Dictionary } from "@/lib/i18n/dictionary";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-/** Owner-only "Delen" for a collection: switch "openbaar via link" on/off
- * and copy/share the public /c/<id> link. Off by default. */
-export function ShareCollectionButton({ collectionId, initialPublic, shareUrl }: { collectionId: string; initialPublic: boolean; shareUrl: string }) {
-  const { t } = useT();
+type ShareKey =
+  | "button" | "copied" | "copy" | "description" | "error" | "link_label" | "privacy_note"
+  | "public_label" | "public_on" | "public_off" | "share" | "title";
+
+/** Owner-only "Delen": switch "openbaar via link" on/off and copy/share the
+ * public link. Off by default. For a collection (/c/<id>, collectionId set)
+ * or your wishlist (/v/<userId>, kind "wishlist"). */
+export function ShareCollectionButton({
+  kind = "collection",
+  collectionId,
+  initialPublic,
+  shareUrl,
+}: {
+  kind?: "collection" | "wishlist";
+  collectionId?: string;
+  initialPublic: boolean;
+  shareUrl: string;
+}) {
+  const { t: translate } = useT();
+  const t = (key: `share_collection_${ShareKey}`) =>
+    translate((kind === "wishlist" ? key.replace("share_collection_", "share_wishlist_") : key) as keyof Dictionary);
   const [open, setOpen] = useState(false);
   const [isPublic, setIsPublic] = useState(initialPublic);
   const [isPending, startTransition] = useTransition();
@@ -22,7 +41,7 @@ export function ShareCollectionButton({ collectionId, initialPublic, shareUrl }:
   function toggle(next: boolean) {
     setIsPublic(next);
     startTransition(async () => {
-      const result = await setCollectionPublic(collectionId, next);
+      const result = kind === "wishlist" ? await setWishlistPublic(next) : await setCollectionPublic(collectionId!, next);
       if (result.error) {
         setIsPublic(!next);
         toast.error(t("share_collection_error"));
@@ -35,7 +54,7 @@ export function ShareCollectionButton({ collectionId, initialPublic, shareUrl }:
       await navigator.clipboard.writeText(shareUrl);
       toast.success(t("share_collection_copied"));
     } catch {
-      toast.error(t("invite_copied_failed"));
+      toast.error(translate("invite_copied_failed"));
     }
   }
 
@@ -61,14 +80,14 @@ export function ShareCollectionButton({ collectionId, initialPublic, shareUrl }:
           </DialogHeader>
           <div className="flex flex-col gap-4">
             <div className="flex items-start gap-3 rounded-lg border border-border/70 bg-card p-3">
-              <Checkbox id="collection-public" checked={isPublic} disabled={isPending} onCheckedChange={(v) => toggle(v === true)} className="mt-0.5" />
-              <Label htmlFor="collection-public" className="flex flex-col gap-0.5">
+              <Checkbox id={`${kind}-public`} checked={isPublic} disabled={isPending} onCheckedChange={(v) => toggle(v === true)} className="mt-0.5" />
+              <Label htmlFor={`${kind}-public`} className="flex flex-col gap-0.5">
                 <span className="flex items-center gap-1.5 font-medium">
                   {isPublic ? <Globe className="size-4 text-primary" /> : <Lock className="size-4 text-muted-foreground" />}
                   {t("share_collection_public_label")}
                 </span>
                 <span className="text-xs font-normal text-muted-foreground">
-                  {t(isPublic ? "share_collection_public_on" : "share_collection_public_off")}
+                  {isPublic ? t("share_collection_public_on") : t("share_collection_public_off")}
                 </span>
               </Label>
             </div>

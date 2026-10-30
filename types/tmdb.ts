@@ -72,7 +72,14 @@ export interface ReleaseDatesDto {
   results: { iso_3166_1: string; release_dates: { certification: string; type: number }[] }[];
 }
 
+/** TMDB watch providers (data by JustWatch), per country. */
+export type WatchProviderDto = { provider_id: number; provider_name: string; logo_path: string | null; display_priority?: number };
+export type WatchProvidersDto = {
+  results: Record<string, { link?: string; flatrate?: WatchProviderDto[]; free?: WatchProviderDto[]; ads?: WatchProviderDto[]; rent?: WatchProviderDto[]; buy?: WatchProviderDto[] }>;
+};
+
 export interface MovieDetailFullDto extends MovieDetailDto {
+  "watch/providers"?: WatchProvidersDto;
   tagline: string | null;
   vote_count: number;
   credits: { cast: CastMemberDto[]; crew: CrewMemberDto[] };
@@ -128,6 +135,7 @@ export interface AggregateCastDto {
 }
 
 export interface TvDetailFullDto extends TvDetailDto {
+  "watch/providers"?: WatchProvidersDto;
   aggregate_credits: { cast: AggregateCastDto[] };
   videos: { results: VideoDto[] };
   recommendations: { results: TvSummaryDto[] };

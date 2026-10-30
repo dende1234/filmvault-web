@@ -6,14 +6,8 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Package, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
-import {
-  addExistingBarcodesToCollections,
-  addKnownBoxToCollections,
-  getUserCollections,
-  setCopyCollections,
-  type OwnedCopy,
-  type ScannedBarcodeResult,
-} from "@/actions/collections";
+import { getUserCollections, setCopyCollections } from "@/actions/collections";
+import { addExistingBarcodesToCollections, addKnownBoxToCollections, type OwnedCopy, type ScannedBarcodeResult } from "@/actions/barcodes";
 import { removeFromWishlistIfCovered } from "@/actions/wishlist";
 import type { Collection } from "@/types/database";
 import { cn } from "@/lib/utils";

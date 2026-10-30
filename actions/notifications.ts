@@ -7,6 +7,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { isMissingError } from "@/lib/admin/migrations";
 import type { UserNotification } from "@/types/database";
 
 function isMissing(error: { code?: string } | null) {
@@ -32,6 +33,19 @@ export async function getUnreadNotificationCount(): Promise<number> {
     .is("read_at", null);
   if (error) return 0;
   return count ?? 0;
+}
+
+/** Loan reminders (loan_reminders.sql): a notification for each copy you
+ * lent out more than 30 days ago, once per loan. Called when the dashboard
+ * opens; quietly does nothing before the SQL has run. */
+export async function createLoanReminders(): Promise<number> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_my_loan_reminders", { p_days: 30 });
+  if (error) {
+    if (!isMissingError(error)) console.error("create_my_loan_reminders", error);
+    return 0;
+  }
+  return typeof data === "number" ? data : 0;
 }
 
 export async function markNotificationsRead(): Promise<void> {

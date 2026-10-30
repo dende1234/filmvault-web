@@ -1,13 +1,13 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, EyeOff, Lightbulb, MessageCircle, SendHorizontal, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import { useT } from "@/lib/i18n/locale-provider";
 import { HELP_ENTRIES } from "@/lib/help/faq";
 import { entriesForPage, matchHelp, type HelpEntry, type Lang } from "@/lib/help/match";
-import { logHelpQuestion, rateHelpQuestion } from "@/actions/help";
+import { getHelpAnswerEntries, logHelpQuestion, rateHelpQuestion } from "@/actions/help";
 import type { FeedbackKind } from "@/types/database";
 import { cn } from "@/lib/utils";
 import { FeedbackForm } from "@/components/feedback-form";
@@ -18,7 +18,7 @@ import { ReelMascot } from "@/components/help/reel-mascot";
 const POPULAR = ["add-film", "scan-barcode", "import-csv", "share-collection"];
 /** Pages with their own sticky action bar at the bottom: no floating Reel there
  * (the panel still opens from the menu). */
-const QUIET_PATHS = ["/collections/scan", "/collections/import"];
+const QUIET_PATHS = ["/scannen", "/collections/import"];
 const BUBBLE_SEEN_KEY = "fv_reel_bubble_seen"; // sessionStorage: once per session
 const BUBBLE_OFF_KEY = "fv_reel_bubble_off"; // localStorage: "don't show again"
 
@@ -85,6 +85,20 @@ export function ReelAssistant({
   const nextId = useRef(1);
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Answers admins added (help_answers.sql), loaded the first time Reel opens.
+  const [extra, setExtra] = useState<HelpEntry[] | null>(null);
+  const entries = useMemo(() => (extra?.length ? [...HELP_ENTRIES, ...extra] : HELP_ENTRIES), [extra]);
+
+  useEffect(() => {
+    if (!open || extra !== null) return;
+    let cancelled = false;
+    getHelpAnswerEntries()
+      .catch(() => [])
+      .then((list) => !cancelled && setExtra(list));
+    return () => {
+      cancelled = true;
+    };
+  }, [open, extra]);
 
   // Greeting bubble: once per session, until "don't show again".
   useEffect(() => {
@@ -139,7 +153,7 @@ export function ReelAssistant({
     if (!question) return;
     started();
     setInput("");
-    const matches = matchHelp(question, HELP_ENTRIES, pathname);
+    const matches = matchHelp(question, entries, pathname);
     const best = matches[0]?.entry ?? null;
     const answerId = id();
     setMessages((m) => [
@@ -160,7 +174,7 @@ export function ReelAssistant({
   }
 
   const suggestions = (() => {
-    const forPage = entriesForPage(HELP_ENTRIES, pathname);
+    const forPage = entriesForPage(entries, pathname);
     return forPage.length > 0
       ? { title: t("reel_page_help"), entries: forPage }
       : { title: t("reel_popular"), entries: HELP_ENTRIES.filter((e) => POPULAR.includes(e.id)) };

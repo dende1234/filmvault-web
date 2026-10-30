@@ -22,6 +22,8 @@ import { WatchedButton } from "@/components/watched/watched-button";
 import { FilmLogCard } from "@/components/watched/film-log-card";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WatchProviders } from "@/components/movie/watch-providers";
+import { watchCountry as getWatchCountry } from "@/lib/watch-country";
 
 function pickTrailer(tv: TvDetailFullDto) {
   const videos = (tv.videos?.results ?? []).filter((v) => v.site === "YouTube");
@@ -44,6 +46,7 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
 
   const locale = await getLocale();
   const dict = getDictionary(locale);
+  const watchCountry = await getWatchCountry();
 
   let tv: TvDetailFullDto;
   try {
@@ -128,6 +131,7 @@ export default async function SeriesDetailPage({ params }: { params: Promise<{ i
 
       <div className="mx-auto grid w-full max-w-6xl gap-10 lg:grid-cols-[1fr_20rem]">
         <div className="flex min-w-0 flex-col gap-10">
+          <WatchProviders providers={tv["watch/providers"]} country={watchCountry} dict={dict} locale={locale} />
           {tv.overview && (
             <section className="flex flex-col gap-3">
               <h2 className="font-display text-xl font-semibold tracking-tight">{dict.movie_overview_title}</h2>

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getLocale } from "@/lib/preferences";
 import { getMovieCollectionRef, getTmdbCollection } from "@/lib/tmdb/server";
 import { isSeries } from "@/lib/titles";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 
 export type FranchisePart = { id: number; title: string; poster: string | null; year: string | null; owned: boolean; wished: boolean };
 export type Franchise = { id: number; name: string; poster: string | null; parts: FranchisePart[]; owned: number };
@@ -41,12 +42,10 @@ async function ownedAndWished() {
   const owned = new Set<number>();
   const colIds = (cols ?? []).map((c: { id: string }) => c.id);
   if (colIds.length > 0) {
-    for (let from = 0; ; from += 1000) {
-      const { data, error } = await supabase.from("collection_items").select("tmdb_movie_id").in("collection_id", colIds).range(from, from + 999);
-      if (error) throw error;
-      for (const r of (data ?? []) as { tmdb_movie_id: number }[]) if (!isSeries(r.tmdb_movie_id)) owned.add(r.tmdb_movie_id);
-      if (!data || data.length < 1000) break;
-    }
+    const rows = await fetchAll<{ tmdb_movie_id: number }>((from, to) =>
+      supabase.from("collection_items").select("tmdb_movie_id").in("collection_id", colIds).order("id").range(from, to),
+    );
+    for (const r of rows) if (!isSeries(r.tmdb_movie_id)) owned.add(r.tmdb_movie_id);
   }
   const { data: wl } = await supabase.from("wishlist_items").select("tmdb_movie_id").eq("user_id", user.id);
   const wished = new Set(((wl ?? []) as { tmdb_movie_id: number }[]).map((w) => w.tmdb_movie_id));

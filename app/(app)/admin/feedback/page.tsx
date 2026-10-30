@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getFeedbackList } from "@/actions/feedback";
-import { getHelpQuestions } from "@/actions/help";
+import { getHelpQuestions, listHelpAnswers } from "@/actions/help";
 import { requireAdmin } from "@/lib/require-admin";
 import { cn } from "@/lib/utils";
 import { getDictionary } from "@/lib/i18n/dictionary";
@@ -50,7 +50,7 @@ export default async function AdminFeedbackPage({
   );
 
   if (params.tab === "help") {
-    const rows = await getHelpQuestions();
+    const [rows, answers] = await Promise.all([getHelpQuestions(), listHelpAnswers()]);
     return (
       <div className="mx-auto flex max-w-4xl flex-col gap-6">
         <PageHeader title={dict.admin_feedback_title} description={dict.admin_feedback_description} />
@@ -58,7 +58,7 @@ export default async function AdminFeedbackPage({
         {rows === null ? (
           <p className="text-sm text-destructive">{dict.admin_help_not_ready}</p>
         ) : (
-          <AdminHelpQuestions rows={rows} dict={dict} locale={locale} />
+          <AdminHelpQuestions rows={rows} answers={answers} dict={dict} locale={locale} />
         )}
       </div>
     );

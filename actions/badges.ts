@@ -4,19 +4,11 @@
 // same "check and award on visit" model (no DB trigger/cron).
 
 import { createClient } from "@/lib/supabase/server";
+import { requireUserId } from "@/lib/auth";
 import { getUserCollections, getCollectionItemsForCollections } from "@/actions/collections";
 import { getAcceptedFriendIds } from "@/actions/friends";
 import { getPostsByAuthor } from "@/actions/posts";
 import type { UserBadge } from "@/types/database";
-
-async function requireUserId() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("not authenticated");
-  return user.id;
-}
 
 export async function getEarnedBadges(): Promise<UserBadge[]> {
   const supabase = await createClient();

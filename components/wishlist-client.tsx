@@ -16,8 +16,10 @@ import { Button } from "@/components/ui/button";
 import { isSeries } from "@/lib/titles";
 import { useSeasonsLabel } from "@/components/seasons-picker";
 import { cn } from "@/lib/utils";
+import { ShareCollectionButton } from "@/components/share-collection-button";
 
-export function WishlistClient({ items: initialItems }: { items: WishlistItem[] }) {
+/** share: the "Delen" switch + link; null before public_wishlist.sql. */
+export function WishlistClient({ items: initialItems, share }: { items: WishlistItem[]; share?: { isPublic: boolean; url: string } | null }) {
   const { t } = useT();
   const [items, setItems] = useState(initialItems);
   const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
@@ -64,7 +66,8 @@ export function WishlistClient({ items: initialItems }: { items: WishlistItem[] 
         }
         actions={
           items.length > 0 ? (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
+              {share && <ShareCollectionButton kind="wishlist" initialPublic={share.isPublic} shareUrl={share.url} />}
               {[false, true].map((only) => (
                 <button
                   key={String(only)}

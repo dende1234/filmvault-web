@@ -6,7 +6,7 @@ import { useT } from "@/lib/i18n/locale-provider";
 import { Button, type ButtonProps } from "@/components/ui/button";
 
 /** Shares (or copies) a personal invite link. The `?ref=invite-…` source is
- * picked up by the middleware's fv_src cookie and recorded on signup, so
+ * picked up by the proxy's fv_src cookie and recorded on signup, so
  * invites show up as their own source in the growth stats. */
 export function InviteButton({ url, variant = "secondary", size }: { url: string; variant?: ButtonProps["variant"]; size?: ButtonProps["size"] }) {
   const { t } = useT();
