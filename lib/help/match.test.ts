@@ -16,6 +16,17 @@ describe("matchHelp", () => {
     }
   });
 
+  it("answers questions about the newer features", () => {
+    const cases: [string, string][] = [
+      ["Waar kan ik deze film streamen?", "streaming"],
+      ["kan ik mijn verlanglijst delen", "wishlist-share"],
+      ["aankoopprijs bijhouden voor de verzekering", "value"],
+      ["collectie vergelijken met een vriend", "compare-friend"],
+      ["werkt de winkelmodus offline", "shop-offline"],
+    ];
+    for (const [q, id] of cases) expect(matchHelp(q, HELP_ENTRIES)[0]?.entry.id, q).toBe(id);
+  });
+
   it("tolerates a small typo", () => {
     expect(matchHelp("exporteeren", HELP_ENTRIES).length).toBeGreaterThan(0);
   });

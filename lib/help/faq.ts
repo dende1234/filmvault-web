@@ -367,11 +367,11 @@ export const HELP_ENTRIES: HelpEntry[] = [
   {
     id: "wishlist-share",
     category: "wishlist",
-    possible: false,
+    possible: true,
     q: { nl: "Kan ik mijn verlanglijst delen?", en: "Can I share my wishlist?" },
     a: {
-      nl: "Dat kan nog niet: je verlanglijst is alleen voor jou. Een deelbare link (bijvoorbeeld voor verjaardagen) staat op de ideeënlijst.",
-      en: "Not yet: your wishlist is private. A shareable link (for birthdays, say) is on the ideas list.",
+      nl: "Ja. Klik op je [verlanglijst](/wishlist) op **Delen** en zet **Openbaar via link** aan. Wie de link heeft ziet je titels (Holy Grails bovenaan), ook zonder account. Zet je het uit, dan werkt de link niet meer.",
+      en: "Yes. On your [wishlist](/wishlist) click **Share** and switch on **Public via link**. Anyone with the link sees your titles (Holy Grails first), even without an account. Switch it off and the link stops working.",
     },
     keywords: { nl: ["verlanglijst delen", "cadeau", "verjaardag"], en: ["share wishlist", "gift", "birthday"] },
     pages: ["/wishlist"],
@@ -507,6 +507,66 @@ export const HELP_ENTRIES: HelpEntry[] = [
     },
     keywords: { nl: ["telefoon", "mobiel", "iphone", "beginscherm"], en: ["phone", "mobile", "iphone", "home screen"] },
   },
+  {
+    id: "value",
+    category: "copy",
+    possible: true,
+    q: { nl: "Kan ik de waarde of aankoopprijs van mijn collectie bijhouden?", en: "Can I track the value or purchase price of my collection?" },
+    a: {
+      nl: "Ja. Open een exemplaar en vul bij **Aankoop** de prijs, datum en winkel in. De totale waarde zie je bovenaan de collectie en in het [printoverzicht](/collections/print), handig voor je verzekering. De CSV-export en -import nemen ze ook mee.",
+      en: "Yes. Open a copy and fill in price, date and shop under **Purchase**. The total value shows at the top of the collection and in the [printable overview](/collections/print), handy for insurance. The CSV export and import carry them too.",
+    },
+    keywords: { nl: ["waarde", "aankoopprijs", "wat heb ik betaald", "verzekering", "totale waarde", "prijs", "gekocht bij"], en: ["value", "purchase price", "what i paid", "insurance", "worth", "price paid", "bought at"] },
+    pages: ["/collections"],
+  },
+  {
+    id: "streaming",
+    category: "watched",
+    possible: true,
+    q: { nl: "Kan ik zien waar een film te streamen is?", en: "Can I see where a film is streaming?" },
+    a: {
+      nl: "Ja, op de pagina van een film of serie staat **Te zien in Nederland** (of België): bij welke diensten je hem kunt streamen, huren of kopen. De gegevens komen van JustWatch via TMDB.",
+      en: "Yes, a film or series page shows **Watch in the Netherlands** (or Belgium): where you can stream, rent or buy it. The data comes from JustWatch via TMDB.",
+    },
+    keywords: { nl: ["streamen", "netflix", "videoland", "disney", "prime", "waar te zien", "kijken online", "huren"], en: ["stream", "streaming", "netflix", "disney", "prime", "where to watch", "rent"] },
+    pages: ["/films", "/series"],
+  },
+  {
+    id: "upgrades",
+    category: "collections",
+    possible: true,
+    q: { nl: "Welke films heb ik op dvd die ook op Blu-ray of 4K bestaan?", en: "Which DVDs do I own that also exist on Blu-ray or 4K?" },
+    a: {
+      nl: "Kijk bij [Upgrade-tips](/upgrades): titels die je alleen op dvd of Blu-ray hebt terwijl de filmlijst een betere uitgave kent. Met één tik zet je ze op je verlanglijst.",
+      en: "See [Upgrade tips](/upgrades): titles you own only on DVD or Blu-ray while the film list knows a better release. One tap puts them on your wishlist.",
+    },
+    keywords: { nl: ["upgrade", "4k", "blu-ray", "betere kwaliteit", "vervangen", "dvd vervangen"], en: ["upgrade", "4k", "blu-ray", "better quality", "replace dvd"] },
+    pages: ["/upgrades"],
+  },
+  {
+    id: "compare-friend",
+    category: "social",
+    possible: true,
+    q: { nl: "Kan ik mijn collectie vergelijken met die van een vriend?", en: "Can I compare my collection with a friend's?" },
+    a: {
+      nl: "Ja. Open een vriend via [Vrienden](/friends); onder de collecties staat **Vergelijken**: wat alleen zij hebben, wat alleen jij hebt, wat jullie allebei hebben en welke titels van je verlanglijst zij bezitten (lenen!).",
+      en: "Yes. Open a friend via [Friends](/friends); below their collections is **Compare**: what only they have, what only you have, what you both have and which wishlist titles they own (borrow it!).",
+    },
+    keywords: { nl: ["vergelijken", "vriend vergelijken", "wat heeft hij", "lenen van vriend", "overlap"], en: ["compare", "compare friend", "what do they have", "borrow from friend", "overlap"] },
+    pages: ["/friends"],
+  },
+  {
+    id: "shop-offline",
+    category: "add",
+    possible: true,
+    q: { nl: "Werkt de winkelmodus zonder bereik?", en: "Does shop mode work without signal?" },
+    a: {
+      nl: "Ja, als je de [winkelmodus](/scannen?modus=winkel) één keer met verbinding opent. Je collectie en verlanglijst worden dan op je telefoon bewaard en zonder bereik zie je nog steeds of je iets hebt, in een andere editie hebt of op je verlanglijst hebt staan.",
+      en: "Yes, if you open [shop mode](/scannen?modus=winkel) once with a connection. Your collection and wishlist are then saved on your phone, and without signal you still see whether you own something, own another edition or have it on your wishlist.",
+    },
+    keywords: { nl: ["offline", "geen bereik", "zonder internet", "geen wifi", "kelder", "beurs"], en: ["offline", "no signal", "no internet", "no wifi", "fair"] },
+    pages: ["/scannen"],
+  },
   // ---------- Not possible yet ----------
   {
     id: "games",
@@ -518,17 +578,6 @@ export const HELP_ENTRIES: HelpEntry[] = [
       en: "No, Filmory is for films and series (DVD, Blu-ray, 4K UHD). Games or music aren't possible. Would you like that? Let us know and we'll count the votes.",
     },
     keywords: { nl: ["games", "spellen", "muziek", "cd", "vinyl", "boeken"], en: ["games", "music", "cd", "vinyl", "books"] },
-  },
-  {
-    id: "value",
-    category: "not-yet",
-    possible: false,
-    q: { nl: "Kan ik de waarde of aankoopprijs van mijn collectie bijhouden?", en: "Can I track the value or purchase price of my collection?" },
-    a: {
-      nl: "Dat kan nog niet. Je kunt wel een notitie per exemplaar gebruiken. Aankoopprijs en totale waarde staan op de ideeënlijst.",
-      en: "Not yet. You can use a note per copy. Purchase price and total value are on the ideas list.",
-    },
-    keywords: { nl: ["waarde", "aankoopprijs", "wat heb ik betaald", "verzekering", "totale waarde"], en: ["value", "purchase price", "what i paid", "insurance", "worth"] },
   },
   {
     id: "android-app",
