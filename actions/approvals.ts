@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { BarcodeAlreadyRegisteredError } from "@/lib/errors";
 import { requireAdmin } from "@/lib/require-admin";
+import { isMissingError } from "@/lib/admin/migrations";
 import { detailsColumns } from "@/lib/copy-details";
 import { seasonsField } from "@/lib/seasons";
 import { getCollectionIdsContainingBarcode, getCollectionIdsContainingMovie } from "@/actions/collections";
@@ -23,6 +24,7 @@ export async function getPendingBarcodes(status: "pending" | "rejected" = "pendi
   if (error) throw error;
   return data as PendingBarcode[];
 }
+
 /** Admin: puts rejected submissions back in the queue (e.g. rejected by
  * mistake). They can then be approved as usual; the submitter is notified
  * again by the trigger in approval_notifications.sql. */
@@ -35,6 +37,7 @@ export async function restoreRejectedBarcodes(ids: string[]): Promise<void> {
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
 }
+
 export async function getPendingBarcodeCollectionLinks(pendingBarcodeIds: string[]): Promise<PendingBarcodeCollectionRow[]> {
   if (pendingBarcodeIds.length === 0) return [];
   const supabase = await createClient();
@@ -45,6 +48,7 @@ export async function getPendingBarcodeCollectionLinks(pendingBarcodeIds: string
   if (error) throw error;
   return data as PendingBarcodeCollectionRow[];
 }
+
 /** Admin-only shortcut: registers a barcode straight into the master
  * `barcodes` list — skips pending-approval entirely AND does not add it to
  * any collection. Deliberately separate from addBarcodesToCollections/
@@ -78,6 +82,7 @@ export async function adminRegisterBarcode(
   }
   return data.id as string;
 }
+
 /** Admin-only: corrects an existing master film-list entry (e.g. a wrongly
  * registered type/editie), or removes it entirely. Relies on the
  * admin-only barcodes UPDATE/DELETE RLS policies in admin_tools.sql. */
@@ -87,33 +92,45 @@ export async function updateBarcodeDetails(barcodeId: string, type: string, edit
   const { error } = await supabase.from("barcodes").update({ type, editie }).eq("id", barcodeId);
   if (error) throw error;
 }
+
 export async function deleteBarcode(barcodeId: string): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
   const { error } = await supabase.from("barcodes").delete().eq("id", barcodeId);
   if (error) throw error;
 }
+
 async function getPendingBarcodeById(supabase: Awaited<ReturnType<typeof createClient>>, id: string): Promise<PendingBarcode> {
   const { data, error } = await supabase.from("pending_barcodes").select("*").eq("id", id).eq("status", "pending").single();
   if (error) throw error;
   return data as PendingBarcode;
 }
+
 async function barcodeAlreadyExists(supabase: Awaited<ReturnType<typeof createClient>>, tmdbMovieId: number, barcode: string) {
   const { data } = await supabase.from("barcodes").select("id").eq("tmdb_movie_id", tmdbMovieId).eq("barcode", barcode);
   return (data ?? []).length > 0;
 }
+
+function afterApproval() {
+  revalidatePath("/admin/pending-barcodes");
+  revalidatePath("/admin/add-film");
+}
+
 // The submitter's "approved / rejected" notification is made by the database
 // (trigger in approval_notifications.sql), so a review from any client,
 // the Android app included, notifies once.
 
-/**
- * Sequential, not atomic — acceptable tradeoff for this iteration (no
- * Postgres RPC). Guards against duplicating a barcode that another
- * (near-simultaneous) approval already registered for this film.
- */
+/** Approves in one transaction via approve_pending_barcode()
+ * (supabase/sql/approve_pending.sql). Until that has run: the old step-by-
+ * step version below, which guards against duplicating a barcode that a
+ * near-simultaneous approval already registered for this film. */
 export async function approvePendingBarcode(pendingFromClient: PendingBarcode): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
+  const { error: rpcError } = await supabase.rpc("approve_pending_barcode", { p_id: pendingFromClient.id });
+  if (!rpcError) return afterApproval();
+  if (!isMissingError(rpcError)) throw rpcError;
+
   // Only the id is trusted from the client — the row's contents are re-read.
   const pending = await getPendingBarcodeById(supabase, pendingFromClient.id);
   const { error: statusError } = await supabase
@@ -166,6 +183,7 @@ export async function approvePendingBarcode(pendingFromClient: PendingBarcode): 
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
 }
+
 export async function rejectPendingBarcode(id: string): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
@@ -175,15 +193,20 @@ export async function rejectPendingBarcode(id: string): Promise<void> {
   revalidatePath("/admin/pending-barcodes");
   revalidatePath("/admin/add-film");
 }
+
 /** Box variant of approvePendingBarcode — pendingRows must all share the
  * same box_group_id (one film per row). Approves every row, upserts each
  * film into barcodes (tagged with the shared box_group_id/box_name), then
  * inserts one collection_items row per (film x eligible collection); a
  * collection is skipped if it already contains ANY film from this box.
- * Sequential, not atomic — same tradeoff as approvePendingBarcode. */
+ * One transaction via approve_pending_box(); same fallback as above. */
 export async function approvePendingBox(pendingRowsFromClient: PendingBarcode[]): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
+  const { error: rpcError } = await supabase.rpc("approve_pending_box", { p_ids: pendingRowsFromClient.map((r) => r.id) });
+  if (!rpcError) return afterApproval();
+  if (!isMissingError(rpcError)) throw rpcError;
+
   // Only the ids are trusted from the client — the rows' contents are re-read.
   const pendingRows = await Promise.all(pendingRowsFromClient.map((row) => getPendingBarcodeById(supabase, row.id)));
   const first = pendingRows[0];

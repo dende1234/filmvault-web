@@ -22,12 +22,14 @@ import type { Barcode, BoxFilmInput, CollectionItem, NewBarcodeInput, PendingBar
 export async function getOwnedCopiesOfTitle(tmdbMovieId: number): Promise<OwnedCopy[]> {
   return toOwnedCopies(await ownedCopies({ tmdbIds: [tmdbMovieId] }));
 }
+
 export async function getBarcodesForMovie(tmdbMovieId: number): Promise<Barcode[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.from("barcodes").select("*").eq("tmdb_movie_id", tmdbMovieId);
   if (error) throw error;
   return data as Barcode[];
 }
+
 /** No DB constraint makes a barcode value globally unique — for a normal item
  * this is defensive against an accidental duplicate row, but for a box it's
  * the whole point: all films in the box share this barcode value. */
@@ -37,6 +39,7 @@ export async function findBarcodesByCode(code: string): Promise<Barcode[]> {
   if (error) throw error;
   return data as Barcode[];
 }
+
 /** Existing-barcode path: one collection_items row per (barcode x collection)
  * pair, but all rows for the same barcode share one item_group_id. Dedup is
  * per exact barcode, not per movie — a collection may hold several
@@ -90,6 +93,7 @@ export async function addExistingBarcodesToCollections(
     ),
   );
 }
+
 /** Known-box path: films already approved (found via findBarcodesByCode) go
  * straight into collection_items, one row per (film x collection), each film
  * with its own item_group_id but sharing the box's box_group_id/box_name. A
@@ -133,12 +137,14 @@ export async function addKnownBoxToCollections(
   revalidatePath("/collections", "layout");
   return alreadyContaining;
 }
+
 async function insertPendingBarcodeCollectionLinks(supabase: Awaited<ReturnType<typeof createClient>>, pendingBarcodeId: string, collectionIds: string[]) {
   const { error } = await supabase
     .from("pending_barcode_collections")
     .insert(collectionIds.map((collectionId) => ({ pending_barcode_id: pendingBarcodeId, collection_id: collectionId })));
   if (error) throw error;
 }
+
 /** Like insertPendingBarcodeCollectionLinks, but skips links that already exist
  * (a re-submission of something still waiting). */
 async function addMissingPendingLinks(supabase: Awaited<ReturnType<typeof createClient>>, pendingBarcodeId: string, collectionIds: string[]) {
@@ -146,6 +152,7 @@ async function addMissingPendingLinks(supabase: Awaited<ReturnType<typeof create
   const missing = collectionIds.filter((id) => !existing.has(id));
   if (missing.length > 0) await insertPendingBarcodeCollectionLinks(supabase, pendingBarcodeId, missing);
 }
+
 /** New-box path: submitting a box whose barcode isn't known yet goes through
  * admin approval — one pending_barcodes row per film, all sharing a fresh
  * box_group_id/box_name, same barcode. */
@@ -192,6 +199,7 @@ export async function addNewBoxAsPending(
   }
   revalidatePath("/collections", "layout");
 }
+
 /** New-barcode path: one pending_barcodes row per staged barcode — collection_id
  * keeps the first-selected collection for backward compatibility, the full
  * target list is recorded in pending_barcode_collections. */
@@ -234,6 +242,7 @@ export async function addNewBarcodesAsPending(
   }
   revalidatePath("/collections", "layout");
 }
+
 /**
  * Re-checks staged "new" barcodes against the live barcodes table (another
  * user may have registered the same barcode meanwhile) before deciding which
@@ -273,6 +282,7 @@ export async function addBarcodesToCollections(
 
   return nothingAddedFor;
 }
+
 /** Your own submissions of this barcode that are still waiting: submitting it
  * again (e.g. because nothing seemed to happen) shouldn't queue it twice. */
 async function ownPendingWithBarcode(supabase: Awaited<ReturnType<typeof createClient>>, submittedBy: string, barcode: string) {
@@ -284,6 +294,7 @@ async function ownPendingWithBarcode(supabase: Awaited<ReturnType<typeof createC
     .eq("status", "pending");
   return (data ?? []) as { id: string; tmdb_movie_id: number; is_box: boolean }[];
 }
+
 /** One physical copy you own (all collections it is in), for the scan result. */
 export type OwnedCopy = {
   itemId: string;
@@ -296,6 +307,7 @@ export type OwnedCopy = {
   label: string | null;
   region: string | null;
 };
+
 export type ScannedBarcodeResult =
   | { kind: "none"; barcode: string }
   | {
@@ -342,6 +354,7 @@ async function ownedCopies(match: { barcode?: string; boxGroupId?: string | null
   const { data } = await query;
   return ((data ?? []) as CollectionItem[]).map((row) => ({ row, collectionName: names.get(row.collection_id) ?? "" }));
 }
+
 function toOwnedCopies(rows: OwnedRow[]): OwnedCopy[] {
   const byGroup = new Map<string, OwnedCopy>();
   for (const { row, collectionName } of rows) {
@@ -368,6 +381,7 @@ function toOwnedCopies(rows: OwnedRow[]): OwnedCopy[] {
   }
   return Array.from(byGroup.values());
 }
+
 /** What a scanned barcode is on the master film list: one film/series,
  * a box, or unknown (then the user picks the title and it goes to approval). */
 export async function lookupScannedBarcode(raw: string): Promise<ScannedBarcodeResult> {
