@@ -1214,4 +1214,6 @@ export const nl = {
   import_field_price: "Aankoopprijs",
   import_field_purchaseDate: "Aankoopdatum",
   import_field_shop: "Winkel",
+  notifications_loan_reminder: "{0} is al ruim een maand uitgeleend aan {1}. Tijd om hem terug te vragen?",
+  notifications_loan_since: "uitgeleend sinds {0}",
 };

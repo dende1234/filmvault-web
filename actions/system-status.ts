@@ -39,7 +39,6 @@ export async function getSystemStatus(): Promise<{ migrations: MigrationStatus[]
     env("BREVO_LIST_ID"),
     env("BREVO_DOI_TEMPLATE_ID"),
     env("ANTHROPIC_API_KEY"),
-    env("CRON_SECRET"),
   ];
   return { migrations, settings };
 }

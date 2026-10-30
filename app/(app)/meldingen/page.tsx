@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, CheckCircle2, Hourglass, XCircle } from "lucide-react";
+import { Bell, CheckCircle2, HandHelping, Hourglass, XCircle } from "lucide-react";
 import { getMyPendingSubmissions, getNotifications } from "@/actions/notifications";
 import { MarkNotificationsRead } from "@/components/mark-notifications-read";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
@@ -60,6 +60,35 @@ export default async function NotificationsPage() {
       ) : items.length === 0 ? null : (
         <ul className="flex flex-col gap-2">
           {items.map((n) => {
+            if (n.kind === "loan_reminder") {
+              const since = n.payload.loanedAt ? date.format(new Date(n.payload.loanedAt)) : "";
+              const href = n.payload.collectionId && n.payload.itemId ? `/collections/${n.payload.collectionId}/items/${n.payload.itemId}` : null;
+              const body = (
+                <CardContent className="flex items-start gap-3 pt-5">
+                  <HandHelping className="mt-0.5 size-5 shrink-0 text-warning" aria-hidden />
+                  <div className="flex min-w-0 flex-col gap-1">
+                    <p className="text-sm">{format(dict.notifications_loan_reminder, n.payload.title ?? "", n.payload.loanedTo ?? "")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {since && <>{format(dict.notifications_loan_since, since)} · </>}
+                      {date.format(new Date(n.created_at))}
+                    </p>
+                  </div>
+                </CardContent>
+              );
+              return (
+                <li key={n.id}>
+                  <Card className={cn(!n.read_at && "border-primary/40 bg-primary/5")}>
+                    {href ? (
+                      <Link href={href} className="block rounded-card hover:bg-elevated/40">
+                        {body}
+                      </Link>
+                    ) : (
+                      body
+                    )}
+                  </Card>
+                </li>
+              );
+            }
             const approved = n.kind === "barcode_approved";
             const Icon = approved ? CheckCircle2 : XCircle;
             const title = n.payload.title ?? n.payload.barcode ?? "";

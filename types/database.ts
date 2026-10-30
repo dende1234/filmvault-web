@@ -468,9 +468,14 @@ export interface UserFeedback {
 /** user_notifications (contributors_region.sql). */
 export interface UserNotification {
   id: string;
-  kind: "barcode_approved" | "barcode_rejected";
+  kind: "barcode_approved" | "barcode_rejected" | "loan_reminder";
   payload: {
     title?: string;
+    /** loan_reminder (loan_reminders.sql) */
+    loanedTo?: string;
+    loanedAt?: string;
+    collectionId?: string;
+    itemId?: string;
     poster?: string | null;
     barcode?: string;
     isBox?: boolean;

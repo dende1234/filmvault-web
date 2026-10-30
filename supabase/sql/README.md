@@ -10,7 +10,7 @@ again):
 1. `approve_pending.sql` — approve a submitted barcode/box in one transaction
 2. `dashboard_stats.sql` — dashboard numbers computed in the database
 3. `purchase_details.sql` — purchase price, date and shop per copy
-4. `loan_reminders.sql` — reminder notification for loans older than 30 days
+4. `loan_reminders.sql` — reminder notification for loans older than 30 days (made when the dashboard opens)
 5. `public_wishlist.sql` — share your wishlist via a link
 6. `help_answers.sql` — Reel answers managed from /admin/feedback
 7. `admin_log.sql` — log of admin actions

@@ -1211,4 +1211,6 @@ export const en: Record<keyof typeof nl, string> = {
   import_field_price: "Purchase price",
   import_field_purchaseDate: "Purchase date",
   import_field_shop: "Shop",
+  notifications_loan_reminder: "{0} has been lent to {1} for over a month. Time to ask for it back?",
+  notifications_loan_since: "lent since {0}",
 };

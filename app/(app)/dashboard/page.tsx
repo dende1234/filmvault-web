@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Eye, EyeOff, Film, LibraryBig, Play } from "lucide-react";
 import { getUserCollections, getDashboardData } from "@/actions/collections";
 import { getOrCreateProfile } from "@/actions/profile";
+import { createLoanReminders } from "@/actions/notifications";
 import { getFollowingCount } from "@/actions/follows";
 import { getAcceptedFriendIds } from "@/actions/friends";
 import { SITE_URL } from "@/lib/site";
@@ -53,7 +54,7 @@ function ItemPoster({ item }: { item: CollectionItem }) {
 export default async function DashboardPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  const [collections, profile] = await Promise.all([getUserCollections(), getOrCreateProfile()]);
+  const [collections, profile] = await Promise.all([getUserCollections(), getOrCreateProfile(), createLoanReminders()]);
   // Same physical film can span multiple collections (shared item_group_id) —
   // counted/shown once, mirrors DashboardViewModel.kt.
   const stats = await getDashboardData(collections.map((c) => c.id));
