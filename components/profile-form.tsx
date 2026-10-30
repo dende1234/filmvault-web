@@ -8,6 +8,7 @@ import { Avatar } from "@/components/avatar";
 import { NewsletterToggle } from "@/components/newsletter-toggle";
 import { EmailDigestToggle } from "@/components/email-digest-toggle";
 import { PushToggle } from "@/components/push-toggle";
+import { NotifyPrefsForm } from "@/components/notify-prefs-form";
 import { updateProfile, setThemePreference, setLocale, deleteAccount } from "@/actions/profile";
 import { signOut } from "@/actions/auth";
 import type { Profile, ThemePreference } from "@/types/database";
@@ -155,6 +156,11 @@ export function ProfileForm({ profile }: { profile: Profile }) {
             <p className="mb-2 text-sm font-medium">{t("push_title")}</p>
             <PushToggle />
           </div>
+          <div className="border-t border-border/60 pt-4">
+            <p className="mb-1 text-sm font-medium">{t("notify_prefs_title")}</p>
+            <p className="mb-2 text-xs text-muted-foreground">{t("notify_prefs_hint")}</p>
+            <NotifyPrefsForm initial={profile.notify_prefs} />
+          </div>
         </CardContent>
       </Card>
 
@@ -172,6 +178,16 @@ export function ProfileForm({ profile }: { profile: Profile }) {
       ) : (
         <Button onClick={() => setIsEditing(true)}>{t("profile_edit_button")}</Button>
       )}
+
+      <div className="mt-4 border-t border-border pt-6">
+        <h2 className="mb-2 text-base font-semibold">{t("data_export_title")}</h2>
+        <p className="mb-3 text-sm text-muted-foreground">{t("data_export_hint")}</p>
+        <Button asChild variant="outline" className="w-full">
+          <a href="/api/export/all" download>
+            {t("data_export_button")}
+          </a>
+        </Button>
+      </div>
 
       <div className="mt-4 border-t border-border pt-6">
         <h2 className="mb-2 text-base font-semibold text-destructive">{t("profile_danger_zone_title")}</h2>

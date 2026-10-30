@@ -28,6 +28,8 @@ export interface Profile {
   newsletter_opt_in_at?: string | null;
   /** Weekly e-mail summary (email_digest.sql). */
   email_digest?: boolean;
+  /** Per-kind push/e-mail choices (notification_prefs.sql); missing = yes. */
+  notify_prefs?: import("@/lib/notify-prefs").NotifyPrefs;
 }
 
 export interface Collection {
