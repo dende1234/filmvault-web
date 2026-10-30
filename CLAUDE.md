@@ -12,9 +12,11 @@ npm run build   # production build (also the type check, since there is no separ
 npm run lint    # eslint (next core-web-vitals + typescript config)
 npm test        # vitest: unit tests for the pure helpers in lib/ (lib/**/*.test.ts)
 npx vitest run lib/seasons.test.ts   # a single test file
+npm run test:e2e   # Playwright (e2e/): against `next start` on :3100 after `npm run build`, or E2E_BASE_URL; member tests need E2E_EMAIL/E2E_PASSWORD
+npm run db:types   # supabase gen types → types/supabase.generated.ts (needs the Supabase CLI login and SUPABASE_PROJECT_ID)
 ```
 
-CI (`.github/workflows/ci.yml`, Node 22) runs `npm ci`, `npm run lint`, `npm test` and `npm run build` with dummy env values. Tests cover pure functions only (no database); keep new parsing/matching logic in plain `lib/` modules so it can be tested.
+CI (`.github/workflows/ci.yml`, Node 22) runs `npm ci`, `npm run lint`, `npm test`, `npm run build` and the public e2e tests (pages render, signed-out redirect, axe finds no serious accessibility issues) with dummy env values. Tests cover pure functions only (no database); keep new parsing/matching logic in plain `lib/` modules so it can be tested.
 
 Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `TMDB_API_KEY` (required to build/run); optional: `NEXT_PUBLIC_SITE_URL`, `BREVO_API_KEY`/`BREVO_LIST_ID`/`BREVO_DOI_TEMPLATE_ID` (newsletter), `FEEDBACK_SALT` (IP hashing), `NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION`, `ANTHROPIC_API_KEY` (admin shelf scan, `lib/ai/shelf-scan.ts`; runtime only).
 
