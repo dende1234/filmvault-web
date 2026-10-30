@@ -11,6 +11,7 @@ const KIND_LABEL = {
   barcode: "notify_kind_barcode",
   friends: "notify_kind_friends",
   loan: "notify_kind_loan",
+  news: "notify_kind_news",
 } as const;
 
 /** Which kinds arrive by push and by e-mail (digest). Friend requests only

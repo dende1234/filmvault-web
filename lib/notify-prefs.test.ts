@@ -11,6 +11,7 @@ describe("notification preferences", () => {
   it("maps notification kinds", () => {
     expect(kindOfNotification("barcode_rejected")).toBe("barcode");
     expect(kindOfNotification("loan_reminder")).toBe("loan");
+    expect(kindOfNotification("announcement")).toBe("news");
     expect(kindOfNotification("something_else")).toBeNull();
   });
 });

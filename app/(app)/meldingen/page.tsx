@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, CheckCircle2, HandHelping, Hourglass, XCircle } from "lucide-react";
+import { Bell, CheckCircle2, HandHelping, Megaphone, Hourglass, XCircle } from "lucide-react";
 import { getMyPendingSubmissions, getNotifications } from "@/actions/notifications";
 import { MarkNotificationsRead } from "@/components/mark-notifications-read";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
@@ -60,6 +60,22 @@ export default async function NotificationsPage() {
       ) : items.length === 0 ? null : (
         <ul className="flex flex-col gap-2">
           {items.map((n) => {
+            if (n.kind === "announcement") {
+              return (
+                <li key={n.id}>
+                  <Card className={cn(!n.read_at && "border-primary/40 bg-primary/5")}>
+                    <CardContent className="flex items-start gap-3 pt-5">
+                      <Megaphone className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden />
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <p className="text-sm font-medium">{n.payload.title}</p>
+                        {n.payload.body && <p className="whitespace-pre-line text-sm text-muted-foreground">{n.payload.body}</p>}
+                        <p className="text-xs text-muted-foreground">{date.format(new Date(n.created_at))}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </li>
+              );
+            }
             if (n.kind === "loan_reminder") {
               const since = n.payload.loanedAt ? date.format(new Date(n.payload.loanedAt)) : "";
               const href = n.payload.collectionId && n.payload.itemId ? `/collections/${n.payload.collectionId}/items/${n.payload.itemId}` : null;

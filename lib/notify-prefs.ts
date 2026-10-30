@@ -1,7 +1,8 @@
 /** Per-kind notification choices (notification_prefs.sql): profiles.notify_prefs
- * = { push: { barcode: false }, email: { loan: false } }. Missing = yes. */
+ * = { push: { barcode: false }, email: { loan: false } }. Missing = yes.
+ * "news" = announcements from the Filmory team (announcements.sql). */
 
-export const NOTIFY_KINDS = ["barcode", "friends", "loan"] as const;
+export const NOTIFY_KINDS = ["barcode", "friends", "loan", "news"] as const;
 export type NotifyKind = (typeof NOTIFY_KINDS)[number];
 export type NotifyChannel = "push" | "email";
 export type NotifyPrefs = Partial<Record<NotifyChannel, Partial<Record<NotifyKind, boolean>>>>;
@@ -14,6 +15,7 @@ export function wants(prefs: NotifyPrefs | null | undefined, channel: NotifyChan
 export function kindOfNotification(kind: string): NotifyKind | null {
   if (kind === "barcode_approved" || kind === "barcode_rejected") return "barcode";
   if (kind === "loan_reminder") return "loan";
+  if (kind === "announcement") return "news";
   if (kind.startsWith("friend")) return "friends";
   return null;
 }

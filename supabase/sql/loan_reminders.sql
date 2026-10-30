@@ -21,7 +21,7 @@ begin
   end loop;
   alter table public.user_notifications
     add constraint user_notifications_kind_check
-    check (kind in ('barcode_approved', 'barcode_rejected', 'loan_reminder'));
+    check (kind in ('barcode_approved', 'barcode_rejected', 'loan_reminder', 'announcement'));
 end $$;
 
 create or replace function public.create_my_loan_reminders(p_days int default 30)

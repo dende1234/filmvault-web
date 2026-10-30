@@ -32,6 +32,9 @@ const ACTIONS: AdminAction[] = [
   "comment_delete",
   "feature_change",
   "announcement_send",
+  "announcement_schedule",
+  "announcement_cancel",
+  "titles_refresh",
   "help_answer_save",
   "help_answer_delete",
 ];

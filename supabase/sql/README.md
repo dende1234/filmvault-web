@@ -35,6 +35,7 @@ Third round:
 20. `smart_collections.sql` — saved filters that act as collections
 21. `feature_flags.sql` — switch features on per group or percentage
 22. `notification_prefs.sql` — push/e-mail choices per notification kind
+23. `announcements.sql` — planned and targeted announcements
 
 The web app keeps working before a file has run; `/admin/status` shows which
 ones are still missing.
