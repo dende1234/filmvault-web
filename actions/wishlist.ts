@@ -149,3 +149,39 @@ export async function addManyToWishlist(items: { tmdbMovieId: number; title: str
   revalidatePath("/reeksen");
   return rows.length;
 }
+
+export type PublicWishlist = {
+  owner_id: string;
+  owner_name: string | null;
+  owner_avatar: string | null;
+  items: Pick<WishlistItem, "tmdb_movie_id" | "movie_title" | "movie_poster" | "seasons" | "is_grail" | "added_at">[];
+};
+
+/** Logged-out-safe read of a shared wishlist (null = not shared, or
+ * public_wishlist.sql hasn't run). Holy Grails first. */
+export async function getPublicWishlist(userId: string): Promise<PublicWishlist | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(userId)) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("get_public_wishlist", { p_user_id: userId });
+  if (error || !data) return null;
+  return data as PublicWishlist;
+}
+
+/** Whether your wishlist is shared; null before public_wishlist.sql. */
+export async function getWishlistPublic(): Promise<boolean | null> {
+  const supabase = await createClient();
+  const userId = await requireUserId();
+  const { data, error } = await supabase.from("profiles").select("wishlist_public").eq("id", userId).maybeSingle();
+  if (error) return null;
+  return (data as { wishlist_public?: boolean } | null)?.wishlist_public === true;
+}
+
+export async function setWishlistPublic(isPublic: boolean): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+  const userId = await requireUserId();
+  const { error } = await supabase.from("profiles").update({ wishlist_public: isPublic }).eq("id", userId);
+  if (error) return { error: error.code === "PGRST204" ? "not_ready" : error.message };
+  revalidatePath("/wishlist");
+  revalidatePath(`/v/${userId}`);
+  return { error: null };
+}
