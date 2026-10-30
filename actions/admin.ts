@@ -17,15 +17,6 @@ import { isValidEanUpc, normalizeBarcode } from "@/lib/barcode";
 import { getLocale } from "@/lib/preferences";
 import type { AdminProfile, AdminStats, Barcode, PendingBarcode } from "@/types/database";
 import type { MovieSummaryDto } from "@/types/tmdb";
-import { fetchAll } from "@/lib/supabase/fetch-all";
-
-export async function getAllProfiles(): Promise<AdminProfile[]> {
-  await requireAdmin();
-  const supabase = await createClient();
-  return fetchAll<AdminProfile>((from, to) =>
-    supabase.from("profiles").select("id, name, email, avatar_url, is_admin, created_at").order("created_at").range(from, to),
-  );
-}
 
 export async function setUserAdminStatus(targetUserId: string, isAdmin: boolean): Promise<void> {
   await requireAdmin();
@@ -257,4 +248,67 @@ export async function getGrowthStats(): Promise<GrowthStats | null> {
   const { data, error } = await supabase.rpc("admin_growth_stats");
   if (error) return null;
   return data as GrowthStats;
+}
+
+const USERS_PAGE = 50;
+
+/** /admin/users: search on name or e-mail, newest members first, 50 a page. */
+export async function getProfilesPage(query: string, page: number): Promise<{ profiles: AdminProfile[]; total: number; pageSize: number }> {
+  await requireAdmin();
+  const supabase = await createClient();
+  // PostgREST's or() syntax uses , ( ) and * — keep them out of the term.
+  const q = query.replace(/[,()*%\\]/g, " ").trim().slice(0, 80);
+  let builder = supabase
+    .from("profiles")
+    .select("id, name, email, avatar_url, is_admin, created_at", { count: "exact" })
+    .order("created_at", { ascending: false, nullsFirst: false })
+    .range(page * USERS_PAGE, page * USERS_PAGE + USERS_PAGE - 1);
+  if (q) builder = builder.or(`name.ilike.*${q}*,email.ilike.*${q}*`);
+  const { data, error, count } = await builder;
+  if (error) throw error;
+  return { profiles: (data ?? []) as AdminProfile[], total: count ?? 0, pageSize: USERS_PAGE };
+}
+
+export type AdminUserDetail = {
+  profile: AdminProfile;
+  /** null before admin_users.sql has run. */
+  overview: { collections: number; public_collections: number; copies: number; wishlist: number; last_added: string | null } | null;
+  submissions: { pending: number; approved: number; rejected: number; recent: Pick<PendingBarcode, "id" | "barcode" | "movie_title" | "status" | "submitted_at">[] };
+  feedback: { id: string; created_at: string; kind: string; message: string; status: string }[];
+};
+
+/** /admin/users/<id>: one member at a glance. */
+export async function getAdminUserDetail(userId: string): Promise<AdminUserDetail | null> {
+  await requireAdmin();
+  if (!/^[0-9a-f-]{36}$/i.test(userId)) return null;
+  const supabase = await createClient();
+  const { data: profile } = await supabase.from("profiles").select("id, name, email, avatar_url, is_admin, created_at").eq("id", userId).maybeSingle();
+  if (!profile) return null;
+
+  const countStatus = (status: string) =>
+    supabase.from("pending_barcodes").select("id", { count: "exact", head: true }).eq("submitted_by", userId).eq("status", status);
+  const [overview, pending, approved, rejected, recent, feedback] = await Promise.all([
+    supabase.rpc("admin_user_overview", { p_user_id: userId }),
+    countStatus("pending"),
+    countStatus("approved"),
+    countStatus("rejected"),
+    supabase
+      .from("pending_barcodes")
+      .select("id, barcode, movie_title, status, submitted_at")
+      .eq("submitted_by", userId)
+      .order("submitted_at", { ascending: false })
+      .limit(20),
+    supabase.from("user_feedback").select("id, created_at, kind, message, status").eq("user_id", userId).order("created_at", { ascending: false }).limit(10),
+  ]);
+  return {
+    profile: profile as AdminProfile,
+    overview: overview.error ? null : (overview.data as AdminUserDetail["overview"]),
+    submissions: {
+      pending: pending.count ?? 0,
+      approved: approved.count ?? 0,
+      rejected: rejected.count ?? 0,
+      recent: (recent.data ?? []) as AdminUserDetail["submissions"]["recent"],
+    },
+    feedback: (feedback.data ?? []) as AdminUserDetail["feedback"],
+  };
 }

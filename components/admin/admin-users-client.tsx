@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MoreVertical } from "lucide-react";
 import { toast } from "sonner";
@@ -37,7 +38,6 @@ export function AdminUsersClient({ profiles, currentUserId }: { profiles: AdminP
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="font-display text-3xl font-semibold tracking-tight">{t("admin_users_label")}</h1>
 
       {profiles.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("admin_users_empty")}</p>
@@ -48,7 +48,9 @@ export function AdminUsersClient({ profiles, currentUserId }: { profiles: AdminP
               <CardContent className="flex items-center justify-between gap-3 pt-5">
                 <div>
                   <p className="flex items-center gap-2 font-medium">
-                    {profile.name || t("friends_unnamed_user")}
+                    <Link href={`/admin/users/${profile.id}`} className="hover:text-primary">
+                      {profile.name || t("friends_unnamed_user")}
+                    </Link>
                     {profile.is_admin && (
                       <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-primary-foreground">
                         {t("admin_users_admin_badge")}

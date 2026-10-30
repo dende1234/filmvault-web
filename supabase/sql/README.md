@@ -14,6 +14,7 @@ again):
 5. `public_wishlist.sql` — share your wishlist via a link
 6. `help_answers.sql` — Reel answers managed from /admin/feedback
 7. `admin_log.sql` — log of admin actions
+8. `admin_users.sql` — counts per member on /admin/users/<id>
 
 The web app keeps working before a file has run; `/admin/status` shows which
 ones are still missing.
