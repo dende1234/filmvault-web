@@ -30,6 +30,7 @@ const ACTIONS: AdminAction[] = [
   "user_unblock",
   "post_delete",
   "comment_delete",
+  "feature_change",
   "announcement_send",
   "help_answer_save",
   "help_answer_delete",

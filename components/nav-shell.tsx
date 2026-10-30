@@ -37,6 +37,7 @@ import {
   Inbox,
   ScanLine,
   ScanBarcode,
+  ToggleRight,
   CalendarClock,
   PieChart,
   Search,
@@ -237,6 +238,7 @@ export function NavShell({
               <NavLink href="/admin/users" icon={ShieldCheck} label={t("admin_users_label")} onNavigate={close} />
               <NavLink href="/admin/reports" icon={Flag} label={t("moderation_title")} onNavigate={close} />
               <NavLink href="/admin/feedback" icon={Inbox} label={t("admin_feedback_title")} onNavigate={close} count={feedbackNewCount} />
+              <NavLink href="/admin/features" icon={ToggleRight} label={t("features_title")} onNavigate={close} />
               <NavLink href="/admin/log" icon={ScrollText} label={t("admin_log_label")} onNavigate={close} />
               <NavLink href="/admin/stats" icon={BarChart3} label={t("admin_stats_label")} onNavigate={close} />
               <NavLink href="/admin/growth" icon={TrendingUp} label={t("admin_growth_label")} onNavigate={close} />

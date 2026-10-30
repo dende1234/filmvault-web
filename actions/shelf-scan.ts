@@ -5,7 +5,7 @@
 // be added by picking a release the master film list already has.
 
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/require-admin";
+import { featureOn } from "@/lib/features";
 import type { Barcode } from "@/types/database";
 
 export type KnownSingleRelease = { barcode: string; type: string; editie: string };
@@ -13,7 +13,7 @@ export type KnownSingleRelease = { barcode: string; type: string; editie: string
 const MAX_TITLES = 100;
 
 export async function getKnownReleases(tmdbIds: number[]): Promise<Record<number, KnownSingleRelease[]>> {
-  await requireAdmin();
+  if (!(await featureOn("shelf_scan"))) throw new Error("forbidden");
   const ids = Array.from(new Set(tmdbIds)).slice(0, MAX_TITLES);
   if (ids.length === 0) return {};
   const supabase = await createClient();
