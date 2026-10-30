@@ -1,5 +1,6 @@
 import { CheckCircle2, CircleHelp, XCircle } from "lucide-react";
 import { getSystemStatus, type ProbeState } from "@/actions/system-status";
+import { getRecentErrors } from "@/actions/errors";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
 import { PageHeader } from "@/components/page-header";
@@ -12,13 +13,47 @@ const ICON: Record<ProbeState, typeof CheckCircle2> = { ok: CheckCircle2, missin
 const COLOR: Record<ProbeState, string> = { ok: "text-success", missing: "text-destructive", unknown: "text-muted-foreground" };
 
 export default async function AdminStatusPage() {
-  const dict = getDictionary(await getLocale());
-  const { migrations, settings } = await getSystemStatus();
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const [{ migrations, settings }, errors] = await Promise.all([getSystemStatus(), getRecentErrors()]);
+  const when = new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "nl-NL", { dateStyle: "short", timeStyle: "short" });
   const missing = migrations.filter((m) => m.state === "missing").length;
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6">
       <PageHeader title={dict.admin_status_title} description={dict.admin_status_subtitle} />
+
+      <Card>
+        <CardContent className="flex flex-col gap-3 pt-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display text-xl font-semibold tracking-tight">{dict.admin_errors_title}</h2>
+            {errors && <Badge variant={errors.length === 0 ? "success" : "warning"}>{format(dict.admin_errors_count, errors.length)}</Badge>}
+          </div>
+          {errors === null ? (
+            <p className="text-sm text-muted-foreground">{dict.admin_errors_not_ready}</p>
+          ) : errors.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{dict.admin_errors_none}</p>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {errors.map((e) => (
+                <li key={e.id} className="flex flex-col gap-0.5 py-2 text-sm">
+                  <p className="flex flex-wrap items-center gap-2">
+                    <Badge variant={e.source === "server" ? "destructive" : "warning"}>{e.source}</Badge>
+                    <span className="font-mono text-xs">{e.path ?? "?"}</span>
+                    <span className="text-xs text-muted-foreground">{when.format(new Date(e.created_at))}</span>
+                  </p>
+                  <details>
+                    <summary className="cursor-pointer truncate text-xs">{e.message.split("\n")[0]}</summary>
+                    <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 text-[11px]">
+                      {[e.message, e.digest && `digest: ${e.digest}`, e.context, e.user_agent].filter(Boolean).join("\n")}
+                    </pre>
+                  </details>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardContent className="flex flex-col gap-3 pt-5">

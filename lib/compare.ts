@@ -1,6 +1,6 @@
 /** Compare two collections by title (tmdb_movie_id), each title once. Pure. */
 
-export type CompareTitle = { tmdbId: number; title: string; poster: string | null };
+export type CompareTitle = { tmdbId: number; title: string; poster: string | null; trade?: "sale" | "trade" | "both"; wished?: boolean };
 
 export type Comparison = {
   onlyThem: CompareTitle[];
@@ -8,9 +8,11 @@ export type Comparison = {
   both: CompareTitle[];
   /** On your wishlist and in their collection: borrow it, or ask where they got it. */
   wishTheyHave: CompareTitle[];
+  /** What they marked for sale or trade (trade_list.sql), your wishlist titles first. */
+  theirTrades: CompareTitle[];
 };
 
-type Row = { tmdb_movie_id: number; movie_title: string; movie_poster: string | null };
+type Row = { tmdb_movie_id: number; movie_title: string; movie_poster: string | null; for_trade?: "sale" | "trade" | "both" | null };
 
 function byTitle(rows: Row[]): Map<number, CompareTitle> {
   const m = new Map<number, CompareTitle>();
@@ -29,5 +31,12 @@ export function compareCollections(mine: Row[], theirs: Row[], myWishlist: { tmd
     onlyMe: sorted([...me.values()].filter((t) => !them.has(t.tmdbId))),
     both: sorted([...me.values()].filter((t) => them.has(t.tmdbId))),
     wishTheyHave: sorted([...them.values()].filter((t) => wished.has(t.tmdbId) && !me.has(t.tmdbId))),
+    theirTrades: Array.from(
+      new Map(
+        theirs
+          .filter((r) => r.for_trade)
+          .map((r) => [r.tmdb_movie_id, { tmdbId: r.tmdb_movie_id, title: r.movie_title, poster: r.movie_poster, trade: r.for_trade!, wished: wished.has(r.tmdb_movie_id) }]),
+      ).values(),
+    ).sort((a, b) => Number(b.wished) - Number(a.wished) || a.title.localeCompare(b.title, "nl")),
   };
 }

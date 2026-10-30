@@ -30,3 +30,14 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
           TMDB_API_KEY: dummy-tmdb-key
+
+      # Public pages render, signed-out visitors are redirected, and axe finds
+      # no serious accessibility problems (member tests skip without an account).
+      - run: npx playwright install --with-deps chromium
+
+      - name: End-to-end (public pages)
+        run: npm run test:e2e
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: dummy-anon-key
+          TMDB_API_KEY: dummy-tmdb-key

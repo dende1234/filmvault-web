@@ -69,7 +69,7 @@ export interface VideoDto {
 }
 
 export interface ReleaseDatesDto {
-  results: { iso_3166_1: string; release_dates: { certification: string; type: number }[] }[];
+  results: { iso_3166_1: string; release_dates: { certification: string; type: number; release_date?: string; note?: string }[] }[];
 }
 
 /** TMDB watch providers (data by JustWatch), per country. */

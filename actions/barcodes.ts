@@ -13,6 +13,7 @@ import { getTitleDetail } from "@/lib/tmdb/server";
 import { normalizeBarcode } from "@/lib/barcode";
 import { detailsColumns } from "@/lib/copy-details";
 import { seasonsField } from "@/lib/seasons";
+import { isMissingError } from "@/lib/admin/migrations";
 import { getCollectionIdsContainingBarcode, getCollectionIdsContainingMovie } from "@/actions/collections";
 import { getPendingBarcodeCollectionLinks } from "@/actions/approvals";
 import type { Barcode, BoxFilmInput, CollectionItem, NewBarcodeInput, PendingBarcode } from "@/types/database";
@@ -218,6 +219,7 @@ export async function addNewBarcodesAsPending(
     const waiting = (await ownPendingWithBarcode(supabase, submittedBy, staged.barcode)).find((p) => p.tmdb_movie_id === tmdbMovieId && !p.is_box);
     if (waiting) {
       await addMissingPendingLinks(supabase, waiting.id, collectionIds);
+      await approveIfTrusted(supabase, waiting.id);
       continue;
     }
     const row: Record<string, unknown> = {
@@ -239,8 +241,17 @@ export async function addNewBarcodesAsPending(
     }
     if (error) throw error;
     await insertPendingBarcodeCollectionLinks(supabase, (inserted as PendingBarcode).id, collectionIds);
+    await approveIfTrusted(supabase, (inserted as PendingBarcode).id);
   }
   revalidatePath("/collections", "layout");
+}
+
+/** A trusted contributor's submission is approved right away
+ * (approve_own_trusted in auto_approve.sql); for everyone else, or before
+ * that SQL has run, it simply stays in the queue. */
+async function approveIfTrusted(supabase: Awaited<ReturnType<typeof createClient>>, pendingId: string) {
+  const { error } = await supabase.rpc("approve_own_trusted", { p_id: pendingId });
+  if (error && !isMissingError(error)) console.error("approve_own_trusted", error);
 }
 
 /**

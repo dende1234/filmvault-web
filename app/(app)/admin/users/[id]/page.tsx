@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { getAdminUserDetail } from "@/actions/admin";
+import { getAdminUserDetail, getTrusted } from "@/actions/admin";
+import { TrustedToggle } from "@/components/admin/trusted-toggle";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
 import { Avatar } from "@/components/avatar";
@@ -17,7 +18,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
   const { id } = await params;
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  const detail = await getAdminUserDetail(id);
+  const [detail, trusted] = await Promise.all([getAdminUserDetail(id), getTrusted(id)]);
   if (!detail) notFound();
   const { profile, overview, submissions, feedback } = detail;
   const date = new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "nl-NL", { dateStyle: "medium" });
@@ -53,6 +54,12 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
         <p className="text-sm text-muted-foreground">{dict.admin_user_overview_not_ready}</p>
       )}
       {overview?.last_added && <p className="-mt-3 text-xs text-muted-foreground">{format(dict.admin_user_last_added, date.format(new Date(overview.last_added)))}</p>}
+
+      {trusted === null ? (
+        <p className="text-xs text-muted-foreground">{dict.admin_trusted_not_ready}</p>
+      ) : (
+        <TrustedToggle userId={profile.id} initial={trusted} />
+      )}
 
       <Card>
         <CardHeader>

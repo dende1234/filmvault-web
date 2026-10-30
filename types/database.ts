@@ -26,6 +26,8 @@ export interface Profile {
   /** E-mail consent (growth_tracking.sql). Absent until that migration runs. */
   newsletter_opt_in?: boolean;
   newsletter_opt_in_at?: string | null;
+  /** Weekly e-mail summary (email_digest.sql). */
+  email_digest?: boolean;
 }
 
 export interface Collection {
@@ -89,6 +91,8 @@ export interface CollectionItem {
   purchase_price?: number | null;
   purchase_date?: string | null;
   purchase_shop?: string | null;
+  /** Ruillijst (trade_list.sql). */
+  for_trade?: "sale" | "trade" | "both" | null;
   is_box: boolean;
   box_group_id: string | null;
   box_name: string | null;

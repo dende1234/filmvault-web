@@ -578,6 +578,40 @@ export const HELP_ENTRIES: HelpEntry[] = [
     keywords: { nl: ["offline", "geen bereik", "zonder internet", "geen wifi", "kelder", "beurs"], en: ["offline", "no signal", "no internet", "no wifi", "fair"] },
     pages: ["/scannen"],
   },
+  {
+    id: "search",
+    category: "collections",
+    possible: true,
+    q: { nl: "Hoe zoek ik in al mijn collecties tegelijk?", en: "How do I search all my collections at once?" },
+    a: {
+      nl: "Druk ergens op **/** (of Ctrl/⌘+K), of tik op **Zoeken** in het menu. Je zoekt op titel of barcode in al je collecties, je verlanglijst en je bekeken films.",
+      en: "Press **/** anywhere (or Ctrl/⌘+K), or tap **Search** in the menu. You search by title or barcode across all your collections, your wishlist and your watched films.",
+    },
+    keywords: { nl: ["zoeken", "zoek", "vinden", "waar staat", "alle collecties", "barcode zoeken"], en: ["search", "find", "where is", "all collections", "search barcode"] },
+  },
+  {
+    id: "statistics",
+    category: "collections",
+    possible: true,
+    q: { nl: "Waar zie ik statistieken van mijn collectie?", en: "Where do I see statistics of my collection?" },
+    a: {
+      nl: "Bij [Statistieken](/statistieken): aantal exemplaren, hoeveel je hebt gezien, de aankoopwaarde, wat je per maand toevoegde en de verdeling over formaten, edities, labels en winkels.",
+      en: "In [Statistics](/statistieken): number of copies, how much you've watched, the purchase value, what you added per month and the split by format, edition, label and shop.",
+    },
+    keywords: { nl: ["statistieken", "cijfers", "overzicht", "hoeveel films", "grafiek"], en: ["statistics", "stats", "numbers", "how many films", "chart"] },
+    pages: ["/statistieken"],
+  },
+  {
+    id: "trade",
+    category: "social",
+    possible: true,
+    q: { nl: "Kan ik films te koop of te ruil aanbieden?", en: "Can I offer films for sale or trade?" },
+    a: {
+      nl: "Ja. Open een exemplaar en kies bij **Ruilen of verkopen** te koop, te ruil of allebei. Vrienden zien het als ze hun collectie met de jouwe vergelijken, met titels van hun verlanglijst bovenaan.",
+      en: "Yes. Open a copy and choose for sale, for trade or both under **Trade or sell**. Friends see it when they compare their collection with yours, titles on their wishlist first.",
+    },
+    keywords: { nl: ["ruilen", "verkopen", "te koop", "te ruil", "ruillijst", "dubbel kwijt"], en: ["trade", "sell", "for sale", "for trade", "trade list"] },
+  },
   // ---------- Not possible yet ----------
   {
     id: "games",
@@ -603,14 +637,15 @@ export const HELP_ENTRIES: HelpEntry[] = [
   },
   {
     id: "email-notifications",
-    category: "not-yet",
-    possible: false,
-    q: { nl: "Kan ik meldingen per e-mail krijgen?", en: "Can I get notifications by email?" },
+    category: "account",
+    possible: true,
+    q: { nl: "Kan ik meldingen per e-mail of als pushmelding krijgen?", en: "Can I get notifications by email or as push notifications?" },
     a: {
-      nl: "Dat kan nog niet: meldingen staan in de app bij [Meldingen](/meldingen). Wil je ze liever per mail? Laat het weten.",
-      en: "Not yet: notifications are in the app under [Notifications](/meldingen). Prefer them by email? Let us know.",
+      nl: "Ja. Op je [profiel](/profile) zet je de **wekelijkse samenvatting** per e-mail aan (alleen als er iets nieuws is), en **pushmeldingen** per apparaat: bij een goedgekeurde barcode of een vriendverzoek. Op een iPhone werken pushmeldingen als Filmory op je beginscherm staat.",
+      en: "Yes. On your [profile](/profile) switch on the **weekly summary** by email (only when there's something new), and **push notifications** per device: when a barcode is approved or someone sends a friend request. On an iPhone push works once Filmory is on your home screen.",
     },
-    keywords: { nl: ["meldingen per mail", "e-mail melding", "mail bij goedkeuring"], en: ["email notifications", "notify by email"] },
+    keywords: { nl: ["meldingen per mail", "e-mail melding", "mail bij goedkeuring", "pushmelding", "notificatie", "samenvatting"], en: ["email notifications", "notify by email", "push notification", "weekly summary"] },
+    pages: ["/profile", "/meldingen"],
   },
   {
     id: "price-tracking",
@@ -625,13 +660,17 @@ export const HELP_ENTRIES: HelpEntry[] = [
   },
   {
     id: "release-calendar",
-    category: "not-yet",
-    possible: false,
-    q: { nl: "Kan ik zien welke steelbooks of 4K-releases eraan komen?", en: "Can I see upcoming steelbook or 4K releases?" },
+    category: "collections",
+    possible: true,
+    q: { nl: "Kan ik zien welke dvd-, Blu-ray- en 4K-releases eraan komen?", en: "Can I see upcoming DVD, Blu-ray and 4K releases?" },
     a: {
-      nl: "Een releasekalender is er nog niet. Laat het weten als je dat wilt, dan nemen we het mee.",
-      en: "There's no release calendar yet. Let us know if you'd like one and we'll consider it.",
+      nl: "Ja, in de [Releasekalender](/releases): per maand de releases in Nederland (of België), met titels van je verlanglijst bovenaan en apart wat er binnenkort van je verlanglijst verschijnt. De gegevens komen van TMDB.",
+      en: "Yes, in the [Release calendar](/releases): releases per month in the Netherlands (or Belgium), wishlist titles first, plus what's coming soon from your wishlist. The data comes from TMDB.",
     },
-    keywords: { nl: ["releasekalender", "nieuwe releases", "binnenkort", "pre-order"], en: ["release calendar", "upcoming releases", "coming soon", "pre-order"] },
+    pages: ["/releases", "/wishlist"],
+    keywords: {
+      nl: ["releasekalender", "nieuwe releases", "releases", "binnenkort", "pre-order", "komen eraan", "komt uit", "verschijnt", "uitkomen", "4k releases"],
+      en: ["release calendar", "upcoming releases", "releases", "coming soon", "pre-order", "coming out", "release date"],
+    },
   },
 ];

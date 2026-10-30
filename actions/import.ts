@@ -21,6 +21,7 @@ import { addViewing, setFilmRating } from "@/actions/watched";
 import { addToWishlist } from "@/actions/wishlist";
 import type { Barcode } from "@/types/database";
 import type { MovieSummaryDto } from "@/types/tmdb";
+import { withinLimit } from "@/lib/rate-limit";
 
 const MAX_BATCH = 25;
 const SEARCH_CONCURRENCY = 5;
@@ -55,6 +56,7 @@ export async function matchImportRows(
 ): Promise<ImportRowMatch[]> {
   await requireUserId();
   if (rows.length > MAX_BATCH) throw new Error("batch_too_large");
+  if (!(await withinLimit("import_match"))) throw new Error("rate_limited");
   const supabase = await createClient();
   const locale = await getLocale();
 

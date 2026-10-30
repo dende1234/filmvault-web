@@ -23,6 +23,10 @@ describe("matchHelp", () => {
       ["aankoopprijs bijhouden voor de verzekering", "value"],
       ["collectie vergelijken met een vriend", "compare-friend"],
       ["werkt de winkelmodus offline", "shop-offline"],
+      ["welke 4k releases komen eraan", "release-calendar"],
+      ["kan ik pushmeldingen krijgen", "email-notifications"],
+      ["films te ruil aanbieden", "trade"],
+      ["statistieken van mijn collectie", "statistics"],
     ];
     for (const [q, id] of cases) expect(matchHelp(q, HELP_ENTRIES)[0]?.entry.id, q).toBe(id);
   });

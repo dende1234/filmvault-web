@@ -45,6 +45,14 @@ export const MIGRATIONS: Migration[] = [
   { file: "admin_log.sql", probe: { kind: "table", table: "admin_log" } },
   { file: "admin_users.sql", probe: null, note: "function" },
   { file: "admin_quality.sql", probe: null, note: "function" },
+  { file: "app_errors.sql", probe: { kind: "table", table: "app_errors" } },
+  { file: "rate_limits.sql", probe: { kind: "table", table: "rate_events" } },
+  { file: "admin_move_barcode.sql", probe: null, note: "function" },
+  { file: "auto_approve.sql", probe: { kind: "table", table: "trusted_contributors" } },
+  { file: "moderation.sql", probe: { kind: "table", table: "blocked_members" } },
+  { file: "email_digest.sql", probe: { kind: "column", table: "profiles", column: "email_digest" } },
+  { file: "push_subscriptions.sql", probe: { kind: "table", table: "push_subscriptions" } },
+  { file: "trade_list.sql", probe: { kind: "column", table: "collection_items", column: "for_trade" } },
 ];
 
 /** PostgREST/Postgres codes for "this table, column or function doesn't exist". */

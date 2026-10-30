@@ -11,6 +11,7 @@ import { lookupProductTitle } from "@/lib/barcode-lookup";
 import { cleanProductTitle } from "@/lib/product-title";
 import { searchMovies, searchTv } from "@/lib/tmdb/server";
 import { normalizeBarcode } from "@/lib/barcode";
+import { withinLimit } from "@/lib/rate-limit";
 
 export type BarcodeSuggestion = { id: number; title: string; poster: string | null; year: string | null };
 
@@ -20,6 +21,7 @@ export async function suggestTitlesForBarcode(raw: string): Promise<{ productTit
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { productTitle: null, suggestions: [] };
+  if (!(await withinLimit("barcode_suggest"))) return { productTitle: null, suggestions: [] };
 
   const productTitle = await lookupProductTitle(normalizeBarcode(raw));
   if (!productTitle) return { productTitle: null, suggestions: [] };

@@ -17,5 +17,16 @@ again):
 8. `admin_users.sql` — counts per member on /admin/users/<id>
 9. `admin_quality.sql` — popular titles without a barcode on /admin/quality
 
+Second round:
+
+10. `app_errors.sql` — errors from production, shown on /admin/status
+11. `rate_limits.sql` — per-member limits on heavy actions
+12. `admin_move_barcode.sql` — move a barcode (and members' copies) to the right title
+13. `auto_approve.sql` — auto-approve trusted contributors (after approve_pending.sql)
+14. `moderation.sql` — recent posts/comments for admins, blocking members from posting
+15. `email_digest.sql` — weekly e-mail summary (opt-in)
+16. `push_subscriptions.sql` — push notifications per device
+17. `trade_list.sql` — mark copies for sale or trade
+
 The web app keeps working before a file has run; `/admin/status` shows which
 ones are still missing.

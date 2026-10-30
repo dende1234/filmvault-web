@@ -7,6 +7,8 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUserId } from "@/lib/auth";
 import type { FriendRequest, FriendRequestWithProfile, ProfileSearchResult } from "@/types/database";
+import { after } from "next/server";
+import { sendPushToUser } from "@/lib/push";
 
 export async function searchProfiles(query: string): Promise<ProfileSearchResult[]> {
   const trimmed = query.trim();
@@ -51,6 +53,14 @@ export async function sendFriendRequest(receiverId: string): Promise<void> {
 
   const { error } = await supabase.from("friend_requests").insert({ sender_id: senderId, receiver_id: receiverId });
   if (error) throw error;
+  const { data: me } = await supabase.from("profiles").select("name").eq("id", senderId).maybeSingle();
+  after(() =>
+    sendPushToUser(receiverId, {
+      nl: { title: "Nieuw vriendverzoek", body: `${me?.name || "Iemand"} wil vrienden worden op Filmory.` },
+      en: { title: "New friend request", body: `${me?.name || "Someone"} wants to be friends on Filmory.` },
+      url: "/friends",
+    }),
+  );
   revalidatePath("/friends");
 }
 

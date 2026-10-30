@@ -17,8 +17,9 @@ type Key = keyof Comparison;
  * have, what you both have, and your wishlist titles they own. */
 export function FriendCompare({ comparison, friendName }: { comparison: Comparison; friendName: string }) {
   const { t } = useT();
-  const [shown, setShown] = useState<Record<Key, number>>({ wishTheyHave: PAGE, onlyThem: PAGE, onlyMe: PAGE, both: PAGE });
+  const [shown, setShown] = useState<Record<Key, number>>({ theirTrades: PAGE, wishTheyHave: PAGE, onlyThem: PAGE, onlyMe: PAGE, both: PAGE });
   const tabs: { key: Key; label: string }[] = [
+    ...(comparison.theirTrades.length > 0 ? [{ key: "theirTrades" as const, label: t("compare_trades", comparison.theirTrades.length) }] : []),
     { key: "wishTheyHave", label: t("compare_wish_they_have", comparison.wishTheyHave.length) },
     { key: "onlyThem", label: t("compare_only_them", friendName, comparison.onlyThem.length) },
     { key: "onlyMe", label: t("compare_only_me", comparison.onlyMe.length) },
@@ -52,6 +53,12 @@ export function FriendCompare({ comparison, friendName }: { comparison: Comparis
                       <Link key={title.tmdbId} href={titleHref(title.tmdbId)} className="group flex flex-col gap-2">
                         <Poster path={title.poster} title={title.title} size="sm" hover />
                         <p className="line-clamp-2 text-xs font-medium leading-snug group-hover:text-primary">{title.title}</p>
+                        {title.trade && (
+                          <p className="text-[11px] text-muted-foreground">
+                            {t(title.trade === "sale" ? "trade_sale" : title.trade === "trade" ? "trade_trade" : "trade_both")}
+                            {title.wished && <span className="ml-1 font-medium text-primary">· {t("compare_on_your_wishlist")}</span>}
+                          </p>
+                        )}
                       </Link>
                     ))}
                   </PosterGrid>

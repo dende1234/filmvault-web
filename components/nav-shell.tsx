@@ -37,6 +37,9 @@ import {
   Inbox,
   ScanLine,
   ScanBarcode,
+  CalendarClock,
+  PieChart,
+  Search,
   ClipboardCheck,
   ScrollText,
   Sparkles,
@@ -51,6 +54,7 @@ import type { Profile } from "@/types/database";
 import { Logo } from "@/components/brand/logo";
 import { Avatar } from "@/components/avatar";
 import { FeedbackDialog } from "@/components/feedback-dialog";
+import { GlobalSearch } from "@/components/global-search";
 import { ReelAssistant } from "@/components/help/reel-assistant";
 import { useLocalFlag } from "@/lib/use-local-flag";
 
@@ -151,6 +155,7 @@ export function NavShell({
   const [open, setOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(() => pathname.startsWith("/admin"));
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [reelOpen, setReelOpen] = useState(false);
   const [reelHidden, setReelHidden] = useLocalFlag(REEL_HIDDEN_KEY);
   const close = () => setOpen(false);
@@ -171,6 +176,18 @@ export function NavShell({
         </button>
       </div>
 
+      <button
+        type="button"
+        onClick={() => {
+          close();
+          setSearchOpen(true);
+        }}
+        className="mb-2 flex items-center gap-3 rounded-lg border border-border bg-background/60 px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <Search className="h-4 w-4" />
+        <span className="flex-1">{t("search_title")}</span>
+        <kbd className="rounded border border-border px-1.5 text-[10px] font-medium">/</kbd>
+      </button>
       <NavLink href="/dashboard" icon={LayoutDashboard} label={t("dashboard_title")} onNavigate={close} />
 
       <SectionLabel>{t("nav_section_collection")}</SectionLabel>
@@ -178,11 +195,13 @@ export function NavShell({
       <NavLink href="/scannen" icon={ScanBarcode} label={t("nav_scan")} onNavigate={close} />
       <NavLink href="/wishlist" icon={Bookmark} label={t("nav_wishlist")} onNavigate={close} />
       <NavLink href="/watched" icon={Eye} label={t("nav_watched")} onNavigate={close} />
+      <NavLink href="/statistieken" icon={PieChart} label={t("stats_title")} onNavigate={close} />
 
       <SectionLabel>{t("nav_section_discover")}</SectionLabel>
       <NavLink href="/films" icon={Film} label={t("nav_films_series")} onNavigate={close} />
       <NavLink href="/reeksen" icon={Layers} label={t("franchise_nav")} onNavigate={close} />
       <NavLink href="/upgrades" icon={Sparkles} label={t("upgrades_nav")} onNavigate={close} />
+      <NavLink href="/releases" icon={CalendarClock} label={t("releases_title")} onNavigate={close} />
       <NavLink href="/lists" icon={ListChecks} label={t("nav_lists")} onNavigate={close} />
       <NavLink href="/recap" icon={CalendarDays} label={t("nav_yearly_recap")} onNavigate={close} />
 
@@ -216,7 +235,7 @@ export function NavShell({
               <NavLink href="/admin/quality" icon={ClipboardCheck} label={t("admin_quality_label")} onNavigate={close} />
               <NavLink href="/admin/manage-types" icon={Tags} label={t("admin_manage_types_label")} onNavigate={close} />
               <NavLink href="/admin/users" icon={ShieldCheck} label={t("admin_users_label")} onNavigate={close} />
-              <NavLink href="/admin/reports" icon={Flag} label={t("admin_reports_label")} onNavigate={close} />
+              <NavLink href="/admin/reports" icon={Flag} label={t("moderation_title")} onNavigate={close} />
               <NavLink href="/admin/feedback" icon={Inbox} label={t("admin_feedback_title")} onNavigate={close} count={feedbackNewCount} />
               <NavLink href="/admin/log" icon={ScrollText} label={t("admin_log_label")} onNavigate={close} />
               <NavLink href="/admin/stats" icon={BarChart3} label={t("admin_stats_label")} onNavigate={close} />
@@ -288,6 +307,7 @@ export function NavShell({
   return (
     <div className="flex min-h-screen">
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+      {profile && <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />}
       {profile && (
         <div className="print:hidden">
         <ReelAssistant open={reelOpen} onOpenChange={setReelOpen} hidden={reelHidden} onHide={() => setReelVisibility(true)} />
@@ -315,9 +335,19 @@ export function NavShell({
             <Logo markClassName="size-6" className="[&>span:last-child]:text-lg" />
           </Link>
           {profile && (
+            <button
+              type="button"
+              onClick={() => setSearchOpen(true)}
+              className="ml-auto rounded-full p-1.5 text-muted-foreground hover:bg-elevated hover:text-foreground"
+              aria-label={t("search_title")}
+            >
+              <Search className="size-5" />
+            </button>
+          )}
+          {profile && (
             <Link
               href="/meldingen"
-              className="relative ml-auto rounded-full p-1.5 text-muted-foreground hover:bg-elevated hover:text-foreground"
+              className="relative rounded-full p-1.5 text-muted-foreground hover:bg-elevated hover:text-foreground"
               aria-label={unreadNotifications > 0 ? t("notifications_unread", unreadNotifications) : t("notifications_title")}
             >
               <Bell className="size-5" />

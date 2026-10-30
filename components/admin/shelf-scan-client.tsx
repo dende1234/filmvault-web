@@ -118,7 +118,7 @@ export function ShelfScanClient({ collections, mediaTypes, edities }: { collecti
       const res = await fetch("/api/admin/shelf-scan", { method: "POST", body: form });
       if (!res.ok) {
         const { error } = (await res.json().catch(() => ({}))) as { error?: string };
-        toast.error(t(error === "unavailable" ? "admin_shelf_scan_error_unavailable" : "admin_shelf_scan_error"));
+        toast.error(t(error === "unavailable" ? "admin_shelf_scan_error_unavailable" : error === "rate_limited" ? "rate_limited" : "admin_shelf_scan_error"));
         return;
       }
       const { items } = (await res.json()) as { items: ShelfItem[] };
