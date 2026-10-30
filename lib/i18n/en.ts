@@ -1243,4 +1243,11 @@ export const en: Record<keyof typeof nl, string> = {
   upgrades_description: "Films and series you own on DVD or Blu-ray while a Blu-ray or 4K release is known. Put them on your wishlist to look out for them in shops.",
   upgrades_empty_title: "No upgrade tips",
   upgrades_empty_description: "You already own everything in the best known quality, or the film list doesn't know a better release yet.",
+  compare_title: "Compare",
+  compare_wish_they_have: "On your wishlist ({0})",
+  compare_only_them: "Only {0} ({1})",
+  compare_only_me: "Only you ({0})",
+  compare_both: "Both ({0})",
+  compare_none: "Nothing in this list.",
+  compare_more: "Show more ({0})",
 };

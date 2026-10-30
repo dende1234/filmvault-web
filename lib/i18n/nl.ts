@@ -1246,4 +1246,11 @@ export const nl = {
   upgrades_description: "Films en series die je op dvd of Blu-ray hebt, terwijl er ook een Blu-ray- of 4K-uitgave bekend is. Zet ze op je verlanglijst om er in de winkel op te letten.",
   upgrades_empty_title: "Geen upgrade-tips",
   upgrades_empty_description: "Je hebt alles al in de beste bekende kwaliteit, of de filmlijst kent nog geen betere uitgave.",
+  compare_title: "Vergelijken",
+  compare_wish_they_have: "Op je verlanglijst ({0})",
+  compare_only_them: "Alleen {0} ({1})",
+  compare_only_me: "Alleen jij ({0})",
+  compare_both: "Allebei ({0})",
+  compare_none: "Niets in deze lijst.",
+  compare_more: "Meer tonen ({0})",
 };

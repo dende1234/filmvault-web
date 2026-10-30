@@ -1,6 +1,9 @@
 import { LibraryBig } from "lucide-react";
 import { getPublicProfiles } from "@/actions/friends";
-import { getCollectionItemsForCollections, getCollectionsForUser } from "@/actions/collections";
+import { getCollectionItemsForCollections, getCollectionsForUser, getUserCollections } from "@/actions/collections";
+import { getWishlist } from "@/actions/wishlist";
+import { compareCollections } from "@/lib/compare";
+import { FriendCompare } from "@/components/friend-compare";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
 import { PageHeader } from "@/components/page-header";
@@ -13,8 +16,14 @@ export default async function FriendCollectionsPage({ params }: { params: Promis
 
   const [profiles, collections] = await Promise.all([getPublicProfiles([userId]), getCollectionsForUser(userId)]);
   const friendName = profiles[0]?.name || dict.friend_collections_default_name;
-  const items = await getCollectionItemsForCollections(collections.map((c) => c.id)).catch(() => []);
+  const [items, myCollections, myWishlist] = await Promise.all([
+    getCollectionItemsForCollections(collections.map((c) => c.id)).catch(() => []),
+    getUserCollections(),
+    getWishlist().catch(() => []),
+  ]);
   const previews = buildCollectionPreviews(items);
+  const myItems = await getCollectionItemsForCollections(myCollections.map((c) => c.id)).catch(() => []);
+  const comparison = compareCollections(myItems, items, myWishlist);
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
@@ -38,6 +47,8 @@ export default async function FriendCollectionsPage({ params }: { params: Promis
           })}
         </div>
       )}
+
+      {items.length > 0 && <FriendCompare comparison={comparison} friendName={friendName} />}
     </div>
   );
 }
