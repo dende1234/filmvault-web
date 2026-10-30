@@ -1392,4 +1392,10 @@ export const nl = {
   admin_errors_not_ready: "Fouten worden pas bewaard als app_errors.sql in Supabase gedraaid is.",
   admin_errors_none: "Geen fouten in de afgelopen 30 dagen.",
   rate_limited: "Je hebt dit vandaag al vaak gedaan. Probeer het later nog eens.",
+  quality_move: "Verhuizen",
+  quality_move_confirm: "Barcode {0} verhuizen naar \"{1}\"? Exemplaren van leden met deze barcode verhuizen mee.",
+  quality_moved: "Verhuisd; {0} exemplaren van leden aangepast.",
+  quality_move_not_ready: "Verhuizen kan pas als admin_move_barcode.sql in Supabase gedraaid is.",
+  quality_move_error: "Verhuizen is mislukt",
+  admin_log_action_barcode_move: "Barcode verhuisd",
 };

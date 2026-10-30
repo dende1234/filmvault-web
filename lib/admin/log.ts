@@ -10,6 +10,7 @@ export type AdminAction =
   | "barcode_register"
   | "barcode_update"
   | "barcode_delete"
+  | "barcode_move"
   | "user_admin_on"
   | "user_admin_off"
   | "user_delete"

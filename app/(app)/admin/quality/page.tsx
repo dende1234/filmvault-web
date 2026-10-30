@@ -5,6 +5,7 @@ import { getDictionary, format, type Dictionary } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
 import { titleHref } from "@/lib/titles";
 import { PageHeader } from "@/components/page-header";
+import { MoveBarcodeButton } from "@/components/admin/move-barcode-button";
 import { Poster } from "@/components/movie/poster";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,7 @@ function Rows({ rows, dict }: { rows: BarcodeRow[]; dict: Dictionary }) {
             {r.type || "–"} · {r.editie || "–"}
             {r.is_box && ` · ${dict.admin_quality_box}`}
           </span>
+          {!r.is_box && <MoveBarcodeButton barcodeId={r.id} barcode={r.barcode} />}
         </li>
       ))}
     </ul>

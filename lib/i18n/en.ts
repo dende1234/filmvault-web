@@ -1389,4 +1389,10 @@ export const en: Record<keyof typeof nl, string> = {
   admin_errors_not_ready: "Errors are stored once app_errors.sql has run in Supabase.",
   admin_errors_none: "No errors in the past 30 days.",
   rate_limited: "You've done this a lot today. Please try again later.",
+  quality_move: "Move",
+  quality_move_confirm: "Move barcode {0} to \"{1}\"? Members' copies with this barcode move along.",
+  quality_moved: "Moved; {0} members' copies updated.",
+  quality_move_not_ready: "Moving works once admin_move_barcode.sql has run in Supabase.",
+  quality_move_error: "Moving failed",
+  admin_log_action_barcode_move: "Barcode moved",
 };
