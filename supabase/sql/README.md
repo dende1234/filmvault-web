@@ -15,6 +15,7 @@ again):
 6. `help_answers.sql` — Reel answers managed from /admin/feedback
 7. `admin_log.sql` — log of admin actions
 8. `admin_users.sql` — counts per member on /admin/users/<id>
+9. `admin_quality.sql` — popular titles without a barcode on /admin/quality
 
 The web app keeps working before a file has run; `/admin/status` shows which
 ones are still missing.

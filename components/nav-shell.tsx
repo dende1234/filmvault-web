@@ -37,6 +37,7 @@ import {
   Inbox,
   ScanLine,
   ScanBarcode,
+  ClipboardCheck,
   ScrollText,
   Sparkles,
   Activity,
@@ -212,6 +213,7 @@ export function NavShell({
               <NavLink href="/admin/add-film" icon={FilePlus} label={t("admin_add_film_label")} onNavigate={close} />
               <NavLink href="/admin/scan-shelf" icon={ScanLine} label={t("admin_shelf_scan_label")} onNavigate={close} />
               <NavLink href="/admin/manage-films" icon={Pencil} label={t("admin_manage_films_label")} onNavigate={close} />
+              <NavLink href="/admin/quality" icon={ClipboardCheck} label={t("admin_quality_label")} onNavigate={close} />
               <NavLink href="/admin/manage-types" icon={Tags} label={t("admin_manage_types_label")} onNavigate={close} />
               <NavLink href="/admin/users" icon={ShieldCheck} label={t("admin_users_label")} onNavigate={close} />
               <NavLink href="/admin/reports" icon={Flag} label={t("admin_reports_label")} onNavigate={close} />

@@ -44,6 +44,7 @@ export const MIGRATIONS: Migration[] = [
   { file: "help_answers.sql", probe: { kind: "table", table: "help_answers" } },
   { file: "admin_log.sql", probe: { kind: "table", table: "admin_log" } },
   { file: "admin_users.sql", probe: null, note: "function" },
+  { file: "admin_quality.sql", probe: null, note: "function" },
 ];
 
 /** PostgREST/Postgres codes for "this table, column or function doesn't exist". */
