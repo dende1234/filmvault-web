@@ -1,12 +1,6 @@
-import { ShopMode } from "@/components/shop-mode";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Winkelmodus" };
-
-/** Scan or search in a shop: do I own it, another edition, or is it on my wishlist? */
+/** Moved into /scannen; kept for bookmarks and older links. */
 export default function ShopModePage() {
-  return (
-    <div className="mx-auto max-w-xl">
-      <ShopMode />
-    </div>
-  );
+  redirect("/scannen?modus=winkel");
 }

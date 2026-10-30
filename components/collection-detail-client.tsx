@@ -192,7 +192,7 @@ export function CollectionDetailClient({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
-                    <Link href={`/collections/scan?collection=${collection.id}`}>
+                    <Link href={`/scannen?modus=meerdere&collection=${collection.id}`}>
                       <ScanLine />
                       {t("bulk_scan_button")}
                     </Link>

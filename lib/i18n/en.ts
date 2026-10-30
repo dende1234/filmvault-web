@@ -1186,4 +1186,13 @@ export const en: Record<keyof typeof nl, string> = {
   admin_status_set: "Present",
   admin_status_required_missing: "Missing (required)",
   admin_status_optional_missing: "Not set (optional)",
+  nav_section_collection: "My collection",
+  nav_section_discover: "Discover",
+  nav_section_social: "Social",
+  nav_scan: "Scan",
+  scan_hub_single: "One film",
+  scan_hub_bulk: "Several",
+  scan_hub_shop: "In a shop",
+  scan_hub_single_title: "Add a film",
+  scan_hub_single_description: "Scan the barcode or search by title. Add a box with the button next to it.",
 };

@@ -48,11 +48,11 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Kan ik meerdere schijven achter elkaar scannen?", en: "Can I scan several discs in a row?" },
     a: {
-      nl: "Ja, via [Meerdere scannen](/collections/scan) (of in een collectie: **Meer → Meerdere scannen**). Scan een stapel, kies één collectie en klik op **Voeg … toe**. Een USB-barcodescanner werkt ook: klik in het veld en scan.",
-      en: "Yes, via [Scan several](/collections/scan) (or in a collection: **More → Scan several**). Scan a pile, choose one collection and click **Add …**. A USB barcode scanner works too: click the field and scan.",
+      nl: "Ja, via [Meerdere scannen](/scannen?modus=meerdere) (of in een collectie: **Meer → Meerdere scannen**). Scan een stapel, kies één collectie en klik op **Voeg … toe**. Een USB-barcodescanner werkt ook: klik in het veld en scan.",
+      en: "Yes, via [Scan several](/scannen?modus=meerdere) (or in a collection: **More → Scan several**). Scan a pile, choose one collection and click **Add …**. A USB barcode scanner works too: click the field and scan.",
     },
     keywords: { nl: ["meerdere scannen", "stapel", "veel films", "snel invoeren", "usb scanner", "bulk"], en: ["scan several", "bulk scan", "many discs", "usb scanner"] },
-    pages: ["/collections/scan", "/collections"],
+    pages: ["/scannen", "/collections"],
   },
   {
     id: "unknown-barcode",
@@ -236,11 +236,11 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Hoe check ik in de winkel of ik een film al heb?", en: "How do I check in a shop whether I own a film?" },
     a: {
-      nl: "Open de [Winkelmodus](/winkelmodus) en scan de barcode. Je ziet meteen of je hem hebt, in een andere editie hebt, of dat hij op je verlanglijst staat (een Holy Grail valt extra op). Zonder barcode kun je op titel zoeken. Je scherm blijft aan zolang de pagina open is.",
-      en: "Open [Shop mode](/winkelmodus) and scan the barcode. You see at once whether you own it, own another edition, or have it on your wishlist (a Holy Grail stands out). Without a barcode you can search by title. Your screen stays on while the page is open.",
+      nl: "Open de [Winkelmodus](/scannen?modus=winkel) en scan de barcode. Je ziet meteen of je hem hebt, in een andere editie hebt, of dat hij op je verlanglijst staat (een Holy Grail valt extra op). Zonder barcode kun je op titel zoeken. Je scherm blijft aan zolang de pagina open is.",
+      en: "Open [Shop mode](/scannen?modus=winkel) and scan the barcode. You see at once whether you own it, own another edition, or have it on your wishlist (a Holy Grail stands out). Without a barcode you can search by title. Your screen stays on while the page is open.",
     },
     keywords: { nl: ["winkel", "winkelmodus", "winkelen", "in de winkel kijken", "kringloop", "rommelmarkt", "check"], en: ["shop", "shop mode", "store", "shopping", "thrift", "flea market", "check"] },
-    pages: ["/winkelmodus", "/dashboard"],
+    pages: ["/scannen", "/dashboard"],
   },
   {
     id: "print",

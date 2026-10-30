@@ -18,7 +18,7 @@ import { ReelMascot } from "@/components/help/reel-mascot";
 const POPULAR = ["add-film", "scan-barcode", "import-csv", "share-collection"];
 /** Pages with their own sticky action bar at the bottom: no floating Reel there
  * (the panel still opens from the menu). */
-const QUIET_PATHS = ["/collections/scan", "/collections/import"];
+const QUIET_PATHS = ["/scannen", "/collections/import"];
 const BUBBLE_SEEN_KEY = "fv_reel_bubble_seen"; // sessionStorage: once per session
 const BUBBLE_OFF_KEY = "fv_reel_bubble_off"; // localStorage: "don't show again"
 

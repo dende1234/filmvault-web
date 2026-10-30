@@ -1189,4 +1189,13 @@ export const nl = {
   admin_status_set: "Aanwezig",
   admin_status_required_missing: "Ontbreekt (verplicht)",
   admin_status_optional_missing: "Niet ingesteld (optioneel)",
+  nav_section_collection: "Mijn collectie",
+  nav_section_discover: "Ontdekken",
+  nav_section_social: "Sociaal",
+  nav_scan: "Scannen",
+  scan_hub_single: "Eén film",
+  scan_hub_bulk: "Meerdere",
+  scan_hub_shop: "In de winkel",
+  scan_hub_single_title: "Film toevoegen",
+  scan_hub_single_description: "Scan de barcode of zoek op titel. Een box voeg je toe met de knop ernaast.",
 };

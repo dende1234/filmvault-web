@@ -27,7 +27,9 @@ type Selected = { id: number; title: string; poster: string | null };
  * and the collections to put it in, without barcode/format/edition fields.
  * For an unknown one you say whether it is a single title or a box, and the
  * barcode is pre-filled for approval. */
-export function AddFilmFlow() {
+/** showModeLinks: the "scan several" / "shop mode" shortcuts (not needed on
+ * /scannen itself, which has them as tabs). */
+export function AddFilmFlow({ showModeLinks = true }: { showModeLinks?: boolean } = {}) {
   const { t } = useT();
   const hasCamera = useHasCamera();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -81,17 +83,17 @@ export function AddFilmFlow() {
         {t("dashboard_add_film_button")}
       </Button>
       <BarcodeScanButton onDetected={onScan} />
-      {hasCamera && (
+      {hasCamera && showModeLinks && (
         <Button asChild variant="ghost">
-          <Link href="/collections/scan">
+          <Link href="/scannen?modus=meerdere">
             <ScanLine />
             {t("bulk_scan_button")}
           </Link>
         </Button>
       )}
-      {hasCamera && (
+      {hasCamera && showModeLinks && (
         <Button asChild variant="ghost">
-          <Link href="/winkelmodus">
+          <Link href="/scannen?modus=winkel">
             <Store />
             {t("shop_nav")}
           </Link>
