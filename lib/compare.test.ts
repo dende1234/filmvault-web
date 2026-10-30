@@ -14,5 +14,22 @@ describe("compareCollections", () => {
     expect(c.both.map((t) => t.tmdbId)).toEqual([2]);
     expect(c.onlyThem.map((t) => t.tmdbId)).toEqual([3, 4]);
     expect(c.wishTheyHave.map((t) => t.tmdbId)).toEqual([4]);
+    expect(c.theirTrades).toEqual([]);
+  });
+
+  it("lists what they offer, your wishlist titles first", () => {
+    const c = compareCollections(
+      [],
+      [
+        { ...row(3, "Casablanca"), for_trade: "sale" as const },
+        { ...row(4, "Dune"), for_trade: "trade" as const },
+        row(5, "Eraserhead"),
+      ],
+      [{ tmdb_movie_id: 4 }],
+    );
+    expect(c.theirTrades.map((t) => [t.tmdbId, t.trade, t.wished])).toEqual([
+      [4, "trade", true],
+      [3, "sale", false],
+    ]);
   });
 });

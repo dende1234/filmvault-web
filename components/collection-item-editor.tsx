@@ -19,6 +19,7 @@ import { CoverUpload } from "@/components/cover-upload";
 import { CopyCollections } from "@/components/copy-collections";
 import { CopyDetails } from "@/components/copy-details";
 import { PurchaseDetails } from "@/components/purchase-details";
+import { TradeSelect } from "@/components/trade-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import type { MovieDetailDto } from "@/types/tmdb";
@@ -322,6 +323,16 @@ export function CollectionItemEditor({
             key={[initial.cut, initial.label, initial.region, initial.audio_languages?.join(","), initial.subtitle_languages?.join(",")].join("|")}
             item={initial}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("trade_title")}</CardTitle>
+          <p className="text-xs text-muted-foreground">{t("trade_hint")}</p>
+        </CardHeader>
+        <CardContent>
+          <TradeSelect key={initial.for_trade ?? "none"} item={initial} />
         </CardContent>
       </Card>
 

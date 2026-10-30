@@ -243,6 +243,17 @@ export async function updateCollectionItemPurchase(
   return { error: null };
 }
 
+/** For sale / for trade / both, or null. "not_ready" before trade_list.sql. */
+export async function updateCollectionItemTrade(itemGroupId: string, forTrade: "sale" | "trade" | "both" | null): Promise<{ error: "not_ready" | null }> {
+  await requireUserId();
+  const supabase = await createClient();
+  const { error } = await supabase.from("collection_items").update({ for_trade: forTrade }).eq("item_group_id", itemGroupId);
+  if (isMissingError(error)) return { error: "not_ready" };
+  if (error) throw error;
+  revalidatePath("/collections", "layout");
+  return { error: null };
+}
+
 export async function removeCollectionItem(itemId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("collection_items").delete().eq("id", itemId);

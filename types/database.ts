@@ -89,6 +89,8 @@ export interface CollectionItem {
   purchase_price?: number | null;
   purchase_date?: string | null;
   purchase_shop?: string | null;
+  /** Ruillijst (trade_list.sql). */
+  for_trade?: "sale" | "trade" | "both" | null;
   is_box: boolean;
   box_group_id: string | null;
   box_name: string | null;
