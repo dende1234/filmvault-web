@@ -28,5 +28,9 @@ Second round:
 16. `push_subscriptions.sql` — push notifications per device
 17. `trade_list.sql` — mark copies for sale or trade
 
+Third round:
+
+18. `indexes.sql` — indexes for the most used lookups (incl. title search)
+
 The web app keeps working before a file has run; `/admin/status` shows which
 ones are still missing.

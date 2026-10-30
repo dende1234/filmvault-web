@@ -53,6 +53,8 @@ export const MIGRATIONS: Migration[] = [
   { file: "email_digest.sql", probe: { kind: "column", table: "profiles", column: "email_digest" } },
   { file: "push_subscriptions.sql", probe: { kind: "table", table: "push_subscriptions" } },
   { file: "trade_list.sql", probe: { kind: "column", table: "collection_items", column: "for_trade" } },
+  // Third round.
+  { file: "indexes.sql", probe: null, note: "index" },
 ];
 
 /** PostgREST/Postgres codes for "this table, column or function doesn't exist". */
