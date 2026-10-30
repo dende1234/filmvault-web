@@ -1391,4 +1391,5 @@ export const nl = {
   admin_errors_count: "{0} laatste",
   admin_errors_not_ready: "Fouten worden pas bewaard als app_errors.sql in Supabase gedraaid is.",
   admin_errors_none: "Geen fouten in de afgelopen 30 dagen.",
+  rate_limited: "Je hebt dit vandaag al vaak gedaan. Probeer het later nog eens.",
 };

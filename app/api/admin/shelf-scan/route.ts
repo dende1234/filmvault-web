@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/require-admin";
 import { scanShelfPhoto, ShelfScanUnavailableError } from "@/lib/ai/shelf-scan";
+import { withinLimit } from "@/lib/rate-limit";
 
 // A Route Handler rather than a Server Action: a shelf photo can be close to
 // the 1 MB Server Action body limit, and the vision call can take a while.
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
   } catch {
     return Response.json({ error: "forbidden" }, { status: 403 });
   }
+  if (!(await withinLimit("shelf_scan"))) return Response.json({ error: "rate_limited" }, { status: 429 });
 
   const form = await request.formData().catch(() => null);
   const photo = form?.get("photo");

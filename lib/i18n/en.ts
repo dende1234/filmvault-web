@@ -1388,4 +1388,5 @@ export const en: Record<keyof typeof nl, string> = {
   admin_errors_count: "{0} latest",
   admin_errors_not_ready: "Errors are stored once app_errors.sql has run in Supabase.",
   admin_errors_none: "No errors in the past 30 days.",
+  rate_limited: "You've done this a lot today. Please try again later.",
 };
