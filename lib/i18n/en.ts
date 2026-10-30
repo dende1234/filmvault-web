@@ -1418,4 +1418,10 @@ export const en: Record<keyof typeof nl, string> = {
   admin_log_action_user_unblock: "Member unblocked",
   admin_log_action_post_delete: "Post deleted",
   admin_log_action_comment_delete: "Comment deleted",
+  digest_title: "Weekly summary",
+  digest_label: "Send me an e-mail every Monday with my new notifications (only when there are any).",
+  digest_on: "You'll get a weekly summary from now on",
+  digest_off: "Weekly summary switched off",
+  digest_error: "Saving failed",
+  digest_not_ready: "The summary isn't available yet: email_digest.sql still has to run in Supabase.",
 };

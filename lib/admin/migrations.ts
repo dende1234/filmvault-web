@@ -50,6 +50,7 @@ export const MIGRATIONS: Migration[] = [
   { file: "admin_move_barcode.sql", probe: null, note: "function" },
   { file: "auto_approve.sql", probe: { kind: "table", table: "trusted_contributors" } },
   { file: "moderation.sql", probe: { kind: "table", table: "blocked_members" } },
+  { file: "email_digest.sql", probe: { kind: "column", table: "profiles", column: "email_digest" } },
   { file: "trade_list.sql", probe: { kind: "column", table: "collection_items", column: "for_trade" } },
 ];
 

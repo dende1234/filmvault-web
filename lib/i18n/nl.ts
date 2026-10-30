@@ -1421,4 +1421,10 @@ export const nl = {
   admin_log_action_user_unblock: "Lid gedeblokkeerd",
   admin_log_action_post_delete: "Bericht verwijderd",
   admin_log_action_comment_delete: "Reactie verwijderd",
+  digest_title: "Wekelijkse samenvatting",
+  digest_label: "Stuur me elke maandag een e-mail met mijn nieuwe meldingen (alleen als er iets is).",
+  digest_on: "Je krijgt voortaan een wekelijkse samenvatting",
+  digest_off: "Wekelijkse samenvatting uitgezet",
+  digest_error: "Opslaan is mislukt",
+  digest_not_ready: "De samenvatting is nog niet beschikbaar: email_digest.sql moet nog in Supabase gedraaid worden.",
 };

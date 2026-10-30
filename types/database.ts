@@ -26,6 +26,8 @@ export interface Profile {
   /** E-mail consent (growth_tracking.sql). Absent until that migration runs. */
   newsletter_opt_in?: boolean;
   newsletter_opt_in_at?: string | null;
+  /** Weekly e-mail summary (email_digest.sql). */
+  email_digest?: boolean;
 }
 
 export interface Collection {
