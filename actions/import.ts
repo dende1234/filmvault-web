@@ -132,6 +132,8 @@ export type ImportItem =
       details?: CopyDetailsInput | null;
       /** Price, date and shop: only stored on a copy that goes straight in. */
       purchase?: PurchaseInput | null;
+      /** Shelf location: only stored on a copy that goes straight in. */
+      location?: string | null;
       /** A Letterboxd watchlist row: goes to the wishlist, not a collection. */
       toWishlist?: boolean;
     } & Viewing)
@@ -240,7 +242,7 @@ export async function importBatch(collectionId: string | null, items: ImportItem
           // Two updates: purchase columns may not exist yet (purchase_details.sql)
           // and must not take the other details down with them.
           if (knownForFilm) {
-            for (const cols of [detailsColumns(item.details), purchaseColumns(item.purchase)]) {
+            for (const cols of [detailsColumns(item.details), purchaseColumns(item.purchase), item.location ? { shelf_location: item.location.slice(0, 80) } : {}]) {
               if (Object.keys(cols).length === 0) continue;
               await supabase
                 .from("collection_items")

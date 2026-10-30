@@ -78,6 +78,8 @@ type ParsedRow = {
   subtitles: string[] | null;
   /** Purchase details (only kept for a copy that goes straight into the collection). */
   purchase: PurchaseInput | null;
+  /** Where it is on the shelf (only for a copy that goes straight in). */
+  location: string | null;
   /** Letterboxd watchlist row: goes to the wishlist. */
   toWishlist: boolean;
 };
@@ -234,6 +236,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
           date: normalizeDate(cell(r, "purchaseDate")),
           shop: cell(r, "shop").trim().slice(0, 80) || null,
         },
+        location: cell(r, "location").trim().slice(0, 80) || null,
         toWishlist: letterboxd === "watchlist",
       };
       if (box) {
@@ -376,6 +379,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
           watchedOn: r.watchedOn,
           details: { cut: r.cut, label: r.label, region: r.region, audioLanguages: r.audio, subtitleLanguages: r.subtitles },
           purchase: r.purchase,
+          location: r.location,
           ...(r.toWishlist ? { toWishlist: true, barcode: null } : {}),
         });
       } else {

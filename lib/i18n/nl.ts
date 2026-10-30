@@ -1435,4 +1435,12 @@ export const nl = {
   push_off: "Pushmeldingen uit op dit apparaat",
   push_error: "Pushmeldingen aanzetten is mislukt",
   push_not_ready: "Pushmeldingen zijn nog niet beschikbaar: push_subscriptions.sql moet nog in Supabase gedraaid worden.",
+  location_title: "Plek in de kast",
+  location_hint: "Waar dit exemplaar staat, zodat je het snel vindt. Je kunt erop filteren in je collectie.",
+  location_placeholder: "Bijv. Woonkamer · kast 2 · plank 3",
+  location_not_ready: "Plek is nog niet beschikbaar: shelf_location.sql moet nog in Supabase gedraaid worden.",
+  location_error: "Opslaan is mislukt",
+  location_all: "Alle plekken",
+  location_none: "Zonder plek",
+  import_field_location: "Plek",
 };

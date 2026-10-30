@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const header = [
     "Titel", "Soort", "Seizoenen", "Barcode", "Formaat", "Editie", "Cut", "Label", "Regio", "Audio", "Ondertitels",
     "Bekeken", "Rating", "Box", "Collecties", "Notitie", "Tags", "Uitgeleend aan", "Toegevoegd op",
-    "Aankoopprijs", "Aankoopdatum", "Winkel",
+    "Aankoopprijs", "Aankoopdatum", "Winkel", "Plek",
   ];
   const lines = copies.map(({ item, collections }) => [
     item.movie_title,
@@ -45,6 +45,7 @@ export async function GET(request: Request) {
     item.purchase_price != null ? Number(item.purchase_price).toFixed(2).replace(".", ",") : "",
     item.purchase_date ?? "",
     item.purchase_shop ?? "",
+    item.shelf_location ?? "",
   ]);
 
   const label = only ? (names.get(only) ?? "collectie") : "alles";

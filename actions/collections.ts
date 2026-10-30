@@ -254,6 +254,32 @@ export async function updateCollectionItemTrade(itemGroupId: string, forTrade: "
   return { error: null };
 }
 
+/** Where the copy is; "" clears it. "not_ready" before shelf_location.sql. */
+export async function updateCollectionItemLocation(itemGroupId: string, location: string | null): Promise<{ error: "not_ready" | null }> {
+  await requireUserId();
+  const supabase = await createClient();
+  const value = location?.trim().slice(0, 80) || null;
+  const { error } = await supabase.from("collection_items").update({ shelf_location: value }).eq("item_group_id", itemGroupId);
+  if (isMissingError(error)) return { error: "not_ready" };
+  if (error) throw error;
+  revalidatePath("/collections", "layout");
+  return { error: null };
+}
+
+/** Every location you used, for suggestions (most used first). */
+export async function getMyLocations(): Promise<string[]> {
+  const userId = await requireUserId();
+  const supabase = await createClient();
+  const { data: cols } = await supabase.from("collections").select("id").eq("user_id", userId);
+  const ids = (cols ?? []).map((c: { id: string }) => c.id);
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase.from("collection_items").select("shelf_location").in("collection_id", ids).not("shelf_location", "is", null).limit(5000);
+  if (error) return [];
+  const counts = new Map<string, number>();
+  for (const r of (data ?? []) as { shelf_location: string }[]) counts.set(r.shelf_location, (counts.get(r.shelf_location) ?? 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k).slice(0, 50);
+}
+
 export async function removeCollectionItem(itemId: string) {
   const supabase = await createClient();
   const { error } = await supabase.from("collection_items").delete().eq("id", itemId);

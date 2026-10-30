@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/dialog";
 
 const ALL = "all";
+const NO_LOCATION = "__no_location";
 
 /** A box shows as one card: its films share box_group_id (older boxes without
  * one fall back to name + barcode). */
@@ -72,6 +73,8 @@ export function CollectionDetailClient({
   const [watchedFilter, setWatchedFilter] = useState<"all" | "watched" | "not_watched">("all");
   const [kindFilter, setKindFilter] = useState<"all" | "movie" | "tv">("all");
   const [boxFilter, setBoxFilter] = useState<"all" | "boxes" | "single">("all");
+  const [locationFilter, setLocationFilter] = useState<string>(ALL);
+  const locations = useMemo(() => Array.from(new Set(items.map((i) => i.shelf_location).filter((l): l is string => !!l))).sort((a, b) => a.localeCompare(b)), [items]);
   const hasBoxes = items.some((i) => i.is_box);
   const seasonsLabel = useSeasonsLabel();
   const hasSeries = items.some((i) => isSeries(i.tmdb_movie_id));
@@ -120,6 +123,7 @@ export function CollectionDetailClient({
       (kindFilter !== "tv" || isSeries(i.tmdb_movie_id)) &&
       (watchedFilter !== "watched" || isWatched(i)) &&
       (watchedFilter !== "not_watched" || !isWatched(i)) &&
+      (locationFilter === ALL || (locationFilter === NO_LOCATION ? !i.shelf_location : i.shelf_location === locationFilter)) &&
       (!query || i.movie_title.toLowerCase().includes(query) || (i.box_name ?? "").toLowerCase().includes(query));
 
     // Group boxes first (all their films), then keep a box when any film matches.
@@ -147,7 +151,7 @@ export function CollectionDetailClient({
     else entries.sort((a, b) => rating(b) - rating(a));
     return entries;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- isWatched reads watchedOverride
-  }, [items, typeFilter, kindFilter, boxFilter, watchedFilter, sort, searchQuery, watchedOverride]);
+  }, [items, typeFilter, kindFilter, boxFilter, watchedFilter, locationFilter, sort, searchQuery, watchedOverride]);
 
   // Shelf letters (A–Z, "#") when sorted by name, like a collector's app.
   const letterGroups = useMemo(() => {
@@ -383,6 +387,23 @@ export function CollectionDetailClient({
                 <SelectItem value="not_watched">{t("not_watched_label")}</SelectItem>
               </SelectContent>
             </Select>
+
+            {locations.length > 0 && (
+              <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <SelectTrigger className="w-40" aria-label={t("location_title")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>{t("location_all")}</SelectItem>
+                  {locations.map((l) => (
+                    <SelectItem key={l} value={l}>
+                      {l}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={NO_LOCATION}>{t("location_none")}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
 
             <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
               <SelectTrigger className="w-36">

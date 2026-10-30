@@ -20,6 +20,7 @@ import { CopyCollections } from "@/components/copy-collections";
 import { CopyDetails } from "@/components/copy-details";
 import { PurchaseDetails } from "@/components/purchase-details";
 import { TradeSelect } from "@/components/trade-select";
+import { LocationInput } from "@/components/location-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import type { MovieDetailDto } from "@/types/tmdb";
@@ -323,6 +324,16 @@ export function CollectionItemEditor({
             key={[initial.cut, initial.label, initial.region, initial.audio_languages?.join(","), initial.subtitle_languages?.join(",")].join("|")}
             item={initial}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("location_title")}</CardTitle>
+          <p className="text-xs text-muted-foreground">{t("location_hint")}</p>
+        </CardHeader>
+        <CardContent>
+          <LocationInput key={initial.shelf_location ?? ""} item={initial} />
         </CardContent>
       </Card>
 

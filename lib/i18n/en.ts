@@ -1432,4 +1432,12 @@ export const en: Record<keyof typeof nl, string> = {
   push_off: "Push notifications off for this device",
   push_error: "Switching push notifications on failed",
   push_not_ready: "Push notifications aren't available yet: push_subscriptions.sql still has to run in Supabase.",
+  location_title: "Place on the shelf",
+  location_hint: "Where this copy is, so you find it quickly. You can filter on it in your collection.",
+  location_placeholder: "E.g. Living room · cabinet 2 · shelf 3",
+  location_not_ready: "Place isn't available yet: shelf_location.sql still has to run in Supabase.",
+  location_error: "Saving failed",
+  location_all: "All places",
+  location_none: "No place",
+  import_field_location: "Place",
 };

@@ -93,6 +93,8 @@ export interface CollectionItem {
   purchase_shop?: string | null;
   /** Ruillijst (trade_list.sql). */
   for_trade?: "sale" | "trade" | "both" | null;
+  /** Where the copy is (shelf_location.sql), free text. */
+  shelf_location?: string | null;
   is_box: boolean;
   box_group_id: string | null;
   box_name: string | null;
