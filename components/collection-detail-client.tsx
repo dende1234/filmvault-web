@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Disc3, Download, Eye, Film, Image as ImageIcon, MoreHorizontal, Printer, ScanLine, SearchX, X } from "lucide-react";
+import { Check, Disc3, Download, Eye, Film, Image as ImageIcon, ListChecks, MoreHorizontal, Printer, ScanLine, SearchX, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { removeBoxFromCollection, removeCollectionItem } from "@/actions/collections";
@@ -31,6 +32,8 @@ import { BoxCard } from "@/components/box-card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { PosterControl, WatchedToggle } from "@/components/watched-toggle";
 import { setFilmWatched } from "@/actions/watched";
+import { undoToast } from "@/lib/undo-toast";
+import { BulkEditDialog } from "@/components/bulk-edit-dialog";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +44,7 @@ import {
 } from "@/components/ui/dialog";
 
 const ALL = "all";
+const NO_LOCATION = "__no_location";
 
 /** A box shows as one card: its films share box_group_id (older boxes without
  * one fall back to name + barcode). */
@@ -72,6 +76,8 @@ export function CollectionDetailClient({
   const [watchedFilter, setWatchedFilter] = useState<"all" | "watched" | "not_watched">("all");
   const [kindFilter, setKindFilter] = useState<"all" | "movie" | "tv">("all");
   const [boxFilter, setBoxFilter] = useState<"all" | "boxes" | "single">("all");
+  const [locationFilter, setLocationFilter] = useState<string>(ALL);
+  const locations = useMemo(() => Array.from(new Set(items.map((i) => i.shelf_location).filter((l): l is string => !!l))).sort((a, b) => a.localeCompare(b)), [items]);
   const hasBoxes = items.some((i) => i.is_box);
   const seasonsLabel = useSeasonsLabel();
   const hasSeries = items.some((i) => isSeries(i.tmdb_movie_id));
@@ -106,6 +112,53 @@ export function CollectionDetailClient({
     } else router.refresh();
   }
   const [isDeleting, setIsDeleting] = useState(false);
+  // "Selecteren": pick copies (a box as a whole) for one change at once.
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const groupIdsOf = (e: Entry) => (e.kind === "item" ? [e.item.item_group_id] : Array.from(new Set(e.items.map((i) => i.item_group_id))));
+  const toggleSelected = (ids: string[]) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      const on = ids.every((id) => next.has(id));
+      for (const id of ids) {
+        if (on) next.delete(id);
+        else next.add(id);
+      }
+      return next;
+    });
+  const renderSelectable = (entry: Entry) => {
+    const card = renderEntry(entry);
+    if (!selectMode) return card;
+    const ids = groupIdsOf(entry);
+    const on = ids.every((id) => selected.has(id));
+    const name = entryName(entry);
+    return (
+      <div key={`sel-${entry.kind === "item" ? entry.item.id : entry.key}`} className="relative">
+        {card}
+        <button
+          type="button"
+          onClick={() => toggleSelected(ids)}
+          aria-pressed={on}
+          aria-label={t(on ? "bulk_deselect" : "bulk_select", name)}
+          className={cn(
+            "absolute inset-0 z-30 rounded-lg ring-2 transition-colors",
+            on ? "bg-primary/15 ring-primary" : "ring-transparent hover:ring-border",
+          )}
+        >
+          <span
+            className={cn(
+              "absolute left-2 top-2 flex size-6 items-center justify-center rounded-full border-2 shadow",
+              on ? "border-primary bg-primary text-primary-foreground" : "border-white bg-black/40",
+            )}
+            aria-hidden
+          >
+            {on && <Check className="size-4" />}
+          </span>
+        </button>
+      </div>
+    );
+  };
   const [mediaTypes, setMediaTypes] = useState<string[]>([]);
 
   useEffect(() => {
@@ -120,6 +173,7 @@ export function CollectionDetailClient({
       (kindFilter !== "tv" || isSeries(i.tmdb_movie_id)) &&
       (watchedFilter !== "watched" || isWatched(i)) &&
       (watchedFilter !== "not_watched" || !isWatched(i)) &&
+      (locationFilter === ALL || (locationFilter === NO_LOCATION ? !i.shelf_location : i.shelf_location === locationFilter)) &&
       (!query || i.movie_title.toLowerCase().includes(query) || (i.box_name ?? "").toLowerCase().includes(query));
 
     // Group boxes first (all their films), then keep a box when any film matches.
@@ -147,7 +201,7 @@ export function CollectionDetailClient({
     else entries.sort((a, b) => rating(b) - rating(a));
     return entries;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- isWatched reads watchedOverride
-  }, [items, typeFilter, kindFilter, boxFilter, watchedFilter, sort, searchQuery, watchedOverride]);
+  }, [items, typeFilter, kindFilter, boxFilter, watchedFilter, locationFilter, sort, searchQuery, watchedOverride]);
 
   // Shelf letters (A–Z, "#") when sorted by name, like a collector's app.
   const letterGroups = useMemo(() => {
@@ -248,9 +302,10 @@ export function CollectionDetailClient({
     if (!pendingBoxDelete) return;
     setIsDeleting(true);
     try {
-      await removeBoxFromCollection(collection.id, pendingBoxDelete.map((i) => i.id));
+      const removed = await removeBoxFromCollection(collection.id, pendingBoxDelete.map((i) => i.id));
       setPendingBoxDelete(null);
       router.refresh();
+      undoToast(t("undo_removed"), t("undo_action"), removed, () => router.refresh(), t("undo_error"));
     } catch {
       toast.error(t("box_remove_error"));
     } finally {
@@ -262,9 +317,10 @@ export function CollectionDetailClient({
     if (!pendingDelete) return;
     setIsDeleting(true);
     try {
-      await removeCollectionItem(pendingDelete.id);
+      const removed = await removeCollectionItem(pendingDelete.id);
       setPendingDelete(null);
       router.refresh();
+      undoToast(t("undo_removed"), t("undo_action"), removed ? [removed] : [], () => router.refresh(), t("undo_error"));
     } catch {
       toast.error(t("collection_item_remove_error"));
     } finally {
@@ -384,6 +440,23 @@ export function CollectionDetailClient({
               </SelectContent>
             </Select>
 
+            {locations.length > 0 && (
+              <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <SelectTrigger className="w-40" aria-label={t("location_title")}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={ALL}>{t("location_all")}</SelectItem>
+                  {locations.map((l) => (
+                    <SelectItem key={l} value={l}>
+                      {l}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={NO_LOCATION}>{t("location_none")}</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+
             <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
               <SelectTrigger className="w-36">
                 <SelectValue />
@@ -394,6 +467,22 @@ export function CollectionDetailClient({
                 <SelectItem value="rating">{t("sort_rating")}</SelectItem>
               </SelectContent>
             </Select>
+
+            {isOwner && (
+              <Button
+                variant={selectMode ? "default" : "outline"}
+                size="sm"
+                className="h-10"
+                aria-pressed={selectMode}
+                onClick={() => {
+                  setSelectMode((v) => !v);
+                  setSelected(new Set());
+                }}
+              >
+                <ListChecks />
+                {t(selectMode ? "bulk_stop" : "bulk_start")}
+              </Button>
+            )}
 
             <Button
               variant="outline"
@@ -450,11 +539,37 @@ export function CollectionDetailClient({
                   <span className="h-px flex-1 bg-border" aria-hidden />
                 </h2>
               )}
-              <PosterGrid dense={caseLook}>{group.entries.map(renderEntry)}</PosterGrid>
+              <PosterGrid dense={caseLook}>{group.entries.map(renderSelectable)}</PosterGrid>
             </section>
           ))}
         </div>
       )}
+
+      {selectMode && (
+        <div className="sticky bottom-20 z-30 mx-auto flex w-full max-w-xl flex-wrap items-center justify-between gap-2 rounded-card border border-border bg-card/95 p-3 shadow-lg backdrop-blur md:bottom-4">
+          <span className="text-sm font-medium">{t("bulk_count", selected.size)}</span>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="ghost" onClick={() => setSelected(new Set(filtered.flatMap(groupIdsOf)))}>
+              {t("pending_select_all")}
+            </Button>
+            <Button size="sm" disabled={selected.size === 0} onClick={() => setBulkOpen(true)}>
+              {t("bulk_edit")}
+            </Button>
+          </div>
+        </div>
+      )}
+      <BulkEditDialog
+        key={bulkOpen ? "open" : "closed"}
+        open={bulkOpen}
+        onOpenChange={setBulkOpen}
+        collectionId={collection.id}
+        itemGroupIds={[...selected]}
+        onDone={() => {
+          setSelected(new Set());
+          setSelectMode(false);
+          router.refresh();
+        }}
+      />
 
       <Dialog open={!!pendingBoxDelete} onOpenChange={(open) => !open && setPendingBoxDelete(null)}>
         <DialogContent>

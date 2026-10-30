@@ -28,6 +28,8 @@ export interface Profile {
   newsletter_opt_in_at?: string | null;
   /** Weekly e-mail summary (email_digest.sql). */
   email_digest?: boolean;
+  /** Per-kind push/e-mail choices (notification_prefs.sql); missing = yes. */
+  notify_prefs?: import("@/lib/notify-prefs").NotifyPrefs;
 }
 
 export interface Collection {
@@ -93,6 +95,8 @@ export interface CollectionItem {
   purchase_shop?: string | null;
   /** Ruillijst (trade_list.sql). */
   for_trade?: "sale" | "trade" | "both" | null;
+  /** Where the copy is (shelf_location.sql), free text. */
+  shelf_location?: string | null;
   is_box: boolean;
   box_group_id: string | null;
   box_name: string | null;
@@ -476,9 +480,11 @@ export interface UserFeedback {
 /** user_notifications (contributors_region.sql). */
 export interface UserNotification {
   id: string;
-  kind: "barcode_approved" | "barcode_rejected" | "loan_reminder";
+  kind: "barcode_approved" | "barcode_rejected" | "loan_reminder" | "announcement";
   payload: {
     title?: string;
+    /** announcement (announcements.sql) */
+    body?: string;
     /** loan_reminder (loan_reminders.sql) */
     loanedTo?: string;
     loanedAt?: string;
@@ -493,4 +499,16 @@ export interface UserNotification {
   };
   created_at: string;
   read_at: string | null;
+}
+
+/** announcements (announcements.sql): planned and/or targeted announcements. */
+export interface Announcement {
+  id: number;
+  title: string;
+  body: string;
+  audience: import("@/lib/announcement-audience").Audience;
+  send_on: string;
+  sent_at: string | null;
+  recipients: number | null;
+  created_at: string;
 }

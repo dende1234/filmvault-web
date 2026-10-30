@@ -136,7 +136,7 @@ async function notifySubmitters(supabase: Awaited<ReturnType<typeof createClient
         ? { title: "Barcode approved", body: `${title} is now in your collection.` }
         : { title: "Barcode not approved", body: `Your submission for ${title} was not approved.` },
       url: "/meldingen",
-    }),
+    }, "barcode"),
   );
 }
 

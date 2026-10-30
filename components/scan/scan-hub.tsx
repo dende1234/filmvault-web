@@ -7,10 +7,11 @@ import { AddFilmFlow } from "@/components/add-film-flow";
 import { AddBoxFlow } from "@/components/add-box-flow";
 import { BulkScan } from "@/components/bulk-scan";
 import { ShopMode } from "@/components/shop-mode";
+import { ShelfScanClient } from "@/components/admin/shelf-scan-client";
 import { PageHeader } from "@/components/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export type ScanMode = "een" | "meerdere" | "winkel";
+export type ScanMode = "een" | "meerdere" | "winkel" | "kast";
 
 /** /scannen: the three ways to scan in one place. Only the active tab is
  * mounted (Radix), so switching tabs also stops that tab's camera. The mode
@@ -19,20 +20,24 @@ export function ScanHub({
   mode,
   collections,
   initialCollectionId,
+  shelf,
 }: {
   mode: ScanMode;
   collections: Collection[];
   initialCollectionId: string | null;
+  /** Shelf photo tab, when the shelf_scan feature is on for this member. */
+  shelf?: { mediaTypes: string[]; edities: string[] } | null;
 }) {
   const { t } = useT();
   const router = useRouter();
 
   return (
     <Tabs value={mode} onValueChange={(v) => router.replace(v === "een" ? "/scannen" : `/scannen?modus=${v}`, { scroll: false })}>
-      <TabsList className="mb-6">
+      <TabsList className="mb-6 max-w-full overflow-x-auto">
         <TabsTrigger value="een">{t("scan_hub_single")}</TabsTrigger>
         <TabsTrigger value="meerdere">{t("scan_hub_bulk")}</TabsTrigger>
         <TabsTrigger value="winkel">{t("scan_hub_shop")}</TabsTrigger>
+        {shelf && <TabsTrigger value="kast">{t("scan_hub_shelf")}</TabsTrigger>}
       </TabsList>
       <TabsContent value="een" className="flex flex-col gap-6">
         <PageHeader title={t("scan_hub_single_title")} description={t("scan_hub_single_description")} />
@@ -47,6 +52,11 @@ export function ScanHub({
       <TabsContent value="winkel">
         <ShopMode />
       </TabsContent>
+      {shelf && (
+        <TabsContent value="kast">
+          <ShelfScanClient collections={collections} mediaTypes={shelf.mediaTypes} edities={shelf.edities} />
+        </TabsContent>
+      )}
     </Tabs>
   );
 }

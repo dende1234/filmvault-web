@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { isMissingError } from "@/lib/admin/migrations";
+import { NOTIFY_KINDS, type NotifyPrefs } from "@/lib/notify-prefs";
+import { profileUpdateSchema } from "@/lib/validation";
 import { requireUserId } from "@/lib/auth";
 import { removeMember, upsertMember } from "@/lib/newsletter";
 import { THEME_COOKIE, LOCALE_COOKIE, SOURCE_COOKIE, type ThemePreference } from "@/lib/preferences";
@@ -117,6 +119,23 @@ export async function setEmailDigest(on: boolean): Promise<{ error: "not_ready" 
   return { error: null };
 }
 
+/** Per-kind push/e-mail choices (notification_prefs.sql). */
+export async function setNotifyPrefs(prefs: NotifyPrefs): Promise<{ error: "not_ready" | "failed" | null }> {
+  const userId = await requireUserId();
+  const clean: NotifyPrefs = {};
+  for (const ch of ["push", "email"] as const) {
+    for (const k of NOTIFY_KINDS) {
+      if (prefs[ch]?.[k] === false) (clean[ch] ??= {})[k] = false;
+    }
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.from("profiles").update({ notify_prefs: clean }).eq("id", userId);
+  if (isMissingError(error)) return { error: "not_ready" };
+  if (error) return { error: "failed" };
+  revalidatePath("/profile");
+  return { error: null };
+}
+
 export async function updateProfile(update: {
   name: string | null;
   bio: string | null;
@@ -130,7 +149,10 @@ export async function updateProfile(update: {
   } = await supabase.auth.getUser();
   if (!user) return { error: "not authenticated" };
 
-  const { error } = await supabase.from("profiles").update(update).eq("id", user.id);
+  // Only the editable fields: never trust the shape a caller sends.
+  const parsed = profileUpdateSchema.safeParse(update);
+  if (!parsed.success) return { error: "invalid" };
+  const { error } = await supabase.from("profiles").update(parsed.data).eq("id", user.id);
   revalidatePath("/profile");
   return { error: error?.message ?? null };
 }

@@ -1,5 +1,5 @@
 import { CheckCircle2, CircleHelp, XCircle } from "lucide-react";
-import { getSystemStatus, type ProbeState } from "@/actions/system-status";
+import { getRlsReport, getSystemStatus, type ProbeState } from "@/actions/system-status";
 import { getRecentErrors } from "@/actions/errors";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
@@ -15,7 +15,8 @@ const COLOR: Record<ProbeState, string> = { ok: "text-success", missing: "text-d
 export default async function AdminStatusPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
-  const [{ migrations, settings }, errors] = await Promise.all([getSystemStatus(), getRecentErrors()]);
+  const [{ migrations, settings }, errors, rls] = await Promise.all([getSystemStatus(), getRecentErrors(), getRlsReport()]);
+  const unsafe = rls?.filter((r) => !r.rls_enabled || r.policies === 0) ?? [];
   const when = new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "nl-NL", { dateStyle: "short", timeStyle: "short" });
   const missing = migrations.filter((m) => m.state === "missing").length;
 
@@ -106,6 +107,29 @@ export default async function AdminStatusPage() {
               </li>
             ))}
           </ul>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="flex flex-col gap-3 pt-5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="font-display text-xl font-semibold tracking-tight">{dict.admin_rls_title}</h2>
+            {rls && <Badge variant={rls.some((r) => !r.rls_enabled) ? "destructive" : "success"}>{format(dict.admin_rls_count, rls.length)}</Badge>}
+          </div>
+          <p className="text-sm text-muted-foreground">{rls ? dict.admin_rls_hint : dict.admin_rls_missing}</p>
+          {rls && (unsafe.length === 0 ? (
+            <p className="flex items-center gap-2 text-sm"><CheckCircle2 className="size-4 text-success" />{dict.admin_rls_all_ok}</p>
+          ) : (
+            <ul className="divide-y divide-border/60">
+              {unsafe.map((r) => (
+                <li key={r.table_name} className="flex items-center gap-3 py-2 text-sm">
+                  <XCircle className={`size-4 shrink-0 ${r.rls_enabled ? "text-warning" : "text-destructive"}`} />
+                  <span className="min-w-0 flex-1 truncate font-mono text-xs">{r.table_name}</span>
+                  <span className="shrink-0 text-xs text-muted-foreground">{r.rls_enabled ? dict.admin_rls_no_policies : dict.admin_rls_off}</span>
+                </li>
+              ))}
+            </ul>
+          ))}
         </CardContent>
       </Card>
     </div>

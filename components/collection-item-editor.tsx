@@ -20,6 +20,7 @@ import { CopyCollections } from "@/components/copy-collections";
 import { CopyDetails } from "@/components/copy-details";
 import { PurchaseDetails } from "@/components/purchase-details";
 import { TradeSelect } from "@/components/trade-select";
+import { LocationInput } from "@/components/location-input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import type { MovieDetailDto } from "@/types/tmdb";
@@ -31,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { undoToast } from "@/lib/undo-toast";
 import {
   Dialog,
   DialogContent,
@@ -244,9 +246,10 @@ export function CollectionItemEditor({
   async function handleDelete() {
     setIsDeleting(true);
     try {
-      await removeCollectionItem(item.id);
+      const removed = await removeCollectionItem(item.id);
       router.replace(`/collections/${item.collection_id}`);
       router.refresh();
+      undoToast(t("undo_removed"), t("undo_action"), removed ? [removed] : [], () => router.refresh(), t("undo_error"));
     } catch {
       toast.error(t("collection_item_remove_error"));
       setIsDeleting(false);
@@ -323,6 +326,16 @@ export function CollectionItemEditor({
             key={[initial.cut, initial.label, initial.region, initial.audio_languages?.join(","), initial.subtitle_languages?.join(",")].join("|")}
             item={initial}
           />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("location_title")}</CardTitle>
+          <p className="text-xs text-muted-foreground">{t("location_hint")}</p>
+        </CardHeader>
+        <CardContent>
+          <LocationInput key={initial.shelf_location ?? ""} item={initial} />
         </CardContent>
       </Card>
 

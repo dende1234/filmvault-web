@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { editionLabel } from "@/lib/edition-label";
 import { parseCsv, toCsv } from "@/lib/csv";
+import { looksLikeXml, xmlToTable } from "@/lib/xml-import";
 import { normalizeBarcode } from "@/lib/barcode";
 import { isSeries } from "@/lib/titles";
 import { parseSeasons } from "@/lib/seasons";
@@ -78,6 +79,8 @@ type ParsedRow = {
   subtitles: string[] | null;
   /** Purchase details (only kept for a copy that goes straight into the collection). */
   purchase: PurchaseInput | null;
+  /** Where it is on the shelf (only for a copy that goes straight in). */
+  location: string | null;
   /** Letterboxd watchlist row: goes to the wishlist. */
   toWishlist: boolean;
 };
@@ -153,7 +156,8 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
 
   // ---------- Step 1: file ----------
   function readTable(content: string, fileName?: string) {
-    const parsed = parseCsv(content);
+    // XML exports of other apps (DVD Profiler, CLZ, My Movies) become the same table.
+    const parsed = looksLikeXml(content) ? xmlToTable(content) : parseCsv(content);
     if (parsed.length === 0) {
       toast.error(t("import_empty_file"));
       return;
@@ -234,6 +238,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
           date: normalizeDate(cell(r, "purchaseDate")),
           shop: cell(r, "shop").trim().slice(0, 80) || null,
         },
+        location: cell(r, "location").trim().slice(0, 80) || null,
         toWishlist: letterboxd === "watchlist",
       };
       if (box) {
@@ -376,6 +381,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
           watchedOn: r.watchedOn,
           details: { cut: r.cut, label: r.label, region: r.region, audioLanguages: r.audio, subtitleLanguages: r.subtitles },
           purchase: r.purchase,
+          location: r.location,
           ...(r.toWishlist ? { toWishlist: true, barcode: null } : {}),
         });
       } else {
@@ -469,7 +475,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
             <input
               ref={fileRef}
               type="file"
-              accept=".csv,.tsv,.txt,text/csv,text/plain,text/tab-separated-values"
+              accept=".csv,.tsv,.txt,.xml,text/csv,text/plain,text/tab-separated-values,text/xml,application/xml"
               className="hidden"
               onChange={(e) => {
                 const file = e.target.files?.[0];

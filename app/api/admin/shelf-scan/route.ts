@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/require-admin";
+import { featureOn } from "@/lib/features";
 import { scanShelfPhoto, ShelfScanUnavailableError } from "@/lib/ai/shelf-scan";
 import { withinLimit } from "@/lib/rate-limit";
 
@@ -9,14 +9,11 @@ export const maxDuration = 60;
 const MAX_BYTES = 5 * 1024 * 1024;
 const TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 
-/** Admin only (for now): photo of a shelf in, recognized titles out. The
+/** Behind the shelf_scan feature switch: photo of a shelf in, recognized titles out. The
  * photo is passed through to the Claude API and not stored. */
 export async function POST(request: Request) {
-  try {
-    await requireAdmin();
-  } catch {
-    return Response.json({ error: "forbidden" }, { status: 403 });
-  }
+  // Admins always; members once the feature is switched on for them (/admin/features).
+  if (!(await featureOn("shelf_scan"))) return Response.json({ error: "forbidden" }, { status: 403 });
   if (!(await withinLimit("shelf_scan"))) return Response.json({ error: "rate_limited" }, { status: 429 });
 
   const form = await request.formData().catch(() => null);

@@ -27,6 +27,13 @@ describe("matchHelp", () => {
       ["kan ik pushmeldingen krijgen", "email-notifications"],
       ["films te ruil aanbieden", "trade"],
       ["statistieken van mijn collectie", "statistics"],
+      ["waar staat deze film in de kast", "shelf-location"],
+      ["meerdere films tegelijk aanpassen", "bulk-edit"],
+      ["hoe maak ik een slimme collectie", "smart-collections"],
+      ["barcode uit een foto lezen", "barcode-photo"],
+      ["kan ik mijn my movies xml importeren", "import-csv"],
+      ["per ongeluk verwijderd, ongedaan maken", "delete-copy"],
+      ["al mijn gegevens downloaden", "data-download"],
     ];
     for (const [q, id] of cases) expect(matchHelp(q, HELP_ENTRIES)[0]?.entry.id, q).toBe(id);
   });

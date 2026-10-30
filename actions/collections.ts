@@ -15,6 +15,7 @@ import { isMissingError } from "@/lib/admin/migrations";
 import { isSeries } from "@/lib/titles";
 import { purchaseColumns } from "@/lib/purchase";
 import type { Collection, CollectionItem, Condition, PublicCollection } from "@/types/database";
+import { bulkPatchSchema, restoreRowSchema } from "@/lib/validation";
 
 export async function getUserCollections(): Promise<Collection[]> {
   const supabase = await createClient();
@@ -254,11 +255,40 @@ export async function updateCollectionItemTrade(itemGroupId: string, forTrade: "
   return { error: null };
 }
 
-export async function removeCollectionItem(itemId: string) {
+/** Where the copy is; "" clears it. "not_ready" before shelf_location.sql. */
+export async function updateCollectionItemLocation(itemGroupId: string, location: string | null): Promise<{ error: "not_ready" | null }> {
+  await requireUserId();
   const supabase = await createClient();
+  const value = location?.trim().slice(0, 80) || null;
+  const { error } = await supabase.from("collection_items").update({ shelf_location: value }).eq("item_group_id", itemGroupId);
+  if (isMissingError(error)) return { error: "not_ready" };
+  if (error) throw error;
+  revalidatePath("/collections", "layout");
+  return { error: null };
+}
+
+/** Every location you used, for suggestions (most used first). */
+export async function getMyLocations(): Promise<string[]> {
+  const userId = await requireUserId();
+  const supabase = await createClient();
+  const { data: cols } = await supabase.from("collections").select("id").eq("user_id", userId);
+  const ids = (cols ?? []).map((c: { id: string }) => c.id);
+  if (ids.length === 0) return [];
+  const { data, error } = await supabase.from("collection_items").select("shelf_location").in("collection_id", ids).not("shelf_location", "is", null).limit(5000);
+  if (error) return [];
+  const counts = new Map<string, number>();
+  for (const r of (data ?? []) as { shelf_location: string }[]) counts.set(r.shelf_location, (counts.get(r.shelf_location) ?? 0) + 1);
+  return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([k]) => k).slice(0, 50);
+}
+
+/** Returns the removed row, so the page can offer "Ongedaan maken". */
+export async function removeCollectionItem(itemId: string): Promise<CollectionItem | null> {
+  const supabase = await createClient();
+  const { data: row } = await supabase.from("collection_items").select("*").eq("id", itemId).maybeSingle();
   const { error } = await supabase.from("collection_items").delete().eq("id", itemId);
   if (error) throw error;
   revalidatePath("/collections", "layout");
+  return (row as CollectionItem | null) ?? null;
 }
 
 // One physical copy can sit in several collections: one collection_items row
@@ -271,6 +301,8 @@ const COPY_COLUMNS = [
   "rating", "watched", "seasons", "custom_cover_path", "is_box", "box_group_id", "box_name",
   "personal_note", "loaned_to", "loaned_at", "is_favorite", "tags", "condition",
   "cut", "audio_languages", "subtitle_languages", "label", "region",
+  // Later copy details: carried along too (skipped while their SQL hasn't run).
+  "purchase_price", "purchase_date", "purchase_shop", "for_trade", "shelf_location",
 ] as const;
 /** The caller's rows for this copy (or, for a box, the whole box), across all
  * of their collections. Friends can read collection_items too, so ownership is
@@ -369,13 +401,16 @@ export async function getBoxItems(collectionId: string, boxGroupId: string): Pro
 }
 
 /** Removes a whole box (its films' rows) from one collection only. */
-export async function removeBoxFromCollection(collectionId: string, itemIds: string[]) {
-  if (itemIds.length === 0) return;
+/** Returns the removed rows, so the page can offer "Ongedaan maken". */
+export async function removeBoxFromCollection(collectionId: string, itemIds: string[]): Promise<CollectionItem[]> {
+  if (itemIds.length === 0) return [];
   await requireUserId();
   const supabase = await createClient();
+  const { data: rows } = await supabase.from("collection_items").select("*").eq("collection_id", collectionId).in("id", itemIds);
   const { error } = await supabase.from("collection_items").delete().eq("collection_id", collectionId).in("id", itemIds);
   if (error) throw error;
   revalidatePath("/collections", "layout");
+  return (rows ?? []) as CollectionItem[];
 }
 
 export async function getCollectionsByIds(collectionIds: string[]): Promise<Collection[]> {
@@ -462,4 +497,117 @@ export async function getMyStatsRows(): Promise<import("@/lib/collection-stats")
   const ids = (cols ?? []).map((c: { id: string }) => c.id);
   if (ids.length === 0) return [];
   return fetchAll((from, to) => supabase.from("collection_items").select("*").in("collection_id", ids).order("id").range(from, to));
+}
+
+export type BulkPatch = {
+  addTags?: string[];
+  removeTags?: string[];
+  /** undefined = unchanged, null = clear */
+  condition?: Condition | null;
+  location?: string | null;
+  forTrade?: "sale" | "trade" | "both" | null;
+  /** Also put these copies in this collection (same item_group_id). */
+  addToCollectionId?: string;
+  /** Take them out of `fromCollectionId` (other collections keep them). */
+  removeFromCollection?: boolean;
+};
+
+const BULK_MAX = 500;
+
+/** "Selecteren" on a collection page: one change for many copies at once.
+ * Only copies in the caller's own collections are touched. Returns the
+ * rows removed from the collection (for "Ongedaan maken"). */
+export async function bulkEditCopies(
+  fromCollectionId: string,
+  itemGroupIds: string[],
+  patch: BulkPatch,
+): Promise<{ error: "not_ready" | "not_found" | null; removed?: CollectionItem[] }> {
+  const userId = await requireUserId();
+  const checked = bulkPatchSchema.safeParse(patch);
+  if (!checked.success) return { error: "not_found" };
+  patch = checked.data;
+  const supabase = await createClient();
+  const groups = Array.from(new Set(itemGroupIds.filter((g) => typeof g === "string"))).slice(0, BULK_MAX);
+  const { data: own } = await supabase.from("collections").select("id").eq("user_id", userId);
+  const ownIds = (own ?? []).map((c: { id: string }) => c.id);
+  if (!ownIds.includes(fromCollectionId) || groups.length === 0) return { error: "not_found" };
+
+  const rows = await fetchAll<CollectionItem>((from, to) =>
+    supabase.from("collection_items").select("*").in("item_group_id", groups).in("collection_id", ownIds).order("id").range(from, to),
+  );
+  const mine = new Set(rows.map((r) => r.item_group_id));
+  const ids = groups.filter((g) => mine.has(g));
+  if (ids.length === 0) return { error: "not_found" };
+
+  const simple: Record<string, unknown> = {};
+  if (patch.condition !== undefined) simple.condition = patch.condition;
+  if (patch.location !== undefined) simple.shelf_location = patch.location?.trim().slice(0, 80) || null;
+  if (patch.forTrade !== undefined) simple.for_trade = patch.forTrade;
+  if (Object.keys(simple).length > 0) {
+    const { error } = await supabase.from("collection_items").update(simple).in("item_group_id", ids).in("collection_id", ownIds);
+    if (isMissingError(error)) return { error: "not_ready" };
+    if (error) throw error;
+  }
+
+  const clean = (list?: string[]) => (list ?? []).map((t) => t.trim()).filter(Boolean).slice(0, 20);
+  const add = clean(patch.addTags);
+  const remove = clean(patch.removeTags).map((t) => t.toLowerCase());
+  if (add.length || remove.length) {
+    const byGroup = new Map<string, string[]>();
+    for (const r of rows) if (!byGroup.has(r.item_group_id)) byGroup.set(r.item_group_id, r.tags ?? []);
+    for (const [group, tags] of byGroup) {
+      const next = [...tags.filter((t) => !remove.includes(t.toLowerCase()))];
+      for (const t of add) if (!next.some((x) => x.toLowerCase() === t.toLowerCase())) next.push(t);
+      if (next.join("\u0000") === tags.join("\u0000")) continue;
+      const { error } = await supabase.from("collection_items").update({ tags: next }).eq("item_group_id", group).in("collection_id", ownIds);
+      if (error) throw error;
+    }
+  }
+
+  if (patch.addToCollectionId && ownIds.includes(patch.addToCollectionId)) {
+    const target = patch.addToCollectionId;
+    const present = new Set(rows.filter((r) => r.collection_id === target).map((r) => r.item_group_id));
+    const seen = new Set<string>();
+    const inserts: Record<string, unknown>[] = [];
+    for (const row of rows) {
+      if (present.has(row.item_group_id) || seen.has(row.item_group_id)) continue;
+      seen.add(row.item_group_id);
+      const copy: Record<string, unknown> = { collection_id: target };
+      for (const col of COPY_COLUMNS) if (col in row) copy[col] = (row as unknown as Record<string, unknown>)[col];
+      inserts.push(copy);
+    }
+    if (inserts.length) {
+      const { error } = await supabase.from("collection_items").insert(inserts);
+      if (error) throw error;
+    }
+  }
+
+  let removed: CollectionItem[] | undefined;
+  if (patch.removeFromCollection) {
+    removed = rows.filter((r) => r.collection_id === fromCollectionId);
+    const { error } = await supabase.from("collection_items").delete().in("item_group_id", ids).eq("collection_id", fromCollectionId);
+    if (error) throw error;
+  }
+
+  revalidatePath("/collections", "layout");
+  return { error: null, removed };
+}
+
+/** "Ongedaan maken": put removed rows back exactly as they were (same ids),
+ * only into the caller's own collections. */
+export async function restoreCopies(rows: CollectionItem[]): Promise<void> {
+  const userId = await requireUserId();
+  if (rows.length === 0) return;
+  const supabase = await createClient();
+  const { data: own } = await supabase.from("collections").select("id").eq("user_id", userId);
+  const ownIds = new Set((own ?? []).map((c: { id: string }) => c.id));
+  const safe = rows
+    .slice(0, BULK_MAX)
+    .map((r) => restoreRowSchema.safeParse(r))
+    .flatMap((r) => (r.success ? [r.data] : []))
+    .filter((r) => ownIds.has(r.collection_id));
+  if (safe.length === 0) return;
+  const { error } = await supabase.from("collection_items").upsert(safe as unknown as Record<string, unknown>[], { onConflict: "id", ignoreDuplicates: true });
+  if (error) throw error;
+  revalidatePath("/collections", "layout");
 }

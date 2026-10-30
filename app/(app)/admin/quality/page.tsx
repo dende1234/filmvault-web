@@ -6,6 +6,7 @@ import { getLocale } from "@/lib/preferences";
 import { titleHref } from "@/lib/titles";
 import { PageHeader } from "@/components/page-header";
 import { MoveBarcodeButton } from "@/components/admin/move-barcode-button";
+import { RefreshTitlesButton } from "@/components/admin/refresh-titles-button";
 import { Poster } from "@/components/movie/poster";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,6 +53,16 @@ export default async function AdminQualityPage() {
           </Link>
         }
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{dict.admin_refresh_title}</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <p className="text-sm text-muted-foreground">{dict.admin_refresh_hint}</p>
+          <RefreshTitlesButton />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

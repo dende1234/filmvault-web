@@ -20,7 +20,11 @@ export type AdminAction =
   | "user_unblock"
   | "post_delete"
   | "comment_delete"
+  | "feature_change"
   | "announcement_send"
+  | "announcement_schedule"
+  | "announcement_cancel"
+  | "titles_refresh"
   | "help_answer_save"
   | "help_answer_delete";
 

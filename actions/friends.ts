@@ -59,7 +59,7 @@ export async function sendFriendRequest(receiverId: string): Promise<void> {
       nl: { title: "Nieuw vriendverzoek", body: `${me?.name || "Iemand"} wil vrienden worden op Filmory.` },
       en: { title: "New friend request", body: `${me?.name || "Someone"} wants to be friends on Filmory.` },
       url: "/friends",
-    }),
+    }, "friends"),
   );
   revalidatePath("/friends");
 }

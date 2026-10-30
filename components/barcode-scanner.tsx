@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ScanBarcode } from "lucide-react";
+import { ImageUp, ScanBarcode } from "lucide-react";
+import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { useHasCamera } from "@/lib/use-has-camera";
 import { isValidEanUpc, normalizeBarcode } from "@/lib/barcode";
@@ -10,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 
 // Minimal typing for the (Chromium-only) Shape Detection API.
 type DetectedBarcode = { rawValue: string };
-type BarcodeDetectorLike = { detect: (source: HTMLVideoElement) => Promise<DetectedBarcode[]> };
+type BarcodeDetectorLike = { detect: (source: ImageBitmapSource) => Promise<DetectedBarcode[]> };
 type BarcodeDetectorCtor = {
   new (options: { formats: string[] }): BarcodeDetectorLike;
   getSupportedFormats?: () => Promise<string[]>;
@@ -40,7 +41,8 @@ export function BarcodeScanButton({
   const { t } = useT();
   const hasCamera = useHasCamera();
   const [open, setOpen] = useState(false);
-  if (!hasCamera) return null;
+  // No camera (e.g. a desktop): read the barcode from a photo instead.
+  if (!hasCamera) return <BarcodePhotoButton onDetected={onDetected} variant={variant} size={size} iconOnly={iconOnly} className={className} />;
 
   return (
     <>
@@ -70,6 +72,15 @@ export function BarcodeScanButton({
               onCancel={() => setOpen(false)}
             />
           )}
+          <BarcodePhotoButton
+            variant="ghost"
+            size="sm"
+            className="w-fit"
+            onDetected={(code) => {
+              setOpen(false);
+              onDetected(code);
+            }}
+          />
         </DialogContent>
       </Dialog>
     </>
@@ -193,5 +204,87 @@ export function ScannerView({
         </Button>
       )}
     </div>
+  );
+}
+
+/** Reads an EAN/UPC from an image (native BarcodeDetector, else zxing).
+ * null when no valid barcode is found. */
+export async function decodeBarcodeFromFile(file: File): Promise<string | null> {
+  const Native = (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor }).BarcodeDetector;
+  if (Native) {
+    try {
+      const bitmap = await createImageBitmap(file);
+      const found = await new Native({ formats: FORMATS }).detect(bitmap);
+      bitmap.close();
+      for (const f of found) {
+        const code = normalizeBarcode(f.rawValue);
+        if (isValidEanUpc(code)) return code;
+      }
+    } catch {
+      // Fall through to zxing.
+    }
+  }
+  const url = URL.createObjectURL(file);
+  try {
+    const [{ BrowserMultiFormatReader }, { BarcodeFormat, DecodeHintType }] = await Promise.all([import("@zxing/browser"), import("@zxing/library")]);
+    const hints = new Map([[DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.EAN_13, BarcodeFormat.UPC_A, BarcodeFormat.EAN_8]]]);
+    const result = await new BrowserMultiFormatReader(hints).decodeFromImageUrl(url);
+    const code = normalizeBarcode(result.getText());
+    return isValidEanUpc(code) ? code : null;
+  } catch {
+    return null;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+/** "Barcode uit foto": pick or take a photo of the barcode. */
+export function BarcodePhotoButton({
+  onDetected,
+  variant = "secondary",
+  size,
+  iconOnly = false,
+  className,
+}: {
+  onDetected: (barcode: string) => void;
+  variant?: ButtonProps["variant"];
+  size?: ButtonProps["size"];
+  iconOnly?: boolean;
+  className?: string;
+}) {
+  const { t } = useT();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          e.target.value = "";
+          if (!file) return;
+          setBusy(true);
+          const code = await decodeBarcodeFromFile(file);
+          setBusy(false);
+          if (code) onDetected(code);
+          else toast.error(t("scanner_photo_none"));
+        }}
+      />
+      <Button
+        type="button"
+        variant={variant}
+        size={iconOnly ? "icon" : size}
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+        aria-label={t("scanner_photo")}
+        className={className}
+      >
+        <ImageUp />
+        {!iconOnly && t("scanner_photo")}
+      </Button>
+    </>
   );
 }

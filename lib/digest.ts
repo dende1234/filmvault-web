@@ -11,6 +11,7 @@ const T = {
     approved: (t: string) => `Je barcode voor ${t} is goedgekeurd en staat in je collectie.`,
     rejected: (t: string) => `Je barcode voor ${t} is niet goedgekeurd.`,
     loan: (t: string, who: string) => `${t} is al ruim een maand uitgeleend aan ${who}.`,
+    news: (t: string) => `Nieuws van Filmory: ${t}`,
     other: (t: string) => `Nieuwe melding: ${t}`,
     cta: "Bekijk je meldingen",
     footer: "Je krijgt deze mail omdat je de wekelijkse samenvatting aan hebt staan. Uitzetten kan op je profiel.",
@@ -23,6 +24,7 @@ const T = {
     approved: (t: string) => `Your barcode for ${t} was approved and is in your collection.`,
     rejected: (t: string) => `Your barcode for ${t} was not approved.`,
     loan: (t: string, who: string) => `${t} has been lent to ${who} for over a month.`,
+    news: (t: string) => `News from Filmory: ${t}`,
     other: (t: string) => `New notification: ${t}`,
     cta: "See your notifications",
     footer: "You get this e-mail because the weekly summary is switched on. You can switch it off on your profile.",
@@ -40,6 +42,7 @@ export function buildDigest(items: DigestNotification[], opts: { name: string | 
     if (n.kind === "barcode_approved") return t.approved(title);
     if (n.kind === "barcode_rejected") return t.rejected(title);
     if (n.kind === "loan_reminder") return t.loan(title, n.payload.loanedTo ?? "?");
+    if (n.kind === "announcement") return t.news(title);
     return t.other(title);
   });
   const url = `${opts.siteUrl.replace(/\/$/, "")}/meldingen`;

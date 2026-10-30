@@ -38,14 +38,6 @@ export async function getAppStats(): Promise<AdminStats> {
   return (data as AdminStats[])[0];
 }
 
-export async function sendAnnouncement(title: string, body: string): Promise<void> {
-  await requireAdmin();
-  const supabase = await createClient();
-  const { error } = await supabase.functions.invoke("send-announcement", { body: { title, body } });
-  if (error) throw error;
-  await logAdminAction("announcement_send", undefined, { title });
-}
-
 /** Deletes ANOTHER user's account and all their data — via a separate
  * admin-delete-user Edge Function, not the self-service delete-account
  * one used by actions/profile.ts's deleteAccount(), since that one trusts

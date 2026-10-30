@@ -8,6 +8,7 @@ import { useT } from "@/lib/i18n/locale-provider";
 import { removeBoxFromCollection } from "@/actions/collections";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { undoToast } from "@/lib/undo-toast";
 
 /** "Box verwijderen uit deze collectie" on the box page, with confirmation. */
 export function BoxPageRemove({ collectionId, itemIds, boxName }: { collectionId: string; itemIds: string[]; boxName: string }) {
@@ -19,8 +20,9 @@ export function BoxPageRemove({ collectionId, itemIds, boxName }: { collectionId
   async function remove() {
     setBusy(true);
     try {
-      await removeBoxFromCollection(collectionId, itemIds);
+      const removed = await removeBoxFromCollection(collectionId, itemIds);
       router.replace(`/collections/${collectionId}`);
+      undoToast(t("undo_removed"), t("undo_action"), removed, () => router.refresh(), t("undo_error"));
     } catch {
       toast.error(t("box_remove_error"));
       setBusy(false);
