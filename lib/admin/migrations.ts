@@ -64,6 +64,7 @@ export const MIGRATIONS: Migration[] = [
   { file: "shelf_location.sql", probe: { kind: "column", table: "collection_items", column: "shelf_location" } },
   { file: "collection_growth.sql", probe: { kind: "table", table: "collection_growth_events" } },
   { file: "owned_releases.sql", probe: { kind: "column", table: "collection_items", column: "catalog_status" } },
+  { file: "wishlist_reservations.sql", probe: { kind: "rpc", fn: "wishlist_reservations_ready" } },
 ];
 
 /** PostgREST/Postgres codes for "this table, column or function doesn't exist". */

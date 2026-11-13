@@ -381,8 +381,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Kan ik mijn verlanglijst delen?", en: "Can I share my wishlist?" },
     a: {
-      nl: "Ja. Klik op je [verlanglijst](/wishlist) op **Delen** en zet **Openbaar via link** aan. Wie de link heeft ziet je titels (Holy Grails bovenaan), ook zonder account. Zet je het uit, dan werkt de link niet meer.",
-      en: "Yes. On your [wishlist](/wishlist) click **Share** and switch on **Public via link**. Anyone with the link sees your titles (Holy Grails first), even without an account. Switch it off and the link stops working.",
+      nl: "Ja. Klik op je [verlanglijst](/wishlist) op **Delen** en zet **Openbaar via link** aan. Wie de link heeft ziet je titels (Holy Grails bovenaan) en kan een cadeau afstrepen als gereserveerd of gekocht, ook zonder account. De wens blijft bestaan. Je eigen vinkjes kun je in dezelfde browser terugzetten; de eigenaar kan markeringen ook terugzetten. Zet delen uit en de link werkt niet meer.",
+      en: "Yes. On your [wishlist](/wishlist) click **Share** and switch on **Public via link**. Anyone with the link sees your titles (Holy Grails first) and can mark a gift as reserved or bought, even without an account. The wish stays on the list. You can undo your own marks in the same browser; the owner can also clear marks. Switch sharing off and the link stops working.",
     },
     keywords: { nl: ["verlanglijst delen", "cadeau", "verjaardag"], en: ["share wishlist", "gift", "birthday"] },
     pages: ["/wishlist"],
@@ -467,8 +467,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Wie kan mijn collectie zien?", en: "Who can see my collection?" },
     a: {
-      nl: "Je collecties zijn privé, behalve voor vrienden die je accepteert, en voor collecties die jij zelf openbaar maakt via een link. Je verlanglijst is altijd privé. Meer in het [privacybeleid](/privacy).",
-      en: "Your collections are private, except to friends you accept and collections you make public via a link yourself. Your wishlist is always private. More in the [privacy policy](/privacy).",
+      nl: "Je collecties zijn privé, behalve voor vrienden die je accepteert, en voor collecties die jij zelf openbaar maakt via een link. Je verlanglijst is privé totdat je die zelf deelt via een link. Meer in het [privacybeleid](/privacy).",
+      en: "Your collections are private, except to friends you accept and collections you make public via a link yourself. Your wishlist is private until you share it via a link. More in the [privacy policy](/privacy).",
     },
     keywords: { nl: ["privacy", "collectie zien", "zichtbaar", "privé"], en: ["privacy", "see collection", "visible", "private"] },
   },

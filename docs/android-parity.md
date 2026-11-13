@@ -76,3 +76,19 @@ of failing.
 - `admin_collection_growth_stats()` reports distinct-title activation in the
   first seven days and return in days 7–30, with mature cohorts and source
   breakdowns. Existing `admin_growth_stats()` and its history stay unchanged.
+
+## Shared wishlist reservations
+
+- `wishlist_reservations.sql` adds a private, RLS-protected reservation table.
+  A reservation does not delete a wishlist item or mark it as owned/watched.
+- `get_public_wishlist_with_reservations(user_id, token)` returns the existing
+  public projection plus `reservations_ready` and per-item `is_reserved`,
+  `reserved_by_you` and `can_release`. Tokens and hashes are never returned.
+- `set_public_wishlist_reservation(user_id, tmdb_movie_id, token, reserved)`
+  works without login only while the owner shares the wishlist. A random
+  32-byte token identifies the recipient for undo; web stores it in an
+  HttpOnly cookie. Other recipients cannot undo someone else's reservation;
+  the signed-in wishlist owner can. Persist the token privately if Android
+  adopts this endpoint. Do not use a device identifier or place it in a URL.
+- Old `get_public_wishlist` clients remain compatible and read-only. Delete
+  a wish and its reservation is removed by the foreign-key cascade.

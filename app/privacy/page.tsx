@@ -16,7 +16,7 @@ function Dutch() {
   return (
     <>
       <h1>Privacybeleid Filmory</h1>
-      <p className="text-sm text-muted-foreground">Laatst bijgewerkt: 10-10-2026</p>
+      <p className="text-sm text-muted-foreground">Laatst bijgewerkt: 13-11-2026</p>
 
       <p>
         Dit privacybeleid is van toepassing op zowel de Filmory-app als deze website, bereikbaar via{" "}
@@ -48,6 +48,11 @@ function Dutch() {
         De taal van de website kiezen we automatisch op basis van je land (afgeleid van je IP-adres, via Vercel) en
         de taalinstelling van je browser. Die gegevens slaan we niet op; alleen een taal die je zelf kiest, onthouden
         we in een cookie en, als je een account hebt, in je profiel. 
+      </p>
+      <p>
+        Streep je een cadeau af op een gedeelde verlanglijst, dan bewaart een functionele cookie maximaal één jaar
+        een willekeurige code in je browser. Daarmee kun je je eigen markeringen terugzetten. We slaan daarbij
+        geen naam van de ontvanger op. Een markering wordt verwijderd als de bijbehorende wens wordt verwijderd.
       </p>
       <p>
         Daarnaast meten we websitebezoek met Vercel Web Analytics: welke pagina&apos;s bezocht worden, via welke
@@ -145,7 +150,7 @@ function English() {
   return (
     <>
       <h1>Filmory Privacy Policy</h1>
-      <p className="text-sm text-muted-foreground">Last updated: 10-10-2026</p>
+      <p className="text-sm text-muted-foreground">Last updated: 13-11-2026</p>
 
       <p>
         This privacy policy applies to both the Filmory app and this website, reachable at{" "}
@@ -177,6 +182,11 @@ function English() {
         We choose the website&apos;s language automatically based on your country (derived from your IP address, via
         Vercel) and your browser&apos;s language setting. We don&apos;t store that data; only a language you choose
         yourself is remembered in a cookie and, if you have an account, in your profile.
+      </p>
+      <p>
+        When you mark a gift on a shared wishlist, a functional cookie stores a random code in your browser for
+        up to one year so you can undo your own marks. We do not store the recipient&apos;s name. A mark is removed
+        when its wishlist item is deleted.
       </p>
       <p>
         We also measure website visits with Vercel Web Analytics: which pages are visited, which website you came

@@ -3,6 +3,8 @@
 // Direct port of wishlist/WishlistRepository.kt — owner-only, no new
 // architecture, mirrors the "extensions" round's Fase 4.
 
+import { cookies } from "next/headers";
+import { isMissingError } from "@/lib/admin/migrations";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUserId } from "@/lib/auth";
@@ -154,7 +156,12 @@ export type PublicWishlist = {
   owner_id: string;
   owner_name: string | null;
   owner_avatar: string | null;
-  items: Pick<WishlistItem, "tmdb_movie_id" | "movie_title" | "movie_poster" | "seasons" | "is_grail" | "added_at">[];
+  reservations_ready?: boolean;
+  items: (Pick<WishlistItem, "tmdb_movie_id" | "movie_title" | "movie_poster" | "seasons" | "is_grail" | "added_at"> & {
+    is_reserved?: boolean;
+    reserved_by_you?: boolean;
+    can_release?: boolean;
+  })[];
 };
 
 /** Logged-out-safe read of a shared wishlist (null = not shared, or
@@ -162,9 +169,14 @@ export type PublicWishlist = {
 export async function getPublicWishlist(userId: string): Promise<PublicWishlist | null> {
   if (!/^[0-9a-f-]{36}$/i.test(userId)) return null;
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc("get_public_wishlist", { p_user_id: userId });
-  if (error || !data) return null;
-  return data as PublicWishlist;
+  const token = (await cookies()).get("fv_wishlist_guest")?.value ?? null;
+  const { data, error } = await supabase.rpc("get_public_wishlist_with_reservations", { p_user_id: userId, p_token: token });
+  if (!error) return data as PublicWishlist | null;
+  if (!isMissingError(error)) return null;
+  // The old read-only shared page remains usable until the SQL is applied.
+  const legacy = await supabase.rpc("get_public_wishlist", { p_user_id: userId });
+  if (legacy.error || !legacy.data) return null;
+  return { ...(legacy.data as PublicWishlist), reservations_ready: false };
 }
 
 /** Whether your wishlist is shared; null before public_wishlist.sql. */

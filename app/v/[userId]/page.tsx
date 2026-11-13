@@ -2,18 +2,13 @@ import type { Metadata } from "next";
 import { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Crown } from "lucide-react";
 import { getPublicWishlist } from "@/actions/wishlist";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
 import { getLocale } from "@/lib/preferences";
-import { isSeries } from "@/lib/titles";
-import { seasonsShort } from "@/lib/seasons";
 import { Logo } from "@/components/brand/logo";
 import { Avatar } from "@/components/avatar";
+import { PublicWishlistItems } from "@/components/public-wishlist-items";
 import { PageHeader } from "@/components/page-header";
-import { Poster, PosterCorner } from "@/components/movie/poster";
-import { PosterGrid } from "@/components/movie/poster-grid";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 
@@ -69,32 +64,7 @@ export default async function PublicWishlistPage({ params }: Props) {
         />
         <p className="-mt-4 max-w-prose text-sm text-muted-foreground">{dict.public_wishlist_hint}</p>
 
-        {wishlist.items.length === 0 ? (
-          <p className="text-muted-foreground">{dict.public_wishlist_empty}</p>
-        ) : (
-          <PosterGrid>
-            {wishlist.items.map((item, i) => (
-              <div key={item.tmdb_movie_id} className="flex flex-col gap-2">
-                <Poster path={item.movie_poster} title={item.movie_title} priority={i < 6}>
-                  {item.is_grail && (
-                    <PosterCorner position="tr">
-                      <Badge variant="overlay" className="gap-1">
-                        <Crown className="size-3 text-primary" aria-hidden />
-                        {dict.public_wishlist_grail}
-                      </Badge>
-                    </PosterCorner>
-                  )}
-                  {isSeries(item.tmdb_movie_id) && seasonsShort(item.seasons) && (
-                    <PosterCorner position="bl">
-                      <Badge variant="overlay">{seasonsShort(item.seasons)!.label}</Badge>
-                    </PosterCorner>
-                  )}
-                </Poster>
-                <p className="line-clamp-2 text-sm font-medium leading-snug">{item.movie_title}</p>
-              </div>
-            ))}
-          </PosterGrid>
-        )}
+        <PublicWishlistItems userId={userId} items={wishlist.items} reservationsReady={wishlist.reservations_ready === true} />
 
         <section className="bg-cinema mt-4 flex flex-col items-center gap-3 rounded-card border border-primary/30 px-6 py-10 text-center">
           <h2 className="font-display text-2xl font-semibold tracking-tight">{dict.public_wishlist_cta_title}</h2>
