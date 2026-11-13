@@ -39,5 +39,14 @@ Third round:
 24. `rls_report.sql` — security check (RLS per table) on /admin/status
 25. `protect_admin_flag.sql` — only admins can change `profiles.is_admin`
 
+Collection onboarding and growth:
+
+26. `owned_releases.sql` — save personal copies immediately, including without a barcode; queue catalogue review atomically
+27. `collection_growth.sql` — separate collection activation and return metrics (run after growth_tracking.sql)
+
+
+Apply these two files before deploying the collection onboarding changes.
+The app shows a not-ready message for new save paths until `owned_releases.sql` is applied.
+
 The web app keeps working before a file has run; `/admin/status` shows which
 ones are still missing.

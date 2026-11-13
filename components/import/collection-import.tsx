@@ -46,6 +46,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { importDestination } from "@/lib/import-destination";
 import { cn } from "@/lib/utils";
 
 const MAX_ROWS = 1000;
@@ -83,6 +84,7 @@ type ParsedRow = {
   location: string | null;
   /** Letterboxd watchlist row: goes to the wishlist. */
   toWishlist: boolean;
+  toWatchedOnly: boolean;
 };
 
 /** "Complete serie" etc. needs the series' season count — resolved on import. */
@@ -104,15 +106,13 @@ type Group =
   | { kind: "box"; key: string; rows: ReviewRow[]; barcode: string; name: string; status: RowStatus; films: ImportFilm[] };
 
 function rowStatus(row: ReviewRow): RowStatus {
-  if (!row.film) return "no_match";
-  if (row.toWishlist) return "wishlist";
   const code = normalizeBarcode(row.barcodeInput);
-  if (code) {
-    const known = row.match?.known;
-    const stillMatches = known && !known.isBox && code === row.match?.barcode && known.films.some((f) => f.tmdbId === row.film!.tmdbId);
-    return stillMatches ? "direct" : "pending";
-  }
-  return row.watched || row.rating != null ? "watched_only" : "no_barcode";
+  const known = row.match?.known;
+  return importDestination({
+    hasFilm: !!row.film, toWishlist: row.toWishlist, toWatchedOnly: row.toWatchedOnly,
+    barcode: code,
+    knownMatches: !!(known && !known.isBox && code === row.match?.barcode && known.films.some((f) => f.tmdbId === row.film?.tmdbId)),
+  });
 }
 
 const STATUS_STYLE: Record<RowStatus, { variant: "success" | "warning" | "secondary" | "outline" | "destructive"; icon: typeof Check }> = {
@@ -124,7 +124,7 @@ const STATUS_STYLE: Record<RowStatus, { variant: "success" | "warning" | "second
   no_match: { variant: "destructive", icon: SearchX },
 };
 
-export function CollectionImport({ collections, mediaTypes, edities }: { collections: Collection[]; mediaTypes: string[]; edities: string[] }) {
+export function CollectionImport({ collections, mediaTypes, edities, ownedReady }: { collections: Collection[]; mediaTypes: string[]; edities: string[]; ownedReady: boolean }) {
   const { t, locale } = useT();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -240,6 +240,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
         },
         location: cell(r, "location").trim().slice(0, 80) || null,
         toWishlist: letterboxd === "watchlist",
+        toWatchedOnly: letterboxd === "watched",
       };
       if (box) {
         return box.titles.map((title, j) => ({ ...base, ref: `r${i}_${j}`, title, box: cell(r, "box") || box.boxName }));
@@ -331,6 +332,8 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
   // Only physical copies need a collection; viewings and wishlist titles don't.
   const needsCollection = groups.some((g) => isIncluded(g) && (g.status === "direct" || g.status === "pending"));
 
+  const needsDirectSave = groups.some((g) => isIncluded(g) && (g.status === "pending" || (g.kind === "single" && g.status === "direct" && !g.row.barcodeInput.trim())));
+
   function updateRows(refs: string[], patch: Partial<ReviewRow>) {
     setRows((prev) => prev.map((r) => (refs.includes(r.ref) ? { ...r, ...patch } : r)));
   }
@@ -347,6 +350,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
 
   // ---------- Step 4: import ----------
   async function startImport() {
+    if (needsDirectSave && !ownedReady) { toast.error(t("owned_save_not_ready")); return; }
     let collectionId: string | null = needsCollection ? target : null;
     try {
       if (needsCollection && target === NEW_COLLECTION) {
@@ -377,6 +381,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
             ? { seasons: parseSeasons(r.seasonsText), completeSeries: COMPLETE_RE.test(r.seasonsText) }
             : {}),
           watched: r.watched,
+          toWatchedOnly: r.toWatchedOnly,
           rating: r.rating,
           watchedOn: r.watchedOn,
           details: { cut: r.cut, label: r.label, region: r.region, audioLanguages: r.audio, subtitleLanguages: r.subtitles },
@@ -595,6 +600,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
 
       {step === "review" && !progress && rows.length > 0 && (
         <div className="flex flex-col gap-5">
+          {needsDirectSave && !ownedReady && <p role="status" className="text-sm text-warning">{t("owned_save_not_ready")}</p>}
           {letterboxd && (
             <Card className="border-success/30 bg-success/5">
               <CardContent className="flex flex-col gap-3 pt-5 sm:flex-row sm:items-center sm:justify-between">
@@ -616,6 +622,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
                           prev.map((r) => ({
                             ...r,
                             toWishlist: mode === "watchlist",
+                            toWatchedOnly: mode === "watched",
                             watched: mode === "watched",
                             rating: mode === "watchlist" ? null : r.rating,
                           })),

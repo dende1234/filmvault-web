@@ -7,16 +7,15 @@
 import { randomUUID } from "crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { fetchAll } from "@/lib/supabase/fetch-all";
 import { requireUserId } from "@/lib/auth";
 import { getLocale } from "@/lib/preferences";
 import { getTitleDetail } from "@/lib/tmdb/server";
 import { normalizeBarcode } from "@/lib/barcode";
-import { detailsColumns } from "@/lib/copy-details";
 import { seasonsField } from "@/lib/seasons";
-import { isMissingError } from "@/lib/admin/migrations";
 import { getCollectionIdsContainingBarcode, getCollectionIdsContainingMovie } from "@/actions/collections";
-import { getPendingBarcodeCollectionLinks } from "@/actions/approvals";
-import type { Barcode, BoxFilmInput, CollectionItem, NewBarcodeInput, PendingBarcode } from "@/types/database";
+import { saveOwnedRelease } from "@/actions/owned-releases";
+import type { Barcode, BoxFilmInput, CollectionItem, NewBarcodeInput } from "@/types/database";
 
 /** Your copies of a title (all releases), e.g. to warn on the film page
  * that you already own it before adding another copy. */
@@ -58,7 +57,28 @@ export async function addExistingBarcodesToCollections(
   collectionIds: string[],
 ): Promise<Set<string>> {
   if (selectedBarcodes.length === 0 || collectionIds.length === 0) return new Set();
+  if (selectedBarcodes.some((b) => b.catalog_status)) {
+    const unchanged = new Set(collectionIds);
+    for (const b of selectedBarcodes) {
+      const skipped = await saveOwnedRelease({ barcode: b.barcode, type: b.type, editie: b.editie,
+        films: [{ tmdb_movie_id: tmdbMovieId, movie_title: movieTitle, movie_poster: moviePoster, seasons: b.seasons }],
+      }, collectionIds);
+      for (const id of unchanged) if (!skipped.has(id)) unchanged.delete(id);
+    }
+    return unchanged;
+  }
   const supabase = await createClient();
+  const userId = await requireUserId();
+  // Reuse the physical copy even when it was saved in a different collection
+  // on an earlier visit (including before its barcode was approved).
+  const ownCopies = await fetchAll<{ barcode: string; item_group_id: string }>((from, to) =>
+    supabase.from("collection_items").select("barcode, item_group_id, collections!inner(user_id)")
+      .in("barcode", selectedBarcodes.map((b) => b.barcode))
+      .eq("tmdb_movie_id", tmdbMovieId).eq("is_box", false).eq("collections.user_id", userId)
+      .order("id").range(from, to),
+  );
+  const ownGroups = new Map<string, string>();
+  for (const copy of ownCopies) if (!ownGroups.has(copy.barcode)) ownGroups.set(copy.barcode, copy.item_group_id);
 
   const alreadyContainingByBarcode = new Map<string, Set<string>>();
   for (const barcode of selectedBarcodes) {
@@ -69,7 +89,7 @@ export async function addExistingBarcodesToCollections(
     const alreadyContaining = alreadyContainingByBarcode.get(barcode.barcode)!;
     const targetCollectionIds = collectionIds.filter((id) => !alreadyContaining.has(id));
     if (targetCollectionIds.length === 0) return [];
-    const itemGroupId = randomUUID();
+    const itemGroupId = ownGroups.get(barcode.barcode) ?? randomUUID();
     return targetCollectionIds.map((collectionId) => ({
       collection_id: collectionId,
       item_group_id: itemGroupId,
@@ -87,6 +107,7 @@ export async function addExistingBarcodesToCollections(
     if (error) throw error;
   }
   revalidatePath("/collections", "layout");
+  revalidatePath("/dashboard");
 
   return new Set(
     collectionIds.filter((collectionId) =>
@@ -108,6 +129,9 @@ export async function addKnownBoxToCollections(
   editie: string,
   collectionIds: string[],
 ): Promise<Set<string>> {
+  if (!(await findBarcodesByCode(barcode)).length) {
+    return saveOwnedRelease({ barcode, type, editie, boxName: boxName ?? "Box", films }, collectionIds);
+  }
   const supabase = await createClient();
   const alreadyContainingLists = await Promise.all(
     films.map((f) => getCollectionIdsContainingMovie(f.tmdb_movie_id, collectionIds)),
@@ -139,129 +163,37 @@ export async function addKnownBoxToCollections(
   return alreadyContaining;
 }
 
-async function insertPendingBarcodeCollectionLinks(supabase: Awaited<ReturnType<typeof createClient>>, pendingBarcodeId: string, collectionIds: string[]) {
-  const { error } = await supabase
-    .from("pending_barcode_collections")
-    .insert(collectionIds.map((collectionId) => ({ pending_barcode_id: pendingBarcodeId, collection_id: collectionId })));
-  if (error) throw error;
-}
-
-/** Like insertPendingBarcodeCollectionLinks, but skips links that already exist
- * (a re-submission of something still waiting). */
-async function addMissingPendingLinks(supabase: Awaited<ReturnType<typeof createClient>>, pendingBarcodeId: string, collectionIds: string[]) {
-  const existing = new Set((await getPendingBarcodeCollectionLinks([pendingBarcodeId])).map((l) => l.collection_id));
-  const missing = collectionIds.filter((id) => !existing.has(id));
-  if (missing.length > 0) await insertPendingBarcodeCollectionLinks(supabase, pendingBarcodeId, missing);
-}
-
-/** New-box path: submitting a box whose barcode isn't known yet goes through
- * admin approval — one pending_barcodes row per film, all sharing a fresh
- * box_group_id/box_name, same barcode. */
+/** Save new box copies immediately; catalogue review runs separately. */
 export async function addNewBoxAsPending(
-  films: BoxFilmInput[],
-  boxName: string,
-  barcode: string,
-  type: string,
-  editie: string,
-  collectionIds: string[],
-) {
-  if (collectionIds.length === 0 || films.length === 0) return;
-  const supabase = await createClient();
-  const submittedBy = await requireUserId();
-  // Already waiting as a box from you: just make sure it targets these collections too.
-  const waiting = (await ownPendingWithBarcode(supabase, submittedBy, barcode)).filter((p) => p.is_box);
-  if (waiting.length > 0) {
-    for (const p of waiting) await addMissingPendingLinks(supabase, p.id, collectionIds);
-    revalidatePath("/collections", "layout");
-    return;
-  }
-  const boxGroupId = randomUUID();
-
-  for (const film of films) {
-    const { data: inserted, error } = await supabase
-      .from("pending_barcodes")
-      .insert({
-        tmdb_movie_id: film.tmdb_movie_id,
-        movie_title: film.movie_title,
-        movie_poster: film.movie_poster,
-        barcode,
-        type,
-        editie,
-        submitted_by: submittedBy,
-        collection_id: collectionIds[0],
-        is_box: true,
-        box_group_id: boxGroupId,
-        box_name: boxName,
-      })
-      .select("*")
-      .single();
-    if (error) throw error;
-    await insertPendingBarcodeCollectionLinks(supabase, (inserted as PendingBarcode).id, collectionIds);
-  }
-  revalidatePath("/collections", "layout");
+  films: BoxFilmInput[], boxName: string, barcode: string, type: string,
+  editie: string, collectionIds: string[],
+): Promise<Set<string>> {
+  return saveOwnedRelease({ films, boxName, barcode, type, editie }, collectionIds);
 }
 
-/** New-barcode path: one pending_barcodes row per staged barcode — collection_id
- * keeps the first-selected collection for backward compatibility, the full
- * target list is recorded in pending_barcode_collections. */
+/** Historical export name retained for existing callers. Ownership no longer
+ * waits for catalogue approval. */
 export async function addNewBarcodesAsPending(
-  newBarcodes: NewBarcodeInput[],
-  tmdbMovieId: number,
-  movieTitle: string,
-  moviePoster: string | null,
-  collectionIds: string[],
-) {
-  if (collectionIds.length === 0) return;
-  const supabase = await createClient();
-  const submittedBy = await requireUserId();
-
-  for (const staged of newBarcodes) {
-    const waiting = (await ownPendingWithBarcode(supabase, submittedBy, staged.barcode)).find((p) => p.tmdb_movie_id === tmdbMovieId && !p.is_box);
-    if (waiting) {
-      await addMissingPendingLinks(supabase, waiting.id, collectionIds);
-      await approveIfTrusted(supabase, waiting.id);
-      continue;
-    }
-    const row: Record<string, unknown> = {
-      tmdb_movie_id: tmdbMovieId,
-      movie_title: movieTitle,
-      movie_poster: moviePoster,
-      barcode: staged.barcode,
-      type: staged.type,
-      editie: staged.editie,
-      ...seasonsField(staged.seasons),
-      submitted_by: submittedBy,
-      collection_id: collectionIds[0],
-    };
-    const details = detailsColumns(staged.details);
-    let { data: inserted, error } = await supabase.from("pending_barcodes").insert({ ...row, ...details }).select("*").single();
-    // PGRST204 = copy_details.sql not run yet: submit without the details.
-    if (error?.code === "PGRST204" && Object.keys(details).length > 0) {
-      ({ data: inserted, error } = await supabase.from("pending_barcodes").insert(row).select("*").single());
-    }
-    if (error) throw error;
-    await insertPendingBarcodeCollectionLinks(supabase, (inserted as PendingBarcode).id, collectionIds);
-    await approveIfTrusted(supabase, (inserted as PendingBarcode).id);
+  newBarcodes: NewBarcodeInput[], tmdbMovieId: number, movieTitle: string,
+  moviePoster: string | null, collectionIds: string[],
+): Promise<Set<string>> {
+  const unchanged = new Set(collectionIds);
+  for (const release of newBarcodes) {
+    const skipped = await saveOwnedRelease({
+      ...release,
+      films: [{ tmdb_movie_id: tmdbMovieId, movie_title: movieTitle, movie_poster: moviePoster, seasons: release.seasons }],
+    }, collectionIds);
+    for (const id of unchanged) if (!skipped.has(id)) unchanged.delete(id);
   }
-  revalidatePath("/collections", "layout");
-}
-
-/** A trusted contributor's submission is approved right away
- * (approve_own_trusted in auto_approve.sql); for everyone else, or before
- * that SQL has run, it simply stays in the queue. */
-async function approveIfTrusted(supabase: Awaited<ReturnType<typeof createClient>>, pendingId: string) {
-  const { error } = await supabase.rpc("approve_own_trusted", { p_id: pendingId });
-  if (error && !isMissingError(error)) console.error("approve_own_trusted", error);
+  return unchanged;
 }
 
 /**
  * Re-checks staged "new" barcodes against the live barcodes table (another
  * user may have registered the same barcode meanwhile) before deciding which
  * path each one takes. Returns the subset of collectionIds where the ENTIRE
- * submitted batch resulted in nothing new — only possible when every staged
- * barcode resolved to an already-known one; genuinely-new barcodes have no
- * dedup gate, since a fresh admin-approval submission always does something
- * for every target collection.
+ * submitted batch resulted in nothing new. Unknown releases are saved
+ * atomically as owned copies and queued separately for catalogue review.
  */
 export async function addBarcodesToCollections(
   selectedExistingBarcodes: Barcode[],
@@ -287,23 +219,11 @@ export async function addBarcodesToCollections(
       : new Set<string>();
 
   if (genuinelyNew.length > 0) {
-    await addNewBarcodesAsPending(genuinelyNew, tmdbMovieId, movieTitle, moviePoster, collectionIds);
-    return new Set();
+    const skipped = await addNewBarcodesAsPending(genuinelyNew, tmdbMovieId, movieTitle, moviePoster, collectionIds);
+    return allExisting.length > 0 ? new Set([...nothingAddedFor].filter((id) => skipped.has(id))) : skipped;
   }
 
   return nothingAddedFor;
-}
-
-/** Your own submissions of this barcode that are still waiting: submitting it
- * again (e.g. because nothing seemed to happen) shouldn't queue it twice. */
-async function ownPendingWithBarcode(supabase: Awaited<ReturnType<typeof createClient>>, submittedBy: string, barcode: string) {
-  const { data } = await supabase
-    .from("pending_barcodes")
-    .select("id, tmdb_movie_id, is_box")
-    .eq("submitted_by", submittedBy)
-    .eq("barcode", barcode)
-    .eq("status", "pending");
-  return (data ?? []) as { id: string; tmdb_movie_id: number; is_box: boolean }[];
 }
 
 /** One physical copy you own (all collections it is in), for the scan result. */
@@ -398,7 +318,21 @@ function toOwnedCopies(rows: OwnedRow[]): OwnedCopy[] {
 export async function lookupScannedBarcode(raw: string): Promise<ScannedBarcodeResult> {
   await requireUserId();
   const barcode = normalizeBarcode(raw);
-  const known = barcode ? await findBarcodesByCode(barcode) : [];
+  let known = barcode ? await findBarcodesByCode(barcode) : [];
+  // Your own unlisted barcodes must already work in shop mode. This lookup
+  // is scoped to your collections and never publishes these rows.
+  if (known.length === 0 && barcode) {
+    const personal = await ownedCopies({ barcode });
+    const seen = new Set<number>();
+    known = personal.flatMap(({ row }) => {
+      if (seen.has(row.tmdb_movie_id)) return [];
+      seen.add(row.tmdb_movie_id);
+      return [{ id: row.id, tmdb_movie_id: row.tmdb_movie_id, barcode: row.barcode,
+        created_at: row.added_at, type: row.type, editie: row.editie, seasons: row.seasons,
+        is_box: row.is_box, box_group_id: row.box_group_id, box_name: row.box_name,
+        catalog_status: "unverified" as const }];
+    });
+  }
   if (known.length === 0) return { kind: "none", barcode };
   if (known.some((b) => b.is_box) || new Set(known.map((b) => b.tmdb_movie_id)).size > 1) {
     // The barcodes table has no titles: resolve each film once via TMDB.

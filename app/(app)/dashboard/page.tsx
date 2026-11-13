@@ -3,8 +3,6 @@ import { Eye, EyeOff, Film, LibraryBig, Play } from "lucide-react";
 import { getUserCollections, getDashboardData } from "@/actions/collections";
 import { getOrCreateProfile } from "@/actions/profile";
 import { createLoanReminders } from "@/actions/notifications";
-import { getFollowingCount } from "@/actions/follows";
-import { getAcceptedFriendIds } from "@/actions/friends";
 import { SITE_URL } from "@/lib/site";
 import { getTitleDetail } from "@/lib/tmdb/server";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
@@ -62,9 +60,6 @@ export default async function DashboardPage() {
 
   const featured = stats.pick ?? stats.recent[0] ?? null;
   const featuredMovie = featured ? await getTitleDetail(featured.tmdb_movie_id, locale).catch(() => null) : null;
-  const [followingCount, friendIds] = profile
-    ? await Promise.all([getFollowingCount(profile.id).catch(() => 0), getAcceptedFriendIds(profile.id).catch(() => [])])
-    : [0, [] as string[]];
   const inviteUrl = `${SITE_URL}/?ref=invite-${(profile?.id ?? "").slice(0, 8)}`;
 
   const firstName = profile?.name?.trim().split(/\s+/)[0];
@@ -108,13 +103,7 @@ export default async function DashboardPage() {
       </BackdropHero>
 
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
-        <OnboardingChecklist
-          hasCollection={collections.length > 0}
-          hasFilm={stats.titles > 0}
-          hasConnection={followingCount > 0 || friendIds.length > 0}
-          hasName={!!profile?.name?.trim()}
-          inviteUrl={inviteUrl}
-        />
+        <OnboardingChecklist titleCount={stats.titles} userId={profile?.id ?? ""} />
 
         <InstallAppCard />
 

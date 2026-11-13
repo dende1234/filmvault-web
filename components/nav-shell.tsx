@@ -139,11 +139,13 @@ function TabLink({ href, icon: Icon, label }: { href: string; icon: typeof Film;
 
 export function NavShell({
   profile,
+  beginner = false,
   feedbackNewCount = 0,
   unreadNotifications = 0,
   children,
 }: {
   profile: Profile | null;
+  beginner?: boolean;
   /** New feedback items, shown on the admin menu (admins only, else 0). */
   feedbackNewCount?: number;
   /** Unread notifications (e.g. a barcode you submitted was approved). */
@@ -195,6 +197,8 @@ export function NavShell({
       <NavLink href="/collections" icon={LibraryBig} label={t("collections_label")} onNavigate={close} />
       <NavLink href="/scannen" icon={ScanBarcode} label={t("nav_scan")} onNavigate={close} />
       <NavLink href="/wishlist" icon={Bookmark} label={t("nav_wishlist")} onNavigate={close} />
+      <details open={!beginner || !["/dashboard", "/collections", "/scannen", "/wishlist"].some((p) => isActive(pathname, p))}>
+      <summary className="cursor-pointer px-3 py-3 text-sm font-medium text-muted-foreground hover:text-foreground">{t("nav_discover_more")}</summary>
       <NavLink href="/watched" icon={Eye} label={t("nav_watched")} onNavigate={close} />
       <NavLink href="/statistieken" icon={PieChart} label={t("stats_title")} onNavigate={close} />
 
@@ -211,6 +215,8 @@ export function NavShell({
       <NavLink href="/friends" icon={Users} label={t("nav_friends")} onNavigate={close} />
       <NavLink href="/badges" icon={Award} label={t("nav_badges")} onNavigate={close} />
       <NavLink href="/meldingen" icon={Bell} label={t("notifications_title")} onNavigate={close} count={unreadNotifications} />
+
+      </details>
 
       {profile?.is_admin && (
         <>

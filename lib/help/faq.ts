@@ -13,8 +13,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Hoe voeg ik een film of serie toe?", en: "How do I add a film or series?" },
     a: {
-      nl: "Klik op **Film of serie toevoegen** op je [dashboard](/dashboard) of bij [Collecties](/collections). Zoek de titel, kies de uitgave (barcode, formaat, editie) en de collectie(s). Heb je een camera, dan kun je ook de barcode scannen.",
-      en: "Click **Add film or series** on your [dashboard](/dashboard) or in [Collections](/collections). Search the title, pick the release (barcode, format, edition) and the collection(s). With a camera you can also scan the barcode.",
+      nl: "Klik op **Film of serie toevoegen** op je [dashboard](/dashboard) of bij [Collecties](/collections). Zoek de titel, kies formaat, editie en collectie(s). Zonder barcode kies je **Ik wil mijn exemplaar zonder barcode opslaan**. Je kunt je eerste collectie in hetzelfde venster aanmaken. Heb je een camera, dan kun je ook de barcode scannen.",
+      en: "Click **Add film or series** on your [dashboard](/dashboard) or in [Collections](/collections). Search the title, pick the format, edition and collection(s). Without a barcode, choose **Save my copy without a barcode**. You can create your first collection in the same dialog. With a camera you can also scan the barcode.",
     },
     keywords: { nl: ["film toevoegen", "serie toevoegen", "dvd toevoegen", "blu-ray toevoegen", "nieuwe film"], en: ["add film", "add movie", "add series", "add dvd", "add blu-ray"] },
     pages: ["/dashboard", "/collections"],
@@ -60,8 +60,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Mijn barcode wordt niet gevonden. Wat nu?", en: "My barcode isn't found. What now?" },
     a: {
-      nl: "Vaak stelt Filmory de film al voor via een externe barcodedatabase (vooral Amerikaanse en Britse uitgaven); tik dan op de juiste. Anders kies je of het een losse film/serie of een box is, zoek je de titel en voeg je hem toe. De barcode gaat dan naar goedkeuring. Is hij goedgekeurd, dan staat hij in je collectie, krijg je een [melding](/meldingen) en vindt iedereen hem voortaan.",
-      en: "Often Filmory already suggests the film from an external barcode database (mostly US and UK releases); just tap the right one. Otherwise choose whether it's a single film/series or a box, search the title and add it. The barcode then goes for approval. Once approved it's in your collection, you get a [notification](/meldingen) and everyone finds it from then on.",
+      nl: "Vaak stelt Filmory de film al voor via een externe barcodedatabase (vooral Amerikaanse en Britse uitgaven); tik dan op de juiste. Anders kies je of het een losse film/serie of een box is, zoek je de titel en voeg je hem toe. Je eigen exemplaar staat direct in je collectie. De barcodegegevens worden apart gecontroleerd voor de gedeelde catalogus. Na controle krijg je een [melding](/meldingen).",
+      en: "Often Filmory already suggests the film from an external barcode database (mostly US and UK releases); just tap the right one. Otherwise choose whether it's a single film/series or a box, search the title and add it. Your own copy goes straight into your collection. Barcode details are reviewed separately for the shared catalogue, and you get a [notification](/meldingen) after review.",
     },
     keywords: { nl: ["barcode niet gevonden", "onbekende barcode", "niet herkend", "goedkeuring"], en: ["barcode not found", "unknown barcode", "not recognised", "approval"] },
   },
@@ -71,8 +71,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Hoe lang duurt het voor een barcode is goedgekeurd?", en: "How long does barcode approval take?" },
     a: {
-      nl: "Een beheerder controleert nieuwe barcodes met de hand, meestal binnen een paar dagen. Bij [Meldingen](/meldingen) zie je wat nog wacht, en je krijgt daar een melding zodra hij is goedgekeurd of afgewezen.",
-      en: "An admin checks new barcodes by hand, usually within a few days. [Notifications](/meldingen) shows what is still waiting, and you get a notification there as soon as it's approved or rejected.",
+      nl: "Je eigen exemplaar hoef je niet af te wachten: het staat al in je collectie. Een beheerder controleert nieuwe barcodegegevens apart. Bij [Meldingen](/meldingen) zie je wat nog wacht, en je krijgt daar een melding zodra hij is goedgekeurd of afgewezen.",
+      en: "Your own copy is already in your collection. An admin reviews new barcode details separately. [Notifications](/meldingen) shows what is still waiting, and you get a notification there as soon as it's approved or rejected.",
     },
     keywords: { nl: ["goedgekeurd", "wachten", "in behandeling", "ter goedkeuring", "pending"], en: ["approved", "waiting", "pending", "approval"] },
     pages: ["/meldingen"],

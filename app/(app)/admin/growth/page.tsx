@@ -1,3 +1,4 @@
+import { CollectionGrowth } from "@/components/admin/collection-growth";
 import { Activity, Download, Mail, Repeat, UserPlus, Zap } from "lucide-react";
 import { getGrowthStats } from "@/actions/admin";
 import { getDictionary, format } from "@/lib/i18n/dictionary";
@@ -40,6 +41,7 @@ export default async function AdminGrowthPage() {
       <div className="mx-auto flex max-w-5xl flex-col gap-6">
         <PageHeader title={dict.admin_growth_title} />
         <EmptyState icon={Activity} title={dict.admin_growth_not_ready_title} description={dict.admin_growth_not_ready_description} />
+        <CollectionGrowth />
       </div>
     );
   }
@@ -74,6 +76,8 @@ export default async function AdminGrowthPage() {
           </>
         }
       />
+
+      <CollectionGrowth />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatTile

@@ -302,7 +302,12 @@ export function CollectionItemEditor({
                   <Badge variant="outline">{t("collection_item_box_caption", item.box_name)}</Badge>
                 ))}
             </div>
-            <p className="font-mono text-xs text-muted-foreground">{item.barcode}</p>
+            {item.catalog_status && item.catalog_status !== "verified" && (
+              <p className="text-sm text-muted-foreground" role="status">
+                {t(item.catalog_status === "personal" ? "owned_status_personal" : "owned_status_unverified")}
+              </p>
+            )}
+            {item.barcode && <p className="font-mono text-xs text-muted-foreground">{item.barcode}</p>}
           </div>
         </div>
       </BackdropHero>

@@ -325,3 +325,23 @@ export async function setTrusted(userId: string, trusted: boolean): Promise<void
   await logAdminAction(trusted ? "user_trust_on" : "user_trust_off", { type: "user", id: userId });
   revalidatePath(`/admin/users/${userId}`);
 }
+
+export type CollectionGrowthStats = {
+  tracking_since: string;
+  signups: number;
+  first_success: number;
+  activation_cohort: number;
+  activated: number;
+  return_cohort: number;
+  returned: number;
+  regular_users: number;
+  by_source: { source: string; signups: number; activation_cohort: number; activated: number; return_cohort: number; returned: number }[];
+};
+
+export async function getCollectionGrowthStats(): Promise<CollectionGrowthStats | null> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_collection_growth_stats");
+  if (error) return null;
+  return data as CollectionGrowthStats;
+}

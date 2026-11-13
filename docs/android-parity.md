@@ -52,3 +52,27 @@ of failing.
 - Combo formats such as `4K + Blu-ray` (`lib/formats.ts`) are stored as one `type` string.
 - Only admins can change `profiles.is_admin` (`protect_admin_flag.sql`); this is
   enforced in the database for both apps.
+
+## Collection onboarding and growth
+
+- Apply `owned_releases.sql` and `collection_growth.sql` from the web repository.
+- `collection_items.catalog_status` is an optional text field: `verified`,
+  `unverified` (catalogue details not confirmed), or `personal` (no barcode).
+  Carry it through copy/move/undo operations; existing clients may ignore it.
+- `save_owned_release(p_release jsonb, p_collection_ids uuid[])` saves owned
+  copies immediately and queues unknown nonempty barcodes in one transaction.
+  `p_release` has barcode/type/editie, optional boxName/details and films
+  (tmdb_movie_id/movie_title/movie_poster/seasons). An empty barcode is valid
+  for personal ownership, and never enters the shared catalogue. Returns
+  collection IDs where nothing new was added. RLS and an explicit ownership
+  check apply. Trusted contributor approval remains available.
+- Catalogue rejection retains the personal copy. Approval updates its status
+  without inserting it again or overwriting notes and purchase details.
+- The existing approval RPCs remain compatible. Older Android clients still
+  queue new codes first until they adopt the save RPC.
+- `collection_growth_events` is trigger-written and admin-read only. It
+  observes actual collection saves/edits by their owner, including Android;
+  admin approvals and pending submissions don't count as user return.
+- `admin_collection_growth_stats()` reports distinct-title activation in the
+  first seven days and return in days 7–30, with mature cohorts and source
+  breakdowns. Existing `admin_growth_stats()` and its history stay unchanged.
