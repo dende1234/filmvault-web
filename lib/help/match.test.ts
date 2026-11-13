@@ -34,6 +34,7 @@ describe("matchHelp", () => {
       ["kan ik mijn my movies xml importeren", "import-csv"],
       ["per ongeluk verwijderd, ongedaan maken", "delete-copy"],
       ["al mijn gegevens downloaden", "data-download"],
+      ["kan familie een cadeau reserveren voor sinterklaas", "wishlist-share"],
     ];
     for (const [q, id] of cases) expect(matchHelp(q, HELP_ENTRIES)[0]?.entry.id, q).toBe(id);
   });

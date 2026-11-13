@@ -486,6 +486,181 @@ export const GUIDES: Guide[] = [
       },
     ],
   },
+  {
+    slug: "black-friday-blu-ray-4k-zonder-dubbel-kopen",
+    lang: "nl",
+    alternate: "black-friday-movie-deals-without-duplicates",
+    title: "Black Friday: Blu-ray- en 4K-deals scoren zonder dubbel te kopen",
+    description:
+      "Rond Black Friday liggen de schappen vol 4K- en Blu-ray-aanbiedingen. Zo koop je slim: met een lijstje vooraf, en zonder thuis te komen met een film die je al had.",
+    updated: "2026-11-13",
+    sections: [
+      {
+        heading: "Waarom het juist nu misgaat",
+        paragraphs: [
+          "Bij een goede aanbieding beslis je snel. Juist dan is het lastig om te onthouden of je die film al hebt, en in welke uitgave. De gewone Blu-ray, de steelbook, de 4K UHD: je weet dat je hem hebt, maar welke versie?",
+          "Wie samen met een partner of huisgenoot koopt, heeft er nog meer last van: de een weet niet wat de ander al heeft gekocht.",
+        ],
+      },
+      {
+        heading: "Maak vooraf een lijstje",
+        paragraphs: ["Bedenk vóór Black Friday wat je echt zoekt. Zo laat je je minder verleiden door 'koopjes' die je eigenlijk niet wilt."],
+        bullets: [
+          "Zet de films die je zoekt op je verlanglijst, en markeer wat je het meest zoekt als Holy Grail.",
+          "Kijk welke titels je nu op dvd of gewone Blu-ray hebt en graag op 4K zou willen: een upgrade is vaak de beste deal.",
+          "Bekijk in de releasekalender wat er binnenkort verschijnt; soms is wachten op een nieuwe uitgave slimmer.",
+        ],
+      },
+      {
+        heading: "In de winkel: scan voordat je afrekent",
+        paragraphs: ["Open in Filmory de winkelmodus en scan de barcode op de achterkant, of zoek op titel. Je ziet meteen een van deze antwoorden:"],
+        bullets: [
+          "Heb je al: precies deze uitgave staat in je collectie.",
+          "Andere editie: je hebt de film, maar in een andere uitgave (je ziet welke).",
+          "Op je verlanglijst: deze zocht je al.",
+          "Nieuw voor jou: je hebt hem nog niet.",
+        ],
+      },
+      {
+        heading: "Geen bereik in de winkel?",
+        paragraphs: [
+          "Open de winkelmodus thuis al een keer. Filmory onthoudt dan je collectie en verlanglijst op je telefoon, zodat opzoeken ook werkt als je in de winkel geen bereik hebt.",
+        ],
+      },
+      {
+        heading: "Online kopen",
+        paragraphs: [
+          "Koop je online, zoek de titel dan eerst even op in je collectie. Let goed op de uitgave: webwinkels gebruiken vaak dezelfde foto voor de gewone versie en de steelbook. De barcode (EAN) in de productinformatie zegt precies welke uitgave het is.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "black-friday-movie-deals-without-duplicates",
+    lang: "en",
+    alternate: "black-friday-blu-ray-4k-zonder-dubbel-kopen",
+    title: "Black Friday: grab Blu-ray and 4K deals without buying duplicates",
+    description:
+      "Around Black Friday the shelves are full of 4K and Blu-ray deals. Here's how to buy smart: with a list beforehand, and without coming home with a movie you already own.",
+    updated: "2026-11-13",
+    sections: [
+      {
+        heading: "Why it goes wrong right now",
+        paragraphs: [
+          "With a good deal you decide fast. That's exactly when it's hard to remember whether you own the movie, and in which release: the regular Blu-ray, the steelbook, the 4K UHD.",
+          "Buying with a partner or housemate makes it worse: one doesn't know what the other already bought.",
+        ],
+      },
+      {
+        heading: "Make a list beforehand",
+        paragraphs: ["Decide before Black Friday what you're really after, so 'bargains' you don't actually want tempt you less."],
+        bullets: [
+          "Put the movies you're looking for on your wishlist, and mark what you want most as a Holy Grail.",
+          "Check which titles you own on DVD or regular Blu-ray and would like on 4K: an upgrade is often the best deal.",
+          "Look at the release calendar for what's coming soon; sometimes waiting for a new release is smarter.",
+        ],
+      },
+      {
+        heading: "In the store: scan before you pay",
+        paragraphs: ["Open Shop mode in Filmory and scan the barcode on the back, or search by title. You instantly get one of these answers:"],
+        bullets: [
+          "You own this: this exact release is in your collection.",
+          "Another edition: you own the movie, in another release (you see which).",
+          "On your wishlist: you were already looking for it.",
+          "New to you: you don't own it.",
+        ],
+      },
+      {
+        heading: "No signal in the store?",
+        paragraphs: ["Open Shop mode once at home. Filmory then keeps your collection and wishlist on your phone, so lookups work without a signal."],
+      },
+      {
+        heading: "Buying online",
+        paragraphs: [
+          "Buying online? Look the title up in your collection first. Watch the release: shops often use the same photo for the regular version and the steelbook. The barcode (EAN) in the product details tells you exactly which release it is.",
+        ],
+      },
+    ],
+  },
+  {
+    slug: "verlanglijst-films-sinterklaas-kerst",
+    lang: "nl",
+    alternate: "movie-wishlist-holiday-gifts",
+    title: "Films cadeau geven aan een verzamelaar: deel een verlanglijst",
+    description:
+      "Een film geven aan iemand die verzamelt is lastig: wat staat er al in de kast, en welke uitgave is gewenst? Met een gedeelde verlanglijst weet iedereen wat te geven, en geeft niemand dubbel.",
+    updated: "2026-11-13",
+    sections: [
+      {
+        heading: "Waarom films cadeau geven lastig is",
+        paragraphs: [
+          "Voor een verzamelaar telt niet alleen de titel, maar ook de uitgave: een 4K UHD, een steelbook, een speciale editie. Wie een film geeft die al in de kast staat, of de 'verkeerde' versie, bedoelt het goed maar mist net.",
+          "En bij Sinterklaas of Kerst kopen meerdere mensen tegelijk. Zonder afspraak liggen er zo twee dezelfde films onder de boom.",
+        ],
+      },
+      {
+        heading: "Eén link voor de hele familie",
+        paragraphs: [
+          "Zet in Filmory je verlanglijst op 'openbaar via link' en stuur die link naar familie en vrienden, bijvoorbeeld in de groepsapp. Zij zien je lijst zonder account, met wat je het meest zoekt (Holy Grail) bovenaan.",
+        ],
+      },
+      {
+        heading: "Reserveren: niemand geeft dubbel",
+        paragraphs: [
+          "Wie iets wil geven, tikt op 'Ik koop deze'. Anderen zien dan dat die titel al gereserveerd is. Jij ziet als eigenaar niet wát er gereserveerd is, zodat het een verrassing blijft.",
+        ],
+        bullets: [
+          "Geen account nodig om te reserveren.",
+          "Toch iets anders kopen? De gever kan de reservering zelf ongedaan maken.",
+          "Zet je het delen uit, dan werkt de link niet meer.",
+        ],
+      },
+      {
+        heading: "Tips voor een goede verlanglijst",
+        bullets: [
+          "Zet bij series welke seizoenen je zoekt.",
+          "Markeer je Holy Grails, zodat gevers weten wat je het liefst wilt.",
+          "Voeg je een film toe aan je collectie, dan haalt Filmory hem vanzelf van je verlanglijst. Zo blijft de lijst kloppen.",
+        ],
+        paragraphs: [],
+      },
+    ],
+  },
+  {
+    slug: "movie-wishlist-holiday-gifts",
+    lang: "en",
+    alternate: "verlanglijst-films-sinterklaas-kerst",
+    title: "Giving movies to a collector: share a wishlist",
+    description:
+      "Giving a movie to a collector is tricky: which ones do they own, and which release do they want? With a shared wishlist everyone knows what to give, and nobody gives the same thing twice.",
+    updated: "2026-11-13",
+    sections: [
+      {
+        heading: "Why giving movies is tricky",
+        paragraphs: [
+          "For a collector the release matters as much as the title: a 4K UHD, a steelbook, a special edition. Giving a movie that's already on the shelf, or the 'wrong' version, is well meant but misses.",
+          "And during the holidays several people buy at the same time. Without coordination, two copies of the same movie end up under the tree.",
+        ],
+      },
+      {
+        heading: "One link for the whole family",
+        paragraphs: [
+          "In Filmory, set your wishlist to 'public via link' and send that link to family and friends, for example in the group chat. They see your list without an account, with what you want most (Holy Grail) first.",
+        ],
+      },
+      {
+        heading: "Reserving: nobody gives the same thing twice",
+        paragraphs: [
+          "Anyone who wants to give something taps 'I'll buy this'. Others then see that the title is taken. As the owner you can't see what's been reserved, so it stays a surprise.",
+        ],
+        bullets: [
+          "No account needed to reserve.",
+          "Buying something else after all? The giver can undo the reservation.",
+          "Switch sharing off and the link stops working.",
+        ],
+      },
+    ],
+  },
 ];
 
 export function getGuide(slug: string): Guide | undefined {

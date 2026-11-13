@@ -7,24 +7,14 @@ import { Award, CalendarDays, Disc3, Eye, Film, LibraryBig, Share2, Star } from 
 import { useT } from "@/lib/i18n/locale-provider";
 import { createPost } from "@/actions/posts";
 import type { Collection, CollectionItem, UserBadge } from "@/types/database";
+import { computeRecap, yearOf } from "@/lib/recap";
 import { StatTile } from "@/components/stat-tile";
+import { RecapShareImage } from "@/components/recap-share-image";
 import { EmptyState } from "@/components/empty-state";
 import { Poster } from "@/components/movie/poster";
 import { PosterRail, RailItem } from "@/components/movie/poster-rail";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-function yearOf(isoDate: string | null): number | null {
-  if (!isoDate) return null;
-  const year = Number.parseInt(isoDate.slice(0, 4), 10);
-  return Number.isNaN(year) ? null : year;
-}
-
-function monthOf(isoDate: string | null): number | null {
-  if (!isoDate || isoDate.length < 7) return null;
-  const month = Number.parseInt(isoDate.slice(5, 7), 10);
-  return Number.isNaN(month) ? null : month;
-}
 
 function monthName(month: number, locale: string): string {
   return new Date(2000, month - 1, 1).toLocaleDateString(locale === "nl" ? "nl-NL" : "en-US", { month: "long" });
@@ -38,52 +28,30 @@ export function YearlyRecapClient({
   collections,
   items,
   badges,
+  initialYear,
 }: {
   collections: Collection[];
   items: CollectionItem[];
   badges: UserBadge[];
+  /** From ?jaar= (the dashboard's wrapped banner in January points at last year). */
+  initialYear?: number;
 }) {
   const { t, locale } = useT();
   const currentYear = new Date().getFullYear();
   const availableYears = useMemo(() => {
-    const years = new Set<number>([currentYear]);
+    const years = new Set<number>([currentYear, ...(initialYear && initialYear <= currentYear ? [initialYear] : [])]);
     items.forEach((i) => { const y = yearOf(i.added_at); if (y) years.add(y); });
     collections.forEach((c) => { const y = yearOf(c.created_at); if (y) years.add(y); });
     badges.forEach((b) => { const y = yearOf(b.earned_at); if (y) years.add(y); });
     return Array.from(years).sort((a, b) => b - a);
-  }, [items, collections, badges, currentYear]);
+  }, [items, collections, badges, currentYear, initialYear]);
 
-  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedYear, setSelectedYear] = useState(initialYear && initialYear <= currentYear ? initialYear : currentYear);
   const [isSharing, setIsSharing] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const recap = useMemo(() => {
-    const itemsThatYear = items.filter((i) => yearOf(i.added_at) === selectedYear);
-    const ratings = itemsThatYear.map((i) => i.rating).filter((r): r is number => r !== null);
-
-    const typeCounts = new Map<string, number>();
-    itemsThatYear.forEach((i) => typeCounts.set(i.type, (typeCounts.get(i.type) ?? 0) + 1));
-    const topType = [...typeCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-
-    const monthCounts = new Map<number, number>();
-    itemsThatYear.forEach((i) => {
-      const m = monthOf(i.added_at);
-      if (m) monthCounts.set(m, (monthCounts.get(m) ?? 0) + 1);
-    });
-    const busiestMonth = [...monthCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-
-    return {
-      itemsThatYear: [...itemsThatYear].sort((a, b) => (a.added_at ?? "").localeCompare(b.added_at ?? "")),
-      filmsAdded: itemsThatYear.length,
-      alreadyWatched: itemsThatYear.filter((i) => i.watched).length,
-      averageRating: ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : null,
-      topType,
-      busiestMonth,
-      newCollections: collections.filter((c) => yearOf(c.created_at) === selectedYear).length,
-      badgesEarned: badges.filter((b) => yearOf(b.earned_at) === selectedYear).length,
-    };
-  }, [items, collections, badges, selectedYear]);
+  const recap = useMemo(() => computeRecap(items, collections, badges, selectedYear), [items, collections, badges, selectedYear]);
 
   async function handleShare() {
     setIsSharing(true);
@@ -139,6 +107,7 @@ export function YearlyRecapClient({
                 ))}
               </SelectContent>
             </Select>
+            <RecapShareImage year={selectedYear} disabled={recap.filmsAdded === 0} />
             <Button onClick={handleShare} disabled={isSharing || shareSuccess}>
               <Share2 />
               {t("yearly_recap_share_button")}

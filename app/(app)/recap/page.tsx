@@ -2,7 +2,8 @@ import { getUserCollections, getCollectionItemsForCollections } from "@/actions/
 import { getEarnedBadges } from "@/actions/badges";
 import { YearlyRecapClient } from "@/components/yearly-recap-client";
 
-export default async function RecapPage() {
+export default async function RecapPage({ searchParams }: { searchParams: Promise<{ jaar?: string }> }) {
+  const asked = Number((await searchParams).jaar);
   const collections = await getUserCollections();
   const rawItems = await getCollectionItemsForCollections(collections.map((c) => c.id));
 
@@ -18,6 +19,6 @@ export default async function RecapPage() {
   const badges = await getEarnedBadges();
 
   return (
-    <YearlyRecapClient collections={collections} items={items} badges={badges} />
+    <YearlyRecapClient collections={collections} items={items} badges={badges} initialYear={Number.isInteger(asked) && asked > 1999 ? asked : undefined} />
   );
 }

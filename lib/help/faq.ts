@@ -381,10 +381,10 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Kan ik mijn verlanglijst delen?", en: "Can I share my wishlist?" },
     a: {
-      nl: "Ja. Klik op je [verlanglijst](/wishlist) op **Delen** en zet **Openbaar via link** aan. Wie de link heeft ziet je titels (Holy Grails bovenaan), ook zonder account. Zet je het uit, dan werkt de link niet meer.",
-      en: "Yes. On your [wishlist](/wishlist) click **Share** and switch on **Public via link**. Anyone with the link sees your titles (Holy Grails first), even without an account. Switch it off and the link stops working.",
+      nl: "Ja. Klik op je [verlanglijst](/wishlist) op **Delen** en zet **Openbaar via link** aan. Wie de link heeft ziet je titels (Holy Grails bovenaan), ook zonder account, en kan met **Ik koop deze** een titel reserveren, zodat niemand dubbel geeft. Jij ziet niet wat er gereserveerd is. Zet je het uit, dan werkt de link niet meer.",
+      en: "Yes. On your [wishlist](/wishlist) click **Share** and switch on **Public via link**. Anyone with the link sees your titles (Holy Grails first), even without an account, and can reserve a title with **I'll buy this** so nobody gives the same thing twice. You can't see what's been reserved. Switch it off and the link stops working.",
     },
-    keywords: { nl: ["verlanglijst delen", "cadeau", "verjaardag"], en: ["share wishlist", "gift", "birthday"] },
+    keywords: { nl: ["verlanglijst delen", "cadeau", "verjaardag", "sinterklaas", "kerst", "reserveren", "cadeaulijst", "dubbel cadeau"], en: ["share wishlist", "gift", "birthday", "christmas", "reserve", "gift list"] },
     pages: ["/wishlist"],
   },
   // ---------- Social ----------

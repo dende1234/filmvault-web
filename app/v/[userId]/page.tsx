@@ -16,6 +16,8 @@ import { PosterGrid } from "@/components/movie/poster-grid";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { GiftButton, GiftProvider } from "@/components/gift/gift-reservations";
+import { createClient } from "@/lib/supabase/server";
 
 type Props = { params: Promise<{ userId: string }> };
 
@@ -40,6 +42,11 @@ export default async function PublicWishlistPage({ params }: Props) {
   const dict = getDictionary(await getLocale());
   const wishlist = await loadWishlist(userId);
   if (!wishlist) notFound();
+  // The owner doesn't get the gift buttons: what others buy stays a surprise.
+  const {
+    data: { user },
+  } = await (await createClient()).auth.getUser();
+  const isOwner = user?.id === wishlist.owner_id;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -68,10 +75,18 @@ export default async function PublicWishlistPage({ params }: Props) {
           }
         />
         <p className="-mt-4 max-w-prose text-sm text-muted-foreground">{dict.public_wishlist_hint}</p>
+        {wishlist.items.length > 0 && (
+          <p className="-mt-4 max-w-prose rounded-card border border-primary/30 bg-primary/5 px-4 py-3 text-sm">
+            {isOwner
+              ? dict.gift_owner_note
+              : format(dict.gift_visitor_note, wishlist.owner_name ?? dict.gift_owner_fallback)}
+          </p>
+        )}
 
         {wishlist.items.length === 0 ? (
           <p className="text-muted-foreground">{dict.public_wishlist_empty}</p>
         ) : (
+          <GiftProvider ownerId={wishlist.owner_id} enabled={!isOwner}>
           <PosterGrid>
             {wishlist.items.map((item, i) => (
               <div key={item.tmdb_movie_id} className="flex flex-col gap-2">
@@ -91,9 +106,11 @@ export default async function PublicWishlistPage({ params }: Props) {
                   )}
                 </Poster>
                 <p className="line-clamp-2 text-sm font-medium leading-snug">{item.movie_title}</p>
+                <GiftButton tmdbMovieId={item.tmdb_movie_id} title={item.movie_title} />
               </div>
             ))}
           </PosterGrid>
+          </GiftProvider>
         )}
 
         <section className="bg-cinema mt-4 flex flex-col items-center gap-3 rounded-card border border-primary/30 px-6 py-10 text-center">

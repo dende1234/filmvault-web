@@ -29,6 +29,7 @@ list, or these values are lost.
 | `smart_collections` (owner-only: `name`, `filter` jsonb) | `smart_collections.sql` | Filter format: `lib/smart-filter.ts` |
 | `feature_flags` | `feature_flags.sql` | Rules in `lib/feature-rules.ts`; Android could read them for its own features |
 | `announcements` | `announcements.sql` | Admin-only; sent by the web cron |
+| `wishlist_reservations` | `wishlist_gifts.sql` | Gift reservations on shared wishlists; only via `wishlist_gift_status` / `reserve_wishlist_gift` / `unreserve_wishlist_gift`. Never show them to the owner |
 | `push_subscriptions` | `push_subscriptions.sql` | Web push only (browser endpoints) |
 | `app_errors`, `rate_limits`, `admin_log`, `help_answers`, `help_questions`, `trusted_contributors` | see README | Admin/support |
 

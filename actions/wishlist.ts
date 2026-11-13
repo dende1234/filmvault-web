@@ -3,6 +3,7 @@
 // Direct port of wishlist/WishlistRepository.kt — owner-only, no new
 // architecture, mirrors the "extensions" round's Fase 4.
 
+import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireUserId } from "@/lib/auth";
@@ -184,4 +185,47 @@ export async function setWishlistPublic(isPublic: boolean): Promise<{ error: str
   revalidatePath("/wishlist");
   revalidatePath(`/v/${userId}`);
   return { error: null };
+}
+
+// ---------- Gift list (wishlist_gifts.sql) ----------
+// Visitors of a shared wishlist mark what they'll buy; anonymous, recognised
+// by a random token from their own browser. Only its hash leaves this file.
+
+export type GiftStatus = { tmdbMovieId: number; mine: boolean }[];
+
+function giftTokenHash(token: string): string | null {
+  if (typeof token !== "string" || !/^[A-Za-z0-9_-]{20,80}$/.test(token)) return null;
+  return createHash("sha256").update(token).digest("hex");
+}
+
+/** What's reserved on this wishlist (and which by this visitor); null before
+ * wishlist_gifts.sql has run, or for a bad token. */
+export async function getGiftStatus(ownerId: string, token: string): Promise<GiftStatus | null> {
+  const hash = giftTokenHash(token);
+  if (!hash || !/^[0-9a-f-]{36}$/i.test(ownerId)) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("wishlist_gift_status", { p_owner: ownerId, p_token_hash: hash });
+  if (error) return null;
+  return ((data ?? []) as { tmdb_movie_id: number; mine: boolean }[]).map((r) => ({ tmdbMovieId: Number(r.tmdb_movie_id), mine: r.mine }));
+}
+
+export async function reserveGift(
+  ownerId: string,
+  tmdbMovieId: number,
+  token: string,
+): Promise<"ok" | "taken" | "own" | "limit" | "not_found" | "invalid" | "failed"> {
+  const hash = giftTokenHash(token);
+  if (!hash || !/^[0-9a-f-]{36}$/i.test(ownerId) || !Number.isInteger(tmdbMovieId)) return "invalid";
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("reserve_wishlist_gift", { p_owner: ownerId, p_tmdb_movie_id: tmdbMovieId, p_token_hash: hash });
+  if (error) return "failed";
+  return data as "ok" | "taken" | "own" | "limit" | "not_found" | "invalid";
+}
+
+export async function unreserveGift(ownerId: string, tmdbMovieId: number, token: string): Promise<boolean> {
+  const hash = giftTokenHash(token);
+  if (!hash || !/^[0-9a-f-]{36}$/i.test(ownerId) || !Number.isInteger(tmdbMovieId)) return false;
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("unreserve_wishlist_gift", { p_owner: ownerId, p_tmdb_movie_id: tmdbMovieId, p_token_hash: hash });
+  return !error && data === true;
 }

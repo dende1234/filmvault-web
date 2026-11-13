@@ -39,5 +39,9 @@ Third round:
 24. `rls_report.sql` — security check (RLS per table) on /admin/status
 25. `protect_admin_flag.sql` — only admins can change `profiles.is_admin`
 
+Growth, phase 1:
+
+26. `wishlist_gifts.sql` — visitors of a shared wishlist reserve a gift ("I'll buy this"); the owner can't see it
+
 The web app keeps working before a file has run; `/admin/status` shows which
 ones are still missing.
