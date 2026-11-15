@@ -11,7 +11,9 @@ import { fetchAll } from "@/lib/supabase/fetch-all";
 import { requireUserId } from "@/lib/auth";
 import { getLocale } from "@/lib/preferences";
 import { getTitleDetail } from "@/lib/tmdb/server";
+import { z } from "zod";
 import { normalizeBarcode } from "@/lib/barcode";
+import { isMissingError } from "@/lib/admin/migrations";
 import { seasonsField } from "@/lib/seasons";
 import { getCollectionIdsContainingBarcode, getCollectionIdsContainingMovie } from "@/actions/collections";
 import { saveOwnedRelease } from "@/actions/owned-releases";
@@ -372,4 +374,35 @@ export async function lookupScannedBarcode(raw: string): Promise<ScannedBarcodeR
     owned: toOwnedCopies(same),
     otherEditions: toOwnedCopies(other),
   };
+}
+
+export type AddBarcodeResult =
+  | { status: "verified"; type?: string; editie?: string }
+  | { status: "pending" }
+  | { status: "conflict"; title: string | null; isBox: boolean }
+  | { status: "has_barcode" | "box" | "not_found" | "invalid" | "not_ready" | "failed" };
+
+/** Adds a barcode later to one of your copies that has none
+ * (add_barcode_later.sql). Known for this title → verified at once (and the
+ * copy takes that release's format/edition); unknown → admin review, as with
+ * a newly scanned barcode; known for another title → refused. */
+export async function addBarcodeToCopy(itemGroupId: string, rawBarcode: string): Promise<AddBarcodeResult> {
+  await requireUserId();
+  const code = normalizeBarcode(typeof rawBarcode === "string" ? rawBarcode : "");
+  if (!z.uuid().safeParse(itemGroupId).success || !/^[0-9A-Za-z]{4,32}$/.test(code)) return { status: "invalid" };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("add_barcode_to_copy", { p_item_group_id: itemGroupId, p_barcode: code });
+  if (isMissingError(error)) return { status: "not_ready" };
+  if (error || !data) return { status: "failed" };
+  const r = data as { status: string; type?: string; editie?: string; tmdb_movie_id?: number; is_box?: boolean };
+  revalidatePath("/collections", "layout");
+  if (r.status === "conflict") {
+    const title = r.tmdb_movie_id ? (await getTitleDetail(r.tmdb_movie_id, await getLocale()).catch(() => null))?.title ?? null : null;
+    return { status: "conflict", title, isBox: !!r.is_box };
+  }
+  if (r.status === "verified") return { status: "verified", type: r.type, editie: r.editie };
+  if (r.status === "pending" || r.status === "has_barcode" || r.status === "box" || r.status === "not_found" || r.status === "invalid") {
+    return { status: r.status } as AddBarcodeResult;
+  }
+  return { status: "failed" };
 }

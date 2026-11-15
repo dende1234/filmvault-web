@@ -159,6 +159,18 @@ export const HELP_ENTRIES: HelpEntry[] = [
     pages: ["/collections"],
   },
   {
+    id: "barcode-later",
+    category: "copy",
+    possible: true,
+    q: { nl: "Kan ik later nog een barcode toevoegen aan een film?", en: "Can I add a barcode to a film later?" },
+    a: {
+      nl: "Ja, als het exemplaar nog geen barcode heeft. Open de film in je collectie en vul bij **Barcode toevoegen** de barcode in, of scan hem. Kent de filmlijst de barcode, dan is hij meteen gecontroleerd. Anders kijkt een beheerder hem eerst na, net als bij een nieuwe barcode; je krijgt een melding als hij is goedgekeurd.",
+      en: "Yes, if the copy has no barcode yet. Open the film in your collection and enter or scan the barcode under **Add barcode**. If the film list knows it, it's verified straight away. Otherwise an admin checks it first, like a new barcode; you get a notification once it's approved.",
+    },
+    keywords: { nl: ["barcode toevoegen", "barcode later", "geen barcode", "barcode vergeten", "barcode erbij"], en: ["add barcode", "barcode later", "no barcode", "missing barcode"] },
+    pages: ["/collections"],
+  },
+  {
     id: "delete-copy",
     category: "copy",
     possible: true,

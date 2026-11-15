@@ -65,6 +65,8 @@ export const MIGRATIONS: Migration[] = [
   { file: "collection_growth.sql", probe: { kind: "table", table: "collection_growth_events" } },
   { file: "owned_releases.sql", probe: { kind: "column", table: "collection_items", column: "catalog_status" } },
   { file: "wishlist_reservations.sql", probe: { kind: "rpc", fn: "wishlist_reservations_ready" } },
+  // Probed with an empty id: answers "not_found"/"invalid" without changing anything.
+  { file: "add_barcode_later.sql", probe: { kind: "rpc", fn: "add_barcode_to_copy", args: { p_item_group_id: "00000000-0000-0000-0000-000000000000", p_barcode: "" } } },
 ];
 
 /** PostgREST/Postgres codes for "this table, column or function doesn't exist". */
