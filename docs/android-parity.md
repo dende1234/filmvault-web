@@ -50,6 +50,7 @@ of failing.
 
 ## Behaviour to keep in step
 
+- Formats and editions are whatever is in `media_types` / `edities` (managed by admins, combos included); `media_types_check.sql` removed the old fixed lists in `*_type_check` / `*_editie_check`. Android should read the lists from those tables, not hard-code them.
 - Combo formats such as `4K + Blu-ray` (`lib/formats.ts`) are stored as one `type` string.
 - Only admins can change `profiles.is_admin` (`protect_admin_flag.sql`); this is
   enforced in the database for both apps.
