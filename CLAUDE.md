@@ -52,6 +52,8 @@ Next.js 16 (App Router) + React 19, Supabase (`@supabase/ssr`) for auth and data
 
 **Undo and bulk edits.** Deleting copies returns the removed rows; `undoToast()` (`lib/undo-toast.ts`) offers "undo" that puts them back with `restoreCopies`. Smart collections are saved filters (`lib/smart-filter.ts`), not rows in `collection_items`. Imports accept CSV and XML (My Movies, CLZ, DVD Profiler; `lib/xml-import.ts` turns XML into the same table the CSV mapping reads).
 
+**MCP server.** `app/api/mcp/route.ts` serves the Filmory MCP server (Streamable HTTP, stateless, `@modelcontextprotocol/sdk`): read-only member tools in `lib/mcp/server.ts`, pure logic in `lib/mcp/collection.ts`. A member logs in with a personal token from their profile (`mcp_tokens.sql`, only the hash is stored, resolved by `mcp_use_token()` with an hourly limit); behind the `mcp` feature switch. The route uses the service-role client, so every query there must filter on that member's own collections or `user_id`. Excluded from the proxy matcher.
+
 **Errors and limits.** Server errors are stored by `instrumentation.ts` (`onRequestError`) and browser errors by `components/error-reporter.tsx`, both through `lib/report-error.ts` into `app_errors` (shown on `/admin/status`). Expensive or external work (shelf scan, import matching, barcode suggestions) asks `withinLimit()` (`lib/rate-limit.ts`) first; add new heavy actions to `LIMITS` there.
 
 **Types.** `types/database.ts` is hand-written (not generated) and mirrors the Postgres columns in snake_case; `types/tmdb.ts` holds TMDB DTOs. Keep them in sync with the SQL when adding columns.

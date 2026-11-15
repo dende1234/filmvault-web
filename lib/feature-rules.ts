@@ -6,7 +6,10 @@ export type FeatureFlag = { key: string; mode: FeatureMode; percent: number; use
 
 /** Every feature that can be switched, with its default before an admin
  * touches it (or before the SQL has run). */
-export const FEATURES = [{ key: "shelf_scan", defaultMode: "admins" }] as const satisfies readonly { key: string; defaultMode: FeatureMode }[];
+export const FEATURES = [
+  { key: "shelf_scan", defaultMode: "admins" },
+  { key: "mcp", defaultMode: "admins" },
+] as const satisfies readonly { key: string; defaultMode: FeatureMode }[];
 export type FeatureKey = (typeof FEATURES)[number]["key"];
 
 /** Stable 0–99 bucket per member and feature (FNV-1a), so a percentage
