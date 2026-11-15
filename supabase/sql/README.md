@@ -44,6 +44,7 @@ Collection onboarding and growth:
 26. `owned_releases.sql` — save personal copies immediately, including without a barcode; queue catalogue review atomically
 27. `collection_growth.sql` — separate collection activation and return metrics (run after growth_tracking.sql)
 28. `wishlist_reservations.sql` — recipients can cross off shared wishlist gifts without an account; apply after `public_wishlist.sql`
+29. `add_barcode_later.sql` — add a barcode later to a copy without one (review like a new barcode); apply after `owned_releases.sql`
 
 
 Apply `owned_releases.sql` and `collection_growth.sql` before deploying the collection onboarding changes.

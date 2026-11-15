@@ -21,6 +21,7 @@ import { CopyDetails } from "@/components/copy-details";
 import { PurchaseDetails } from "@/components/purchase-details";
 import { TradeSelect } from "@/components/trade-select";
 import { LocationInput } from "@/components/location-input";
+import { AddBarcodeLater } from "@/components/add-barcode-later";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import type { MovieDetailDto } from "@/types/tmdb";
@@ -319,6 +320,15 @@ export function CollectionItemEditor({
           <h2 className="mb-2 font-display text-xl font-semibold tracking-tight">{t("collection_item_detail_synopsis_title")}</h2>
           <p className="leading-relaxed text-foreground/90">{movie.overview}</p>
         </div>
+      )}
+
+      {!item.barcode && !item.is_box && (
+        <AddBarcodeLater
+          itemGroupId={item.item_group_id}
+          onSaved={({ barcode, type, editie, catalog_status }) =>
+            setItem((prev) => ({ ...prev, barcode, type: type ?? prev.type, editie: editie ?? prev.editie, catalog_status }))
+          }
+        />
       )}
 
       <Card>

@@ -41,6 +41,7 @@ of failing.
 
 ## Database functions Android can use
 
+- `add_barcode_to_copy(item_group_id, barcode)`: add a barcode later to a copy without one; known → takes that release and is verified, unknown → pending review, other title → refused (`add_barcode_later.sql`)
 - `approve_pending_barcode(id)`, `approve_pending_box(ids)`: approve in one transaction (`approve_pending.sql`)
 - `approve_own_trusted(id)`: auto-approve for trusted contributors (`auto_approve.sql`)
 - `dashboard_stats()`: dashboard numbers (`dashboard_stats.sql`)
