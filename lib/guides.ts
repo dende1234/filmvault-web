@@ -605,13 +605,14 @@ export const GUIDES: Guide[] = [
         ],
       },
       {
-        heading: "Reserveren: niemand geeft dubbel",
+        heading: "Afstrepen: niemand geeft dubbel",
         paragraphs: [
-          "Wie iets wil geven, tikt op 'Ik koop deze'. Anderen zien dan dat die titel al gereserveerd is. Jij ziet als eigenaar niet wát er gereserveerd is, zodat het een verrassing blijft.",
+          "Wie iets wil geven, streept de film op de lijst af als gereserveerd of gekocht. Andere bezoekers zien dan dat die titel al vergeven is. De wens zelf blijft op de lijst staan.",
         ],
         bullets: [
-          "Geen account nodig om te reserveren.",
-          "Toch iets anders kopen? De gever kan de reservering zelf ongedaan maken.",
+          "Geen account nodig om af te strepen.",
+          "Toch iets anders kopen? Je eigen vinkje zet je in dezelfde browser weer terug.",
+          "Als eigenaar kun je markeringen ook terugzetten, bijvoorbeeld na je verjaardag.",
           "Zet je het delen uit, dan werkt de link niet meer.",
         ],
       },
@@ -649,13 +650,14 @@ export const GUIDES: Guide[] = [
         ],
       },
       {
-        heading: "Reserving: nobody gives the same thing twice",
+        heading: "Ticking off: nobody gives the same thing twice",
         paragraphs: [
-          "Anyone who wants to give something taps 'I'll buy this'. Others then see that the title is taken. As the owner you can't see what's been reserved, so it stays a surprise.",
+          "Anyone who wants to give something ticks the movie off as reserved or bought. Other visitors then see that the title is taken. The wish itself stays on the list.",
         ],
         bullets: [
-          "No account needed to reserve.",
-          "Buying something else after all? The giver can undo the reservation.",
+          "No account needed to tick something off.",
+          "Buying something else after all? Undo your own tick in the same browser.",
+          "As the owner you can clear marks too, for example after your birthday.",
           "Switch sharing off and the link stops working.",
         ],
       },

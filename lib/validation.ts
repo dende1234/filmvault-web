@@ -45,6 +45,7 @@ export const restoreRowSchema = z.object({
   movie_title: z.string().max(500),
   movie_poster: nullableString(300),
   barcode: nullableString(64),
+  catalog_status: z.enum(["verified", "unverified", "personal"]).optional(),
   added_at: z.string().max(40).nullable().optional(),
   type: nullableString(60),
   rating: z.number().nullable(),

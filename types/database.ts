@@ -73,6 +73,7 @@ export interface CollectionItem {
   movie_title: string;
   movie_poster: string | null;
   barcode: string;
+  catalog_status?: "verified" | "unverified" | "personal";
   added_at: string | null;
   type: string;
   rating: number | null;
@@ -123,6 +124,8 @@ export function isLoanOverdue(item: Pick<CollectionItem, "loaned_to" | "loaned_a
 }
 
 export interface Barcode {
+  /** Present only for an owner-only scan projection of an unlisted copy. */
+  catalog_status?: "unverified" | "personal";
   id: string;
   tmdb_movie_id: number;
   barcode: string;

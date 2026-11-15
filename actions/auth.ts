@@ -25,20 +25,20 @@ export async function signIn(email: string, password: string): Promise<{ error: 
 /** `newsletterOptIn` travels as auth user metadata, because the profile row
  * doesn't exist yet at sign-up — getOrCreateProfile() copies it over when
  * it creates the profile on the first authenticated request. */
-export async function signUp(email: string, password: string, newsletterOptIn = false): Promise<{ error: string | null }> {
+export async function signUp(email: string, password: string, newsletterOptIn = false): Promise<{ error: string | null; needsConfirmation?: boolean }> {
   const supabase = await createClient();
   const dict = getDictionary(await getLocale());
   // A language the visitor explicitly picked as a guest becomes the profile
   // language (copied over in getOrCreateProfile). A detected one does not.
   const chosen = (await cookies()).get(LOCALE_COOKIE)?.value;
   const language = chosen === "nl" || chosen === "en" ? chosen : undefined;
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: { data: { newsletter_opt_in: newsletterOptIn === true, ...(language ? { language } : {}) } },
   });
   if (error) return { error: authErrorMessage(error, dict, "register_error_fallback") };
-  return { error: null };
+  return { error: null, needsConfirmation: !data.session };
 }
 
 export async function requestPasswordReset(email: string): Promise<{ error: string | null }> {

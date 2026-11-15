@@ -29,7 +29,7 @@ type Selected = { id: number; title: string; poster: string | null };
  * barcode is pre-filled for approval. */
 /** showModeLinks: the "scan several" / "shop mode" shortcuts (not needed on
  * /scannen itself, which has them as tabs). */
-export function AddFilmFlow({ showModeLinks = true }: { showModeLinks?: boolean } = {}) {
+export function AddFilmFlow({ showModeLinks = true, searchOnly = false }: { showModeLinks?: boolean; searchOnly?: boolean } = {}) {
   const { t } = useT();
   const hasCamera = useHasCamera();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -82,8 +82,8 @@ export function AddFilmFlow({ showModeLinks = true }: { showModeLinks?: boolean 
         <Plus />
         {t("dashboard_add_film_button")}
       </Button>
-      <BarcodeScanButton onDetected={onScan} />
-      {hasCamera && showModeLinks && (
+      {!searchOnly && <BarcodeScanButton onDetected={onScan} />}
+      {!searchOnly && hasCamera && showModeLinks && (
         <Button asChild variant="ghost">
           <Link href="/scannen?modus=meerdere">
             <ScanLine />
@@ -91,7 +91,7 @@ export function AddFilmFlow({ showModeLinks = true }: { showModeLinks?: boolean 
           </Link>
         </Button>
       )}
-      {hasCamera && showModeLinks && (
+      {!searchOnly && hasCamera && showModeLinks && (
         <Button asChild variant="ghost">
           <Link href="/scannen?modus=winkel">
             <Store />

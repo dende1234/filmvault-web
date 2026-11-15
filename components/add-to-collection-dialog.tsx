@@ -7,8 +7,9 @@ import { AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { editionLabel } from "@/lib/edition-label";
-import { getUserCollections } from "@/actions/collections";
+import { createCollection, getUserCollections } from "@/actions/collections";
 import { addBarcodesToCollections, getBarcodesForMovie, getOwnedCopiesOfTitle, type OwnedCopy } from "@/actions/barcodes";
+import { ownedReleasesReady } from "@/actions/owned-releases";
 import { getEdities, getMediaTypes } from "@/actions/media-types";
 import { removeFromWishlistIfCovered } from "@/actions/wishlist";
 import { getSeriesSeasons, type SeasonOption } from "@/actions/series";
@@ -57,6 +58,9 @@ export function AddToCollectionDialog({
   const [newBarcodeText, setNewBarcodeText] = useState("");
   const [newBarcodeType, setNewBarcodeType] = useState<string>("DVD");
   const [newBarcodeEditie, setNewBarcodeEditie] = useState("Normaal");
+  const [withoutBarcode, setWithoutBarcode] = useState(!initialBarcode);
+  const [ownedReady, setOwnedReady] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState("");
   const [info, setInfo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -85,8 +89,10 @@ export function AddToCollectionDialog({
       getEdities(),
       series ? getSeriesSeasons(tmdbMovieId) : Promise.resolve([] as SeasonOption[]),
       getOwnedCopiesOfTitle(tmdbMovieId).catch(() => [] as OwnedCopy[]),
+      ownedReleasesReady(),
     ])
-      .then(([barcodes, cols, types, eds, seasonList, ownedCopies]) => {
+      .then(([barcodes, cols, types, eds, seasonList, ownedCopies, ready]) => {
+        setOwnedReady(ready);
         setOwned(ownedCopies);
         setSeasonOptions(seasonList);
         setExistingBarcodes(barcodes);
@@ -146,37 +152,37 @@ export function AddToCollectionDialog({
   const toSubmit: NewBarcodeInput[] = typedIsNew
     ? [...staged, { barcode: typed, type: newBarcodeType, editie: newBarcodeEditie || "Normaal", ...(series ? { seasons: newSeasons } : {}) }]
     : staged;
-  const stagedCount = selectedExisting.size + toSubmit.length;
-  const canSubmit = stagedCount > 0 && selectedCollections.size > 0 && !isSubmitting;
+  const personalRelease: NewBarcodeInput[] = withoutBarcode
+    ? [{ barcode: "", type: newBarcodeType, editie: newBarcodeEditie || "Normaal", ...(series ? { seasons: newSeasons } : {}) }]
+    : toSubmit;
+  const stagedCount = withoutBarcode ? 1 : selectedExisting.size + toSubmit.length;
+  const canSubmit = stagedCount > 0 && (selectedCollections.size > 0 || (collections.length === 0 && !!newCollectionName.trim())) && (!series || !withoutBarcode || newSeasons.length > 0) && !isSubmitting && (personalRelease.length === 0 || ownedReady);
 
   async function handleSubmit() {
     setIsSubmitting(true);
     setError(null);
     try {
-      const selectedBarcodes = existingBarcodes.filter((b) => selectedExisting.has(b.id));
-      const targetCollectionIds = Array.from(selectedCollections);
+      const selectedBarcodes = withoutBarcode ? [] : existingBarcodes.filter((b) => selectedExisting.has(b.id));
+      let targetCollectionIds = Array.from(selectedCollections);
+      if (collections.length === 0) {
+        const collection = await createCollection(newCollectionName.trim(), null);
+        setCollections([collection]);
+        setSelectedCollections(new Set([collection.id]));
+        targetCollectionIds = [collection.id];
+      }
       const alreadyContaining = await addBarcodesToCollections(
         selectedBarcodes,
-        toSubmit,
+        personalRelease,
         tmdbMovieId,
         movieTitle,
         moviePoster,
         targetCollectionIds,
       );
-      // Best-effort auto-cleanup: only when at least one EXISTING (already-known) barcode was
-      // part of this submit — that's the only path that inserts directly into collection_items
-      // in this same call. A genuinely new barcode goes to pending_barcodes and isn't actually
-      // "owned" yet, so removing the wishlist entry here would be premature. Mirrors
-      // AddToCollectionViewModel.kt's submit() exactly, including the same accepted edge case for
-      // mixed existing+new batches.
-      if (selectedBarcodes.length > 0 && alreadyContaining.size < targetCollectionIds.length) {
+      if (alreadyContaining.size < targetCollectionIds.length) {
         removeFromWishlistIfCovered(tmdbMovieId).catch(() => {});
       }
       if (alreadyContaining.size === 0) {
-        // New barcodes go to the approval queue first: say so, or it looks like nothing happened.
-        if (toSubmit.length > 0 && selectedBarcodes.length > 0) toast.success(t("add_to_collection_added_and_submitted"), { duration: 8000 });
-        else if (toSubmit.length > 0) toast.success(t("add_to_collection_submitted"), { duration: 8000 });
-        else toast.success(t("add_to_collection_added"));
+        toast.success(t(personalRelease.some((r) => !!r.barcode) ? "add_to_collection_added_and_submitted" : "add_to_collection_added"));
         onOpenChange(false);
         router.refresh();
       } else {
@@ -237,7 +243,11 @@ export function AddToCollectionDialog({
                 </ul>
               </div>
             )}
-            <div>
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox checked={withoutBarcode} onCheckedChange={(v) => setWithoutBarcode(v === true)} />
+              {t("owned_without_barcode")}
+            </label>
+            {!withoutBarcode && <div>
               <p className="mb-2 text-sm font-medium">{t("add_to_collection_barcodes_for", movieTitle)}</p>
               {existingBarcodes.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{t("add_to_collection_no_barcodes")}</p>
@@ -265,10 +275,10 @@ export function AddToCollectionDialog({
                   </div>
                 </>
               )}
-            </div>
+            </div>}
 
             <div>
-              <p className="text-sm font-medium">{t("add_to_collection_new_barcode_label")}</p>
+              <p className="text-sm font-medium">{t(withoutBarcode ? "owned_release_details" : "add_to_collection_new_barcode_label")}</p>
               <p className="mb-2 text-xs text-muted-foreground">{t("add_to_collection_new_barcode_hint")}</p>
               <div className="flex flex-col gap-2">
                 {series && (
@@ -278,13 +288,13 @@ export function AddToCollectionDialog({
                   </div>
                 )}
                 <div className="flex gap-2">
-                  <Input
+                  {!withoutBarcode && <Input
                     placeholder={t("label_barcode")}
                     value={newBarcodeText}
                     onChange={(e) => setNewBarcodeText(e.target.value)}
                     inputMode="numeric"
-                  />
-                  <BarcodeScanButton
+                  />}
+                  {!withoutBarcode && <BarcodeScanButton
                     iconOnly
                     onDetected={(code) => {
                       const match = existingBarcodes.find((b) => b.barcode.toLowerCase() === code.toLowerCase());
@@ -293,7 +303,7 @@ export function AddToCollectionDialog({
                         setInfo(t("add_to_collection_info_barcode_exists"));
                       } else setNewBarcodeText(code);
                     }}
-                  />
+                  />}
                 </div>
                 <div className="flex gap-2">
                   <Select value={newBarcodeType} onValueChange={setNewBarcodeType}>
@@ -320,9 +330,9 @@ export function AddToCollectionDialog({
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button type="button" variant="outline" onClick={stageNewBarcode}>
+                  {!withoutBarcode && <Button type="button" variant="outline" onClick={stageNewBarcode}>
                     {t("action_add")}
-                  </Button>
+                  </Button>}
                 </div>
                 {staged.map((s, i) => (
                   <div key={i} className="flex items-center justify-between rounded-md bg-muted px-3 py-1.5 text-sm">
@@ -341,7 +351,7 @@ export function AddToCollectionDialog({
             <div>
               <p className="mb-2 text-sm font-medium">{t("add_to_collection_select_collections")}</p>
               {collections.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("add_to_collection_no_collections")}</p>
+                <Input aria-label={t("collections_new_title")} placeholder={t("owned_collection_name")} value={newCollectionName} onChange={(e) => setNewCollectionName(e.target.value)} />
               ) : (
                 <div className="flex flex-col gap-1.5">
                   {collections.map((c) => (
@@ -364,6 +374,7 @@ export function AddToCollectionDialog({
               )}
             </div>
 
+            {!ownedReady && personalRelease.length > 0 && <p role="status" className="text-sm text-warning">{t("owned_save_not_ready")}</p>}
             {info && <p className="text-sm text-muted-foreground">{info}</p>}
             {error && <p className="text-sm text-destructive">{error}</p>}
           </div>

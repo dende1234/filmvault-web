@@ -13,8 +13,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Hoe voeg ik een film of serie toe?", en: "How do I add a film or series?" },
     a: {
-      nl: "Klik op **Film of serie toevoegen** op je [dashboard](/dashboard) of bij [Collecties](/collections). Zoek de titel, kies de uitgave (barcode, formaat, editie) en de collectie(s). Heb je een camera, dan kun je ook de barcode scannen.",
-      en: "Click **Add film or series** on your [dashboard](/dashboard) or in [Collections](/collections). Search the title, pick the release (barcode, format, edition) and the collection(s). With a camera you can also scan the barcode.",
+      nl: "Klik op **Film of serie toevoegen** op je [dashboard](/dashboard) of bij [Collecties](/collections). Zoek de titel, kies formaat, editie en collectie(s). Zonder barcode kies je **Ik wil mijn exemplaar zonder barcode opslaan**. Je kunt je eerste collectie in hetzelfde venster aanmaken. Heb je een camera, dan kun je ook de barcode scannen.",
+      en: "Click **Add film or series** on your [dashboard](/dashboard) or in [Collections](/collections). Search the title, pick the format, edition and collection(s). Without a barcode, choose **Save my copy without a barcode**. You can create your first collection in the same dialog. With a camera you can also scan the barcode.",
     },
     keywords: { nl: ["film toevoegen", "serie toevoegen", "dvd toevoegen", "blu-ray toevoegen", "nieuwe film"], en: ["add film", "add movie", "add series", "add dvd", "add blu-ray"] },
     pages: ["/dashboard", "/collections"],
@@ -60,8 +60,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Mijn barcode wordt niet gevonden. Wat nu?", en: "My barcode isn't found. What now?" },
     a: {
-      nl: "Vaak stelt Filmory de film al voor via een externe barcodedatabase (vooral Amerikaanse en Britse uitgaven); tik dan op de juiste. Anders kies je of het een losse film/serie of een box is, zoek je de titel en voeg je hem toe. De barcode gaat dan naar goedkeuring. Is hij goedgekeurd, dan staat hij in je collectie, krijg je een [melding](/meldingen) en vindt iedereen hem voortaan.",
-      en: "Often Filmory already suggests the film from an external barcode database (mostly US and UK releases); just tap the right one. Otherwise choose whether it's a single film/series or a box, search the title and add it. The barcode then goes for approval. Once approved it's in your collection, you get a [notification](/meldingen) and everyone finds it from then on.",
+      nl: "Vaak stelt Filmory de film al voor via een externe barcodedatabase (vooral Amerikaanse en Britse uitgaven); tik dan op de juiste. Anders kies je of het een losse film/serie of een box is, zoek je de titel en voeg je hem toe. Je eigen exemplaar staat direct in je collectie. De barcodegegevens worden apart gecontroleerd voor de gedeelde catalogus. Na controle krijg je een [melding](/meldingen).",
+      en: "Often Filmory already suggests the film from an external barcode database (mostly US and UK releases); just tap the right one. Otherwise choose whether it's a single film/series or a box, search the title and add it. Your own copy goes straight into your collection. Barcode details are reviewed separately for the shared catalogue, and you get a [notification](/meldingen) after review.",
     },
     keywords: { nl: ["barcode niet gevonden", "onbekende barcode", "niet herkend", "goedkeuring"], en: ["barcode not found", "unknown barcode", "not recognised", "approval"] },
   },
@@ -71,8 +71,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Hoe lang duurt het voor een barcode is goedgekeurd?", en: "How long does barcode approval take?" },
     a: {
-      nl: "Een beheerder controleert nieuwe barcodes met de hand, meestal binnen een paar dagen. Bij [Meldingen](/meldingen) zie je wat nog wacht, en je krijgt daar een melding zodra hij is goedgekeurd of afgewezen.",
-      en: "An admin checks new barcodes by hand, usually within a few days. [Notifications](/meldingen) shows what is still waiting, and you get a notification there as soon as it's approved or rejected.",
+      nl: "Je eigen exemplaar hoef je niet af te wachten: het staat al in je collectie. Een beheerder controleert nieuwe barcodegegevens apart. Bij [Meldingen](/meldingen) zie je wat nog wacht, en je krijgt daar een melding zodra hij is goedgekeurd of afgewezen.",
+      en: "Your own copy is already in your collection. An admin reviews new barcode details separately. [Notifications](/meldingen) shows what is still waiting, and you get a notification there as soon as it's approved or rejected.",
     },
     keywords: { nl: ["goedgekeurd", "wachten", "in behandeling", "ter goedkeuring", "pending"], en: ["approved", "waiting", "pending", "approval"] },
     pages: ["/meldingen"],
@@ -272,10 +272,10 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Kan ik mijn spreadsheet of lijst importeren?", en: "Can I import my spreadsheet or list?" },
     a: {
-      nl: "Ja, via [Importeren](/collections/import). Upload een CSV (uit Excel, Google Sheets, CLZ…) of een XML-export uit My Movies, CLZ Movies of DVD Profiler. Kolommen worden automatisch herkend; je controleert alles voordat het wordt toegevoegd. Download het voorbeeldbestand om te zien welke kolommen kunnen.",
-      en: "Yes, via [Import](/collections/import). Upload a CSV (from Excel, Google Sheets, CLZ…) or an XML export from My Movies, CLZ Movies or DVD Profiler. Columns are recognised automatically; you check everything before it's added. Download the example file to see which columns work.",
+      nl: "Ja, via [Importeren](/collections/import). Upload een CSV (uit Excel, Google Sheets, CLZ…) of een XML-export uit My Movies, CLZ Movies of DVD Profiler, of de export van Movie Collection. Kolommen worden automatisch herkend, ook zonder kopregel, en een IMDb- of TMDB-nummer koppelt de film exact; je controleert alles voordat het wordt toegevoegd. Download het voorbeeldbestand om te zien welke kolommen kunnen.",
+      en: "Yes, via [Import](/collections/import). Upload a CSV (from Excel, Google Sheets, CLZ…) or an XML export from My Movies, CLZ Movies or DVD Profiler, or the Movie Collection export. Columns are recognised automatically, also without a header row, and an IMDb or TMDB number matches the film exactly; you check everything before it's added. Download the example file to see which columns work.",
     },
-    keywords: { nl: ["importeren", "spreadsheet", "excel", "csv", "lijst inlezen", "overzetten", "xml", "my movies", "dvd profiler", "clz"], en: ["import", "spreadsheet", "excel", "csv", "transfer", "xml", "my movies", "dvd profiler", "clz"] },
+    keywords: { nl: ["importeren", "spreadsheet", "excel", "csv", "lijst inlezen", "overzetten", "xml", "my movies", "dvd profiler", "clz", "movie collection", "imdb"], en: ["import", "spreadsheet", "excel", "csv", "transfer", "xml", "my movies", "dvd profiler", "clz", "movie collection", "imdb"] },
     pages: ["/collections/import", "/collections"],
   },
   {
@@ -381,10 +381,10 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Kan ik mijn verlanglijst delen?", en: "Can I share my wishlist?" },
     a: {
-      nl: "Ja. Klik op je [verlanglijst](/wishlist) op **Delen** en zet **Openbaar via link** aan. Wie de link heeft ziet je titels (Holy Grails bovenaan), ook zonder account, en kan met **Ik koop deze** een titel reserveren, zodat niemand dubbel geeft. Jij ziet niet wat er gereserveerd is. Zet je het uit, dan werkt de link niet meer.",
-      en: "Yes. On your [wishlist](/wishlist) click **Share** and switch on **Public via link**. Anyone with the link sees your titles (Holy Grails first), even without an account, and can reserve a title with **I'll buy this** so nobody gives the same thing twice. You can't see what's been reserved. Switch it off and the link stops working.",
+      nl: "Ja. Klik op je [verlanglijst](/wishlist) op **Delen** en zet **Openbaar via link** aan. Wie de link heeft ziet je titels (Holy Grails bovenaan) en kan een cadeau afstrepen als gereserveerd of gekocht, ook zonder account. De wens blijft bestaan. Je eigen vinkjes kun je in dezelfde browser terugzetten; de eigenaar kan markeringen ook terugzetten. Zet delen uit en de link werkt niet meer.",
+      en: "Yes. On your [wishlist](/wishlist) click **Share** and switch on **Public via link**. Anyone with the link sees your titles (Holy Grails first) and can mark a gift as reserved or bought, even without an account. The wish stays on the list. You can undo your own marks in the same browser; the owner can also clear marks. Switch sharing off and the link stops working.",
     },
-    keywords: { nl: ["verlanglijst delen", "cadeau", "verjaardag", "sinterklaas", "kerst", "reserveren", "cadeaulijst", "dubbel cadeau"], en: ["share wishlist", "gift", "birthday", "christmas", "reserve", "gift list"] },
+    keywords: { nl: ["verlanglijst delen", "cadeau", "verjaardag"], en: ["share wishlist", "gift", "birthday"] },
     pages: ["/wishlist"],
   },
   // ---------- Social ----------
@@ -467,8 +467,8 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Wie kan mijn collectie zien?", en: "Who can see my collection?" },
     a: {
-      nl: "Je collecties zijn privé, behalve voor vrienden die je accepteert, en voor collecties die jij zelf openbaar maakt via een link. Je verlanglijst is altijd privé. Meer in het [privacybeleid](/privacy).",
-      en: "Your collections are private, except to friends you accept and collections you make public via a link yourself. Your wishlist is always private. More in the [privacy policy](/privacy).",
+      nl: "Je collecties zijn privé, behalve voor vrienden die je accepteert, en voor collecties die jij zelf openbaar maakt via een link. Je verlanglijst is privé totdat je die zelf deelt via een link. Meer in het [privacybeleid](/privacy).",
+      en: "Your collections are private, except to friends you accept and collections you make public via a link yourself. Your wishlist is private until you share it via a link. More in the [privacy policy](/privacy).",
     },
     keywords: { nl: ["privacy", "collectie zien", "zichtbaar", "privé"], en: ["privacy", "see collection", "visible", "private"] },
   },
@@ -513,10 +513,10 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Werkt Filmory op mijn telefoon?", en: "Does Filmory work on my phone?" },
     a: {
-      nl: "Ja, gewoon in de browser van je telefoon, inclusief barcode scannen met je camera. Zet Filmory op je beginscherm: op iPhone via Delen → Zet op beginscherm, op Android via de knop Installeren op je dashboard of het browsermenu. Dan opent hij als een app.",
-      en: "Yes, right in your phone's browser, including scanning barcodes with your camera. Put Filmory on your home screen: on iPhone via Share → Add to Home Screen, on Android via the Install button on your dashboard or the browser menu. Then it opens like an app.",
+      nl: "Ja, gewoon in de browser van je telefoon, inclusief barcode scannen met je camera. Zet Filmory op je beginscherm: op iPhone via Delen → Zet op beginscherm, op Android via **Meer → App installeren** in het menu (of je [profiel](/profile)). Dat kan altijd, ook als je de kaart op je dashboard hebt weggeklikt. Dan opent hij als een app.",
+      en: "Yes, right in your phone's browser, including scanning barcodes with your camera. Put Filmory on your home screen: on iPhone via Share → Add to Home Screen, on Android via **More → Install app** in the menu (or your [profile](/profile)). That's always possible, also after hiding the card on your dashboard. Then it opens like an app.",
     },
-    keywords: { nl: ["telefoon", "mobiel", "iphone", "beginscherm"], en: ["phone", "mobile", "iphone", "home screen"] },
+    keywords: { nl: ["telefoon", "mobiel", "iphone", "beginscherm", "app installeren", "installeren", "app downloaden"], en: ["phone", "mobile", "iphone", "home screen", "install app", "install", "download app"] },
   },
   {
     id: "value",

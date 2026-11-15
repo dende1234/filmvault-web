@@ -18,6 +18,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   // GDPR: consent must be an active choice, so this starts unchecked.
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -33,15 +34,32 @@ export default function RegisterPage() {
     }
     setError(null);
     startTransition(async () => {
-      const result = await signUp(email, password, newsletterOptIn);
-      if (result.error) {
-        setError(result.error);
-      } else {
-        router.replace("/dashboard");
-        router.refresh();
+      try {
+        const result = await signUp(email.trim(), password, newsletterOptIn);
+        if (result.error) {
+          setError(result.error);
+        } else if (result.needsConfirmation) {
+          setConfirmationEmail(email.trim());
+          setPassword("");
+          setConfirmPassword("");
+        } else {
+          router.replace("/dashboard");
+          router.refresh();
+        }
+      } catch {
+        setError(t("register_error_fallback"));
       }
     });
   }
+
+  if (confirmationEmail) return (
+    <section className="flex flex-col gap-4" role="status">
+      <h2 className="font-display text-2xl font-semibold">{t("register_check_email")}</h2>
+      <p className="text-sm text-muted-foreground">{t("register_check_email_hint", confirmationEmail)}</p>
+      <p className="text-sm text-muted-foreground">{t("register_check_spam")}</p>
+      <Button asChild><Link href="/login">{t("landing_cta_login")}</Link></Button>
+    </section>
+  );
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -49,7 +67,7 @@ export default function RegisterPage() {
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="email">{t("email_label")}</Label>
-        <Input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -57,6 +75,8 @@ export default function RegisterPage() {
         <Input
           id="password"
           type="password"
+          required
+          minLength={6}
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
@@ -68,6 +88,8 @@ export default function RegisterPage() {
         <Input
           id="confirm-password"
           type="password"
+          required
+          minLength={6}
           autoComplete="new-password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}

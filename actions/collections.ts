@@ -302,7 +302,7 @@ const COPY_COLUMNS = [
   "personal_note", "loaned_to", "loaned_at", "is_favorite", "tags", "condition",
   "cut", "audio_languages", "subtitle_languages", "label", "region",
   // Later copy details: carried along too (skipped while their SQL hasn't run).
-  "purchase_price", "purchase_date", "purchase_shop", "for_trade", "shelf_location",
+  "purchase_price", "purchase_date", "purchase_shop", "for_trade", "shelf_location", "catalog_status",
 ] as const;
 /** The caller's rows for this copy (or, for a box, the whole box), across all
  * of their collections. Friends can read collection_items too, so ownership is

@@ -6,8 +6,9 @@ import { Package } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { editionLabel } from "@/lib/edition-label";
-import { getUserCollections } from "@/actions/collections";
+import { createCollection, getUserCollections } from "@/actions/collections";
 import { addKnownBoxToCollections, addNewBoxAsPending, findBarcodesByCode } from "@/actions/barcodes";
+import { ownedReleasesReady } from "@/actions/owned-releases";
 import { getEdities, getMediaTypes } from "@/actions/media-types";
 import type { BoxFilmInput, Collection } from "@/types/database";
 import { Poster } from "@/components/movie/poster";
@@ -35,6 +36,8 @@ export function BoxDetailsDialog({ draft, onClose }: { draft: BoxDraft; onClose:
   const { t, locale } = useT();
   const router = useRouter();
   const known = !!draft.knownBoxGroupId;
+  const [ownedReady, setOwnedReady] = useState(false);
+  const [newCollectionName, setNewCollectionName] = useState("");
   const [collections, setCollections] = useState<Collection[]>([]);
   const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set());
   const [mediaTypes, setMediaTypes] = useState<string[]>([]);
@@ -48,23 +51,30 @@ export function BoxDetailsDialog({ draft, onClose }: { draft: BoxDraft; onClose:
   const [info, setInfo] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getUserCollections(), getMediaTypes(), getEdities()]).then(([cols, types, eds]) => {
+    Promise.all([getUserCollections(), getMediaTypes(), getEdities(), ownedReleasesReady()]).then(([cols, types, eds, ready]) => {
+      setOwnedReady(ready);
       setCollections(cols);
       setMediaTypes(types);
       setEdities(eds);
       if (cols.length === 1) setSelectedCollections(new Set([cols[0].id]));
       if (!draft.type) setType(types[0] ?? "DVD");
       if (!draft.editie) setEditie(eds[0] ?? "Normaal");
-    });
-  }, [draft.type, draft.editie]);
+    }).catch(() => setError(t("add_to_collection_error_load")));
+  }, [draft.type, draft.editie, t]);
 
-  const canSubmit = draft.films.length > 0 && boxName.trim() && barcode.trim() && selectedCollections.size > 0 && !isSubmitting;
+  const canSubmit = draft.films.length > 0 && boxName.trim() && barcode.trim() && (selectedCollections.size > 0 || (collections.length === 0 && !!newCollectionName.trim())) && (known || ownedReady) && !isSubmitting;
 
   async function handleSubmit() {
     setIsSubmitting(true);
     setError(null);
-    const collectionIds = Array.from(selectedCollections);
+    let collectionIds = Array.from(selectedCollections);
     try {
+      if (collections.length === 0) {
+        const collection = await createCollection(newCollectionName.trim(), null);
+        setCollections([collection]);
+        setSelectedCollections(new Set([collection.id]));
+        collectionIds = [collection.id];
+      }
       // Re-check: someone may have registered this barcode as a box meanwhile.
       const boxGroupId = draft.knownBoxGroupId ?? (await findBarcodesByCode(barcode.trim()))[0]?.box_group_id ?? null;
       if (boxGroupId) {
@@ -89,7 +99,7 @@ export function BoxDetailsDialog({ draft, onClose }: { draft: BoxDraft; onClose:
       } else {
         await addNewBoxAsPending(draft.films, boxName.trim(), barcode.trim(), type, editie || "Normaal", collectionIds);
       }
-      toast.success(t("add_to_collection_submitted"));
+      toast.success(t(known ? "add_to_collection_added" : "add_to_collection_added_and_submitted"));
       onClose();
       router.refresh();
     } catch {
@@ -162,6 +172,7 @@ export function BoxDetailsDialog({ draft, onClose }: { draft: BoxDraft; onClose:
           <div>
             <p className="mb-2 text-sm font-medium">{t("add_to_collection_select_collections")}</p>
             <div className="flex flex-col gap-1.5">
+              {collections.length === 0 && <Input aria-label={t("collections_new_title")} placeholder={t("owned_collection_name")} value={newCollectionName} onChange={(e) => setNewCollectionName(e.target.value)} />}
               {collections.map((c) => (
                 <label key={c.id} className="flex items-center gap-2 text-sm">
                   <Checkbox
@@ -181,6 +192,7 @@ export function BoxDetailsDialog({ draft, onClose }: { draft: BoxDraft; onClose:
             </div>
           </div>
 
+          {!known && !ownedReady && <p role="status" className="text-sm text-warning">{t("owned_save_not_ready")}</p>}
           {info && <p className="text-sm text-muted-foreground">{info}</p>}
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>

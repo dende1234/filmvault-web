@@ -55,7 +55,6 @@ export const MIGRATIONS: Migration[] = [
   { file: "trade_list.sql", probe: { kind: "column", table: "collection_items", column: "for_trade" } },
   // Third round.
   { file: "indexes.sql", probe: null, note: "index" },
-  { file: "wishlist_gifts.sql", probe: { kind: "rpc", fn: "wishlist_gift_status", args: { p_owner: "00000000-0000-0000-0000-000000000000", p_token_hash: "" } } },
   { file: "protect_admin_flag.sql", probe: null, note: "trigger" },
   { file: "rls_report.sql", probe: { kind: "rpc", fn: "admin_rls_report" } },
   { file: "announcements.sql", probe: { kind: "table", table: "announcements" } },
@@ -63,6 +62,9 @@ export const MIGRATIONS: Migration[] = [
   { file: "feature_flags.sql", probe: { kind: "table", table: "feature_flags" } },
   { file: "smart_collections.sql", probe: { kind: "table", table: "smart_collections" } },
   { file: "shelf_location.sql", probe: { kind: "column", table: "collection_items", column: "shelf_location" } },
+  { file: "collection_growth.sql", probe: { kind: "table", table: "collection_growth_events" } },
+  { file: "owned_releases.sql", probe: { kind: "column", table: "collection_items", column: "catalog_status" } },
+  { file: "wishlist_reservations.sql", probe: { kind: "rpc", fn: "wishlist_reservations_ready" } },
 ];
 
 /** PostgREST/Postgres codes for "this table, column or function doesn't exist". */

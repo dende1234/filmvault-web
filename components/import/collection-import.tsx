@@ -16,9 +16,13 @@ import {
   IMPORT_FIELDS,
   type ColumnMapping,
   type ImportField,
+  cleanImportBarcode,
   detectColumns,
+  detectColumnsByContent,
   detectRatingScale,
   looksLikeHeader,
+  normalizeImdbId,
+  normalizeTmdbId,
   normalizeDate,
   normalizeEdition,
   normalizeFormat,
@@ -46,6 +50,7 @@ import { Input, Textarea } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { importDestination } from "@/lib/import-destination";
 import { cn } from "@/lib/utils";
 
 const MAX_ROWS = 1000;
@@ -83,6 +88,10 @@ type ParsedRow = {
   location: string | null;
   /** Letterboxd watchlist row: goes to the wishlist. */
   toWishlist: boolean;
+  toWatchedOnly: boolean;
+  /** Ids from the file (e.g. the Movie Collection export): an exact match, no title search. */
+  imdbId: string | null;
+  tmdbId: number | null;
 };
 
 /** "Complete serie" etc. needs the series' season count — resolved on import. */
@@ -104,15 +113,13 @@ type Group =
   | { kind: "box"; key: string; rows: ReviewRow[]; barcode: string; name: string; status: RowStatus; films: ImportFilm[] };
 
 function rowStatus(row: ReviewRow): RowStatus {
-  if (!row.film) return "no_match";
-  if (row.toWishlist) return "wishlist";
   const code = normalizeBarcode(row.barcodeInput);
-  if (code) {
-    const known = row.match?.known;
-    const stillMatches = known && !known.isBox && code === row.match?.barcode && known.films.some((f) => f.tmdbId === row.film!.tmdbId);
-    return stillMatches ? "direct" : "pending";
-  }
-  return row.watched || row.rating != null ? "watched_only" : "no_barcode";
+  const known = row.match?.known;
+  return importDestination({
+    hasFilm: !!row.film, toWishlist: row.toWishlist, toWatchedOnly: row.toWatchedOnly,
+    barcode: code,
+    knownMatches: !!(known && !known.isBox && code === row.match?.barcode && known.films.some((f) => f.tmdbId === row.film?.tmdbId)),
+  });
 }
 
 const STATUS_STYLE: Record<RowStatus, { variant: "success" | "warning" | "secondary" | "outline" | "destructive"; icon: typeof Check }> = {
@@ -124,7 +131,7 @@ const STATUS_STYLE: Record<RowStatus, { variant: "success" | "warning" | "second
   no_match: { variant: "destructive", icon: SearchX },
 };
 
-export function CollectionImport({ collections, mediaTypes, edities }: { collections: Collection[]; mediaTypes: string[]; edities: string[] }) {
+export function CollectionImport({ collections, mediaTypes, edities, ownedReady }: { collections: Collection[]; mediaTypes: string[]; edities: string[]; ownedReady: boolean }) {
   const { t, locale } = useT();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -167,7 +174,8 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
     const header = looksLikeHeader(parsed[0]);
     setTable(parsed);
     setHasHeader(header);
-    setMapping(header ? detectColumns(parsed[0]) : {});
+    // No header row (e.g. the Movie Collection export): judge by the values.
+    setMapping(header ? detectColumns(parsed[0]) : detectColumnsByContent(parsed));
     setStep("columns");
   }
 
@@ -218,7 +226,8 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
       const base = {
         line: i + 1 + (hasHeader ? 1 : 0),
         year: normalizeYear(cell(r, "year")),
-        barcode: normalizeBarcode(cell(r, "barcode")) || null,
+        // Also "EAN13|8712…" or "UPC: …" from other apps.
+        barcode: cleanImportBarcode(cell(r, "barcode")) || null,
         format: cell(r, "format"),
         edition: cell(r, "edition"),
         // Letterboxd watched/diary/ratings exports have no "watched" column: every row is a film you saw.
@@ -226,7 +235,12 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
           letterboxd === "watched" || (letterboxd === null && (normalizeWatched(cell(r, "watched")) || !!normalizeDate(cell(r, "watchedOn")))),
         rating: letterboxd === "watchlist" ? null : normalizeRating(cell(r, "rating"), scale),
         watchedOn: normalizeDate(cell(r, "watchedOn")),
-        kind: normalizeKind(cell(r, "kind")) ?? (cell(r, "seasons") ? ("tv" as const) : null),
+        kind:
+          normalizeKind(cell(r, "kind")) ??
+          normalizeTmdbId(cell(r, "tmdbId"))?.kind ??
+          (cell(r, "seasons") ? ("tv" as const) : null),
+        imdbId: normalizeImdbId(cell(r, "imdbId")),
+        tmdbId: normalizeTmdbId(cell(r, "tmdbId"))?.id ?? null,
         seasonsText: cell(r, "seasons"),
         cut: normalizeCut(cell(r, "cut")) ?? extractCut(cell(r, "edition")),
         label: cell(r, "label").trim().slice(0, 80) || extractLabel(cell(r, "edition")),
@@ -240,9 +254,10 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
         },
         location: cell(r, "location").trim().slice(0, 80) || null,
         toWishlist: letterboxd === "watchlist",
+        toWatchedOnly: letterboxd === "watched",
       };
       if (box) {
-        return box.titles.map((title, j) => ({ ...base, ref: `r${i}_${j}`, title, box: cell(r, "box") || box.boxName }));
+        return box.titles.map((title, j) => ({ ...base, ref: `r${i}_${j}`, title, box: cell(r, "box") || box.boxName, imdbId: null, tmdbId: null }));
       }
       return [{ ...base, ref: `r${i}`, title: primaryTitle(titleCell), box: cell(r, "box") || null }];
     });
@@ -258,7 +273,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
       for (let i = 0; i < parsed.length; i += BATCH) {
         setProgress({ label: "import_matching", done: i, total: parsed.length });
         const batch = parsed.slice(i, i + BATCH);
-        matches.push(...(await matchImportRows(batch.map((p) => ({ title: p.title, year: p.year, barcode: p.barcode, kind: p.kind })))));
+        matches.push(...(await matchImportRows(batch.map((p) => ({ title: p.title, year: p.year, barcode: p.barcode, kind: p.kind, imdbId: p.imdbId, tmdbId: p.tmdbId })))));
       }
     } catch {
       toast.error(t("import_error"));
@@ -331,6 +346,8 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
   // Only physical copies need a collection; viewings and wishlist titles don't.
   const needsCollection = groups.some((g) => isIncluded(g) && (g.status === "direct" || g.status === "pending"));
 
+  const needsDirectSave = groups.some((g) => isIncluded(g) && (g.status === "pending" || (g.kind === "single" && g.status === "direct" && !g.row.barcodeInput.trim())));
+
   function updateRows(refs: string[], patch: Partial<ReviewRow>) {
     setRows((prev) => prev.map((r) => (refs.includes(r.ref) ? { ...r, ...patch } : r)));
   }
@@ -347,6 +364,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
 
   // ---------- Step 4: import ----------
   async function startImport() {
+    if (needsDirectSave && !ownedReady) { toast.error(t("owned_save_not_ready")); return; }
     let collectionId: string | null = needsCollection ? target : null;
     try {
       if (needsCollection && target === NEW_COLLECTION) {
@@ -377,6 +395,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
             ? { seasons: parseSeasons(r.seasonsText), completeSeries: COMPLETE_RE.test(r.seasonsText) }
             : {}),
           watched: r.watched,
+          toWatchedOnly: r.toWatchedOnly,
           rating: r.rating,
           watchedOn: r.watchedOn,
           details: { cut: r.cut, label: r.label, region: r.region, audioLanguages: r.audio, subtitleLanguages: r.subtitles },
@@ -521,7 +540,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
                 onCheckedChange={(v) => {
                   const on = v === true;
                   setHasHeader(on);
-                  setMapping(on && table[0] ? detectColumns(table[0]) : {});
+                  setMapping(on && table[0] ? detectColumns(table[0]) : detectColumnsByContent(table));
                 }}
               />
               <Label htmlFor="has-header">{t("import_has_header")}</Label>
@@ -595,6 +614,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
 
       {step === "review" && !progress && rows.length > 0 && (
         <div className="flex flex-col gap-5">
+          {needsDirectSave && !ownedReady && <p role="status" className="text-sm text-warning">{t("owned_save_not_ready")}</p>}
           {letterboxd && (
             <Card className="border-success/30 bg-success/5">
               <CardContent className="flex flex-col gap-3 pt-5 sm:flex-row sm:items-center sm:justify-between">
@@ -616,6 +636,7 @@ export function CollectionImport({ collections, mediaTypes, edities }: { collect
                           prev.map((r) => ({
                             ...r,
                             toWishlist: mode === "watchlist",
+                            toWatchedOnly: mode === "watched",
                             watched: mode === "watched",
                             rating: mode === "watchlist" ? null : r.rating,
                           })),

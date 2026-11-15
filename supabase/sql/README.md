@@ -39,9 +39,16 @@ Third round:
 24. `rls_report.sql` — security check (RLS per table) on /admin/status
 25. `protect_admin_flag.sql` — only admins can change `profiles.is_admin`
 
-Growth, phase 1:
+Collection onboarding and growth:
 
-26. `wishlist_gifts.sql` — visitors of a shared wishlist reserve a gift ("I'll buy this"); the owner can't see it
+26. `owned_releases.sql` — save personal copies immediately, including without a barcode; queue catalogue review atomically
+27. `collection_growth.sql` — separate collection activation and return metrics (run after growth_tracking.sql)
+28. `wishlist_reservations.sql` — recipients can cross off shared wishlist gifts without an account; apply after `public_wishlist.sql`
+
+
+Apply `owned_releases.sql` and `collection_growth.sql` before deploying the collection onboarding changes.
+Apply `wishlist_reservations.sql` before enabling recipient checkboxes on shared wishlists.
+The app shows a not-ready message for new save paths until `owned_releases.sql` is applied.
 
 The web app keeps working before a file has run; `/admin/status` shows which
 ones are still missing.

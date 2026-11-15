@@ -1,5 +1,5 @@
 import "server-only";
-import type { CollectionDto, GenreDto, ReleaseDatesDto, MovieDetailDto, MovieDetailFullDto, MoviePageDto, TvDetailDto, TvDetailFullDto, TvSummaryDto } from "@/types/tmdb";
+import type { MovieSummaryDto, CollectionDto, GenreDto, ReleaseDatesDto, MovieDetailDto, MovieDetailFullDto, MoviePageDto, TvDetailDto, TvDetailFullDto, TvSummaryDto } from "@/types/tmdb";
 import { tvToSummary } from "@/types/tmdb";
 import { parseTitleId } from "@/lib/titles";
 
@@ -57,6 +57,19 @@ export async function getMovieDetail(movieId: number, language = "nl"): Promise<
 }
 
 const WEEK = 7 * 24 * 3600;
+
+/** IMDb id ("tt0499549") → the TMDB title: a film, or a series as a negative
+ * title id (tvToSummary). Null when TMDB doesn't know it. */
+export async function findByImdbId(imdbId: string, language = "nl"): Promise<MovieSummaryDto | null> {
+  const r = await tmdbGet<{ movie_results?: MovieSummaryDto[]; tv_results?: TvSummaryDto[] }>(
+    `/find/${encodeURIComponent(imdbId)}`,
+    { external_source: "imdb_id", language: tmdbLocale(language) },
+    WEEK,
+  );
+  if (r.movie_results?.[0]) return r.movie_results[0];
+  if (r.tv_results?.[0]) return tvToSummary(r.tv_results[0]);
+  return null;
+}
 
 /** Which film series (TMDB "collection") a film belongs to, if any. Cached a
  * week: it rarely changes, and /reeksen asks it for every film you own. */

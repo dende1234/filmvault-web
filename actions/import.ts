@@ -1,22 +1,18 @@
 "use server";
 
-// User CSV import into a collection. Same rules as adding a film by hand:
-// a barcode already on the master film list goes straight into the
-// collection; an unknown barcode goes to the admin approval queue
-// (pending_barcodes), boxes included. Rows without a barcode can't enter a
-// collection (approval needs a barcode) but can still be logged as watched.
-// Watched/rating go to the "Bekeken" module (film_logs); when an approved
-// copy lands in the collection later, the DB trigger copies them onto it.
+// CSV/XML import. Physical copies are saved immediately, with catalogue
+// review separate from ownership. Letterboxd viewing and wishlist imports
+// have explicit destinations and never create physical copies implicitly.
 
 import { createClient } from "@/lib/supabase/server";
 import { requireUserId } from "@/lib/auth";
 import { getLocale } from "@/lib/preferences";
-import { getTitleDetail, getTvDetail, searchMovies, searchTv } from "@/lib/tmdb/server";
+import { findByImdbId, getTitleDetail, getTvDetail, searchMovies, searchTv } from "@/lib/tmdb/server";
 import { parseTitleId } from "@/lib/titles";
 import { normalizeBarcode } from "@/lib/barcode";
 import { detailsColumns, type CopyDetailsInput } from "@/lib/copy-details";
 import { purchaseColumns, type PurchaseInput } from "@/lib/purchase";
-import { addBarcodesToCollections, addKnownBoxToCollections, addNewBoxAsPending, getBarcodesForMovie } from "@/actions/barcodes";
+import { addBarcodesToCollections, addKnownBoxToCollections, addNewBoxAsPending } from "@/actions/barcodes";
 import { addViewing, setFilmRating } from "@/actions/watched";
 import { addToWishlist } from "@/actions/wishlist";
 import type { Barcode } from "@/types/database";
@@ -49,10 +45,19 @@ function toFilm(m: Pick<MovieSummaryDto, "id" | "title" | "poster_path" | "relea
 }
 
 /** Step 1 (per batch of ≤25 rows): resolve known barcodes via the master
- * film list, otherwise search TMDB by title (+ year preference). The client
- * calls this in batches so each server action stays short. */
+ * film list; otherwise an IMDb or TMDB id from the file (exact, e.g. the
+ * Movie Collection export); otherwise search TMDB by title (+ year
+ * preference). The client calls this in batches so each server action stays
+ * short. */
 export async function matchImportRows(
-  rows: { title: string; year: string | null; barcode: string | null; kind?: "movie" | "tv" | null }[],
+  rows: {
+    title: string;
+    year: string | null;
+    barcode: string | null;
+    kind?: "movie" | "tv" | null;
+    imdbId?: string | null;
+    tmdbId?: number | null;
+  }[],
 ): Promise<ImportRowMatch[]> {
   await requireUserId();
   if (rows.length > MAX_BATCH) throw new Error("batch_too_large");
@@ -77,6 +82,27 @@ export async function matchImportRows(
     return details.get(id)!;
   }
 
+  // IMDb first: it says by itself whether it's a film or a series. A bare
+  // TMDB id is a film unless the row says series (TMDB link or "Soort").
+  async function byId(row: (typeof rows)[number]): Promise<ImportFilm | null> {
+    const imdb = typeof row.imdbId === "string" && /^tt\d{7,10}$/.test(row.imdbId) ? row.imdbId : null;
+    if (imdb) {
+      const found = await findByImdbId(imdb, locale).catch(() => null);
+      if (found) return toFilm(found);
+    }
+    const tmdb = Number.isInteger(row.tmdbId) && row.tmdbId! > 0 ? row.tmdbId! : null;
+    if (tmdb) {
+      const id = row.kind === "tv" ? -tmdb : tmdb;
+      if (details.has(id)) return details.get(id)!;
+      const d = await getTitleDetail(id, locale).catch(() => null);
+      if (d) {
+        details.set(id, toFilm(d));
+        return details.get(id)!;
+      }
+    }
+    return null;
+  }
+
   const results: ImportRowMatch[] = new Array(rows.length);
   let next = 0;
   async function worker() {
@@ -92,6 +118,11 @@ export async function matchImportRows(
           known: { films, type: first.type, editie: first.editie, isBox: first.is_box, boxGroupId: first.box_group_id, boxName: first.box_name },
           candidates: [],
         };
+        continue;
+      }
+      const exact = await byId(rows[i]);
+      if (exact) {
+        results[i] = { barcode: code, known: null, candidates: [exact] };
         continue;
       }
       const title = rows[i].title.trim();
@@ -136,6 +167,7 @@ export type ImportItem =
       location?: string | null;
       /** A Letterboxd watchlist row: goes to the wishlist, not a collection. */
       toWishlist?: boolean;
+      toWatchedOnly?: boolean;
     } & Viewing)
   | {
       kind: "box";
@@ -157,20 +189,6 @@ async function logViewing(film: ImportFilm, v: Viewing) {
   if (v.watched) ok = !(await addViewing(meta, v.watchedOn)).error && ok;
   if (v.rating != null) ok = !(await setFilmRating(meta, v.rating)).error && ok;
   return ok;
-}
-
-/** Already submitted by this user and still waiting? Then don't queue it again. */
-async function alreadyPending(userId: string, barcode: string, tmdbId: number) {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("pending_barcodes")
-    .select("id")
-    .eq("submitted_by", userId)
-    .eq("barcode", barcode)
-    .eq("tmdb_movie_id", tmdbId)
-    .eq("status", "pending")
-    .limit(1);
-  return (data ?? []).length > 0;
 }
 
 /** Step 2 (per batch of ≤25 items): actually import into one collection.
@@ -210,13 +228,12 @@ export async function importBatch(collectionId: string | null, items: ImportItem
       }
       if (item.kind === "single") {
         const barcode = item.barcode && collectionId ? normalizeBarcode(item.barcode) : "";
-        if (!barcode) {
+        if (item.toWatchedOnly || !collectionId) {
           const hasViewing = item.watched || item.rating != null;
           const ok = hasViewing ? await logViewing(item.film, item) : true;
           results.push({ ref: item.ref, status: hasViewing ? (ok ? "watched_only" : "error") : "skipped" });
           continue;
         }
-        const knownForFilm = (await getBarcodesForMovie(item.film.tmdbId)).some((b) => b.barcode.toLowerCase() === barcode.toLowerCase());
         let seasons = item.seasons ?? null;
         const { kind: titleKind, tmdbId: tvId } = parseTitleId(item.film.tmdbId);
         if (titleKind === "tv" && item.completeSeries) {
@@ -224,34 +241,18 @@ export async function importBatch(collectionId: string | null, items: ImportItem
           if (tv) seasons = tv.seasons.filter((s) => s.season_number > 0).map((s) => s.season_number);
         }
         if (titleKind !== "tv") seasons = null;
-        let status: ImportStatus;
-        if (!knownForFilm && (await alreadyPending(userId, barcode, item.film.tmdbId))) status = "pending";
-        else {
-          const unchanged = await addBarcodesToCollections(
-            [],
-            [{ barcode, type: item.type, editie: item.editie, ...(seasons?.length ? { seasons } : {}), details: item.details }],
-            item.film.tmdbId,
-            item.film.title,
-            item.film.poster,
-            target,
-          );
-          status = knownForFilm ? (unchanged.has(cid) ? "already" : "added") : "pending";
-          // A known barcode went straight into the collection: put the details on that copy.
-          // (A pending one carries them on pending_barcodes until approval.)
-          // Purchase details have no place on pending_barcodes, so only here.
-          // Two updates: purchase columns may not exist yet (purchase_details.sql)
-          // and must not take the other details down with them.
-          if (knownForFilm) {
-            for (const cols of [detailsColumns(item.details), purchaseColumns(item.purchase), item.location ? { shelf_location: item.location.slice(0, 80) } : {}]) {
-              if (Object.keys(cols).length === 0) continue;
-              await supabase
-                .from("collection_items")
-                .update(cols)
-                .eq("collection_id", cid)
-                .eq("barcode", barcode)
-                .eq("tmdb_movie_id", item.film.tmdbId);
-            }
-          }
+        const unchanged = await addBarcodesToCollections(
+          [],
+          [{ barcode, type: item.type, editie: item.editie, ...(seasons?.length ? { seasons } : {}), details: item.details }],
+          item.film.tmdbId, item.film.title, item.film.poster, target,
+        );
+        const status: ImportStatus = unchanged.has(cid) ? "already" : "added";
+        for (const cols of [detailsColumns(item.details), purchaseColumns(item.purchase), item.location ? { shelf_location: item.location.slice(0, 80) } : {}]) {
+          if (Object.keys(cols).length === 0) continue;
+          const { error } = await supabase.from("collection_items").update(cols)
+            .eq("collection_id", cid).eq("barcode", barcode)
+            .eq("tmdb_movie_id", item.film.tmdbId).eq("type", item.type).eq("editie", item.editie);
+          if (error && error.code !== "PGRST204") throw error;
         }
         await logViewing(item.film, item);
         results.push({ ref: item.ref, status });
@@ -262,11 +263,9 @@ export async function importBatch(collectionId: string | null, items: ImportItem
         if (item.known) {
           const unchanged = await addKnownBoxToCollections(films, item.known.boxGroupId, item.known.boxName, barcode, item.type, item.editie, target);
           status = unchanged.has(cid) ? "already" : "added";
-        } else if (await alreadyPending(userId, barcode, item.films[0].tmdbId)) {
-          status = "pending";
         } else {
-          await addNewBoxAsPending(films, item.boxName, barcode, item.type, item.editie, target);
-          status = "pending";
+          const unchanged = await addNewBoxAsPending(films, item.boxName, barcode, item.type, item.editie, target);
+          status = unchanged.has(cid) ? "already" : "added";
         }
         for (const f of item.films) await logViewing(f, f);
         results.push({ ref: item.ref, status });
