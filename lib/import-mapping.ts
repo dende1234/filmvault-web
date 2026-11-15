@@ -4,12 +4,13 @@
  * Cine Case, spreadsheets). */
 
 import { comboFor } from "@/lib/formats";
+import { normalizeBarcode } from "@/lib/barcode";
 
 // Order matters for the "contains" pass: subtitles before audio, so a header
 // like "Subtitle languages" isn't taken as audio.
 export const IMPORT_FIELDS = [
   "title", "kind", "seasons", "year", "barcode", "format", "edition", "cut", "label", "region", "subtitles", "audio",
-  "watched", "rating", "purchaseDate", "watchedOn", "box", "price", "shop", "location",
+  "watched", "rating", "purchaseDate", "watchedOn", "box", "price", "shop", "location", "tmdbId", "imdbId",
 ] as const;
 export type ImportField = (typeof IMPORT_FIELDS)[number];
 export type ColumnMapping = Partial<Record<ImportField, number>>;
@@ -36,7 +37,12 @@ const HEADER_SYNONYMS: Record<ImportField, string[]> = {
   shop: ["winkel", "gekocht bij", "aankoopplaats", "shop", "store", "purchased at", "bought at", "retailer", "händler", "laden"],
   location: ["plek", "locatie", "plaats", "kast", "plank", "location", "shelf", "storage location", "standort", "regal"],
   audio: ["audio", "audiotalen", "audio languages", "audio language", "talen", "taal", "languages", "language", "sprache", "sprachen", "tonspur"],
+  // Exact names only (see EXACT_ONLY): "contains" would take "IMDb rating".
+  tmdbId: ["tmdb", "tmdb id", "tmdbid", "tmdb nummer", "tmdb number", "themoviedb id", "tmdb url", "tmdb link"],
+  imdbId: ["imdb", "imdb id", "imdbid", "imdb nummer", "imdb number", "imdb tt", "imdb url", "imdb link"],
 };
+
+const EXACT_ONLY = new Set<ImportField>(["tmdbId", "imdbId"]);
 
 function normHeader(h: string) {
   return h.toLowerCase().replace(/[_\-.]+/g, " ").replace(/\s+/g, " ").trim();
@@ -49,10 +55,15 @@ export function detectColumns(headers: string[]): ColumnMapping {
   const used = new Set<number>();
   // Link columns ("Letterboxd URI", "IMDb URL") are never data fields; without
   // this, "box" would match inside "letterboxd".
-  const normalized = headers.map((h) => (/letterboxd|\buri\b|\burl\b|\blink\b/.test(normHeader(h)) ? "" : normHeader(h)));
+  // An IMDb/TMDB link column is kept: the id is read from the link.
+  const normalized = headers.map((h) => {
+    const n = normHeader(h);
+    if (/^(imdb|tmdb) (url|link)$/.test(n)) return n;
+    return /letterboxd|\buri\b|\burl\b|\blink\b/.test(n) ? "" : n;
+  });
   for (const pass of ["exact", "contains"] as const) {
     for (const field of IMPORT_FIELDS) {
-      if (mapping[field] !== undefined) continue;
+      if (mapping[field] !== undefined || (pass === "contains" && EXACT_ONLY.has(field))) continue;
       const idx = normalized.findIndex(
         (h, i) =>
           !used.has(i) &&
@@ -67,9 +78,81 @@ export function detectColumns(headers: string[]): ColumnMapping {
   return mapping;
 }
 
-/** Does the first row look like a header (no row of data)? */
+/** Does the first row look like a header (no row of data)? A barcode
+ * (also with a prefix like "EAN13|"), an IMDb id or a year means data. */
 export function looksLikeHeader(row: string[]): boolean {
-  return Object.keys(detectColumns(row)).length >= 1 && !row.some((c) => /^\d{8,14}$/.test(c.replace(/\s/g, "")));
+  const isData = (c: string) =>
+    /^\d{8,14}$/.test(cleanImportBarcode(c)) || normalizeImdbId(c) !== null || /^(19|20)\d{2}$/.test(c.trim());
+  return Object.keys(detectColumns(row)).length >= 1 && !row.some(isData);
+}
+
+/** A barcode cell from another app: "EAN13|8712626050162", "UPC: 0123…",
+ * "8712626050162, 5051888…" (several: the first). Prefix and spacing go. */
+export function cleanImportBarcode(value: string): string {
+  const first = value.split(/[,;\n]/).map((p) => p.trim()).find(Boolean) ?? "";
+  const withoutType = first.replace(/^[a-z][a-z0-9 -]{0,12}\s*[|:]\s*/i, "");
+  return normalizeBarcode(withoutType);
+}
+
+/** "tt0499549", an IMDb link, or "0499549" in a column named IMDb → "tt0499549". */
+export function normalizeImdbId(value: string): string | null {
+  const match = value.match(/\btt\d{7,10}\b/i);
+  return match ? match[0].toLowerCase() : null;
+}
+
+/** "19995" or a TMDB link (themoviedb.org/movie/19995, /tv/1399) → the id,
+ * and from a link also whether it's a film or a series. */
+export function normalizeTmdbId(value: string): { id: number; kind: "movie" | "tv" | null } | null {
+  const v = value.trim();
+  const link = v.match(/themoviedb\.org\/(movie|tv)\/(\d+)/i);
+  if (link) return { id: Number(link[2]), kind: link[1].toLowerCase() as "movie" | "tv" };
+  return /^\d{1,9}$/.test(v) && Number(v) > 0 ? { id: Number(v), kind: null } : null;
+}
+
+/** For a file WITHOUT a header row: which column is what, judged by the
+ * values (e.g. the "Movie Collection" app export: number, title, original
+ * title, genres, runtime, year, IMDb id, TMDB id, "EAN13|…", TMDB score).
+ * Recognises IMDb id, TMDB id, barcode, year and title. A score column is
+ * left alone on purpose: in such exports it's usually the public TMDB/IMDb
+ * score, not the member's own rating; it can still be picked by hand. */
+export function detectColumnsByContent(rows: string[][]): ColumnMapping {
+  const sample = rows.slice(0, 300);
+  const width = Math.max(0, ...sample.map((r) => r.length));
+  const cols = Array.from({ length: width }, (_, i) => sample.map((r) => (r[i] ?? "").trim()).filter(Boolean));
+  const share = (values: string[], test: (v: string) => boolean) => (values.length ? values.filter(test).length / values.length : 0);
+  const mapping: ColumnMapping = {};
+  const used = new Set<number>();
+  const take = (field: ImportField, test: (values: string[], i: number) => boolean) => {
+    const idx = cols.findIndex((values, i) => !used.has(i) && values.length > 0 && test(values, i));
+    if (idx >= 0) {
+      mapping[field] = idx;
+      used.add(idx);
+    }
+  };
+
+  take("imdbId", (v) => share(v, (x) => /^tt\d{7,10}$/i.test(x)) >= 0.6);
+  take("barcode", (v) => share(v, (x) => /^\d{8,14}$/.test(cleanImportBarcode(x))) >= 0.6);
+  take("year", (v) => share(v, (x) => /^(19|20)\d{2}$/.test(x)) >= 0.8);
+  take("tmdbId", (v) => {
+    if (share(v, (x) => /^\d{1,8}$/.test(x)) < 0.9) return false;
+    const nums = v.map(Number);
+    // A running number ("1", "2", "3" …) is not an id.
+    const rising = nums.slice(1).filter((n, i) => n > nums[i]).length / Math.max(1, nums.length - 1);
+    const sorted = [...nums].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)];
+    // Runtimes stay under ~300; ids mostly don't.
+    return rising < 0.9 && median > 300 && (mapping.imdbId !== undefined || sorted[sorted.length - 1] > 10_000);
+  });
+  // Title: the first well-filled text column that isn't a list ("Actie - Avontuur - Drama").
+  const maxFill = Math.max(0, ...cols.map((c) => c.length));
+  take(
+    "title",
+    (v) =>
+      v.length >= maxFill * 0.8 &&
+      share(v, (x) => /\p{L}/u.test(x)) >= 0.7 &&
+      share(v, (x) => x.split(" - ").length >= 3) < 0.3,
+  );
+  return mapping;
 }
 
 const FORMAT_SYNONYMS: [RegExp, string][] = [

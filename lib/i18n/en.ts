@@ -274,7 +274,7 @@ export const en: Record<keyof typeof nl, string> = {
   import_step_review: "Review",
   import_step_done: "Done",
   import_upload_label: "Choose a CSV or XML file",
-  import_upload_hint: "Or paste the contents below. Comma, semicolon and tab are recognised. Export from Excel or Google Sheets as CSV. XML exports from DVD Profiler, CLZ Movies and My Movies work too.",
+  import_upload_hint: "Or paste the contents below. Comma, semicolon and tab are recognised. Export from Excel or Google Sheets as CSV. XML exports from DVD Profiler, CLZ Movies and My Movies work too, as does the Movie Collection CSV export. If your file has an IMDb or TMDB number, the film is matched on it exactly.",
   import_paste_placeholder: "Title,Year,Barcode,Format,Edition,Watched,Rating",
   import_template: "Download example file",
   import_next: "Next",
@@ -1621,4 +1621,6 @@ export const en: Record<keyof typeof nl, string> = {
   install_desktop_chrome: "Chrome or Edge: click the install icon on the right of the address bar, or open the browser menu and choose \"Install Filmory\" or \"Install app\".",
   install_desktop_safari: "Safari on a Mac: choose File → \"Add to Dock\" in the menu bar.",
   install_desktop_phone: "On your phone, open filmory.nl and choose Install app there.",
+  import_field_tmdbId: "TMDB id",
+  import_field_imdbId: "IMDb id (tt…)",
 };

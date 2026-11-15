@@ -272,10 +272,10 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Kan ik mijn spreadsheet of lijst importeren?", en: "Can I import my spreadsheet or list?" },
     a: {
-      nl: "Ja, via [Importeren](/collections/import). Upload een CSV (uit Excel, Google Sheets, CLZ…) of een XML-export uit My Movies, CLZ Movies of DVD Profiler. Kolommen worden automatisch herkend; je controleert alles voordat het wordt toegevoegd. Download het voorbeeldbestand om te zien welke kolommen kunnen.",
-      en: "Yes, via [Import](/collections/import). Upload a CSV (from Excel, Google Sheets, CLZ…) or an XML export from My Movies, CLZ Movies or DVD Profiler. Columns are recognised automatically; you check everything before it's added. Download the example file to see which columns work.",
+      nl: "Ja, via [Importeren](/collections/import). Upload een CSV (uit Excel, Google Sheets, CLZ…) of een XML-export uit My Movies, CLZ Movies of DVD Profiler, of de export van Movie Collection. Kolommen worden automatisch herkend, ook zonder kopregel, en een IMDb- of TMDB-nummer koppelt de film exact; je controleert alles voordat het wordt toegevoegd. Download het voorbeeldbestand om te zien welke kolommen kunnen.",
+      en: "Yes, via [Import](/collections/import). Upload a CSV (from Excel, Google Sheets, CLZ…) or an XML export from My Movies, CLZ Movies or DVD Profiler, or the Movie Collection export. Columns are recognised automatically, also without a header row, and an IMDb or TMDB number matches the film exactly; you check everything before it's added. Download the example file to see which columns work.",
     },
-    keywords: { nl: ["importeren", "spreadsheet", "excel", "csv", "lijst inlezen", "overzetten", "xml", "my movies", "dvd profiler", "clz"], en: ["import", "spreadsheet", "excel", "csv", "transfer", "xml", "my movies", "dvd profiler", "clz"] },
+    keywords: { nl: ["importeren", "spreadsheet", "excel", "csv", "lijst inlezen", "overzetten", "xml", "my movies", "dvd profiler", "clz", "movie collection", "imdb"], en: ["import", "spreadsheet", "excel", "csv", "transfer", "xml", "my movies", "dvd profiler", "clz", "movie collection", "imdb"] },
     pages: ["/collections/import", "/collections"],
   },
   {

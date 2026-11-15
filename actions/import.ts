@@ -7,7 +7,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireUserId } from "@/lib/auth";
 import { getLocale } from "@/lib/preferences";
-import { getTitleDetail, getTvDetail, searchMovies, searchTv } from "@/lib/tmdb/server";
+import { findByImdbId, getTitleDetail, getTvDetail, searchMovies, searchTv } from "@/lib/tmdb/server";
 import { parseTitleId } from "@/lib/titles";
 import { normalizeBarcode } from "@/lib/barcode";
 import { detailsColumns, type CopyDetailsInput } from "@/lib/copy-details";
@@ -45,10 +45,19 @@ function toFilm(m: Pick<MovieSummaryDto, "id" | "title" | "poster_path" | "relea
 }
 
 /** Step 1 (per batch of ≤25 rows): resolve known barcodes via the master
- * film list, otherwise search TMDB by title (+ year preference). The client
- * calls this in batches so each server action stays short. */
+ * film list; otherwise an IMDb or TMDB id from the file (exact, e.g. the
+ * Movie Collection export); otherwise search TMDB by title (+ year
+ * preference). The client calls this in batches so each server action stays
+ * short. */
 export async function matchImportRows(
-  rows: { title: string; year: string | null; barcode: string | null; kind?: "movie" | "tv" | null }[],
+  rows: {
+    title: string;
+    year: string | null;
+    barcode: string | null;
+    kind?: "movie" | "tv" | null;
+    imdbId?: string | null;
+    tmdbId?: number | null;
+  }[],
 ): Promise<ImportRowMatch[]> {
   await requireUserId();
   if (rows.length > MAX_BATCH) throw new Error("batch_too_large");
@@ -73,6 +82,27 @@ export async function matchImportRows(
     return details.get(id)!;
   }
 
+  // IMDb first: it says by itself whether it's a film or a series. A bare
+  // TMDB id is a film unless the row says series (TMDB link or "Soort").
+  async function byId(row: (typeof rows)[number]): Promise<ImportFilm | null> {
+    const imdb = typeof row.imdbId === "string" && /^tt\d{7,10}$/.test(row.imdbId) ? row.imdbId : null;
+    if (imdb) {
+      const found = await findByImdbId(imdb, locale).catch(() => null);
+      if (found) return toFilm(found);
+    }
+    const tmdb = Number.isInteger(row.tmdbId) && row.tmdbId! > 0 ? row.tmdbId! : null;
+    if (tmdb) {
+      const id = row.kind === "tv" ? -tmdb : tmdb;
+      if (details.has(id)) return details.get(id)!;
+      const d = await getTitleDetail(id, locale).catch(() => null);
+      if (d) {
+        details.set(id, toFilm(d));
+        return details.get(id)!;
+      }
+    }
+    return null;
+  }
+
   const results: ImportRowMatch[] = new Array(rows.length);
   let next = 0;
   async function worker() {
@@ -88,6 +118,11 @@ export async function matchImportRows(
           known: { films, type: first.type, editie: first.editie, isBox: first.is_box, boxGroupId: first.box_group_id, boxName: first.box_name },
           candidates: [],
         };
+        continue;
+      }
+      const exact = await byId(rows[i]);
+      if (exact) {
+        results[i] = { barcode: code, known: null, candidates: [exact] };
         continue;
       }
       const title = rows[i].title.trim();

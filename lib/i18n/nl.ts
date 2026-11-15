@@ -276,7 +276,7 @@ export const nl = {
   import_step_review: "Controleren",
   import_step_done: "Klaar",
   import_upload_label: "Kies een CSV- of XML-bestand",
-  import_upload_hint: "Of plak de inhoud hieronder. Komma, puntkomma en tab worden herkend. Exporteer vanuit Excel of Google Sheets als CSV. XML-exports van DVD Profiler, CLZ Movies en My Movies werken ook.",
+  import_upload_hint: "Of plak de inhoud hieronder. Komma, puntkomma en tab worden herkend. Exporteer vanuit Excel of Google Sheets als CSV. XML-exports van DVD Profiler, CLZ Movies en My Movies werken ook, net als de CSV-export van Movie Collection. Staat er een IMDb- of TMDB-nummer in je bestand, dan koppelen we de film daar exact op.",
   import_paste_placeholder: "Titel;Jaar;Barcode;Formaat;Editie;Bekeken;Rating",
   import_template: "Voorbeeldbestand downloaden",
   import_next: "Volgende",
@@ -1624,4 +1624,6 @@ export const nl = {
   install_desktop_chrome: "Chrome of Edge: klik op het installeer-icoon rechts in de adresbalk, of open het browsermenu en kies \"Filmory installeren\" of \"App installeren\".",
   install_desktop_safari: "Safari op een Mac: kies in de menubalk Archief → \"Voeg toe aan Dock\".",
   install_desktop_phone: "Op je telefoon open je filmory.nl en kies je daar App installeren.",
+  import_field_tmdbId: "TMDB-id",
+  import_field_imdbId: "IMDb-id (tt…)",
 };
