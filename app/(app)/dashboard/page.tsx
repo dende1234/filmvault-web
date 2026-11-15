@@ -18,6 +18,9 @@ import { PosterRail, RailItem } from "@/components/movie/poster-rail";
 import { StatTile } from "@/components/stat-tile";
 import { EmptyState } from "@/components/empty-state";
 import { OnboardingChecklist } from "@/components/onboarding-checklist";
+import { SeasonalBanner } from "@/components/seasonal-banner";
+import { currentSeason, wrappedYear } from "@/lib/season";
+import { todayNL } from "@/lib/announcement-audience";
 import { InviteButton } from "@/components/invite-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,6 +55,8 @@ function ItemPoster({ item }: { item: CollectionItem }) {
 export default async function DashboardPage() {
   const locale = await getLocale();
   const dict = getDictionary(locale);
+  const today = todayNL();
+  const season = currentSeason(today);
   const [collections, profile] = await Promise.all([getUserCollections(), getOrCreateProfile(), createLoanReminders()]);
   // Same physical film can span multiple collections (shared item_group_id) —
   // counted/shown once, mirrors DashboardViewModel.kt.
@@ -104,6 +109,8 @@ export default async function DashboardPage() {
 
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
         <OnboardingChecklist titleCount={stats.titles} userId={profile?.id ?? ""} />
+
+        {season && <SeasonalBanner season={season} year={season === "wrapped" ? wrappedYear(today) : Number(today.slice(0, 4))} />}
 
         <InstallAppCard />
 
