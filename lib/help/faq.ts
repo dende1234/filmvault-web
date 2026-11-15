@@ -513,10 +513,10 @@ export const HELP_ENTRIES: HelpEntry[] = [
     possible: true,
     q: { nl: "Werkt Filmory op mijn telefoon?", en: "Does Filmory work on my phone?" },
     a: {
-      nl: "Ja, gewoon in de browser van je telefoon, inclusief barcode scannen met je camera. Zet Filmory op je beginscherm: op iPhone via Delen → Zet op beginscherm, op Android via de knop Installeren op je dashboard of het browsermenu. Dan opent hij als een app.",
-      en: "Yes, right in your phone's browser, including scanning barcodes with your camera. Put Filmory on your home screen: on iPhone via Share → Add to Home Screen, on Android via the Install button on your dashboard or the browser menu. Then it opens like an app.",
+      nl: "Ja, gewoon in de browser van je telefoon, inclusief barcode scannen met je camera. Zet Filmory op je beginscherm: op iPhone via Delen → Zet op beginscherm, op Android via **Meer → App installeren** in het menu (of je [profiel](/profile)). Dat kan altijd, ook als je de kaart op je dashboard hebt weggeklikt. Dan opent hij als een app.",
+      en: "Yes, right in your phone's browser, including scanning barcodes with your camera. Put Filmory on your home screen: on iPhone via Share → Add to Home Screen, on Android via **More → Install app** in the menu (or your [profile](/profile)). That's always possible, also after hiding the card on your dashboard. Then it opens like an app.",
     },
-    keywords: { nl: ["telefoon", "mobiel", "iphone", "beginscherm"], en: ["phone", "mobile", "iphone", "home screen"] },
+    keywords: { nl: ["telefoon", "mobiel", "iphone", "beginscherm", "app installeren", "installeren", "app downloaden"], en: ["phone", "mobile", "iphone", "home screen", "install app", "install", "download app"] },
   },
   {
     id: "value",

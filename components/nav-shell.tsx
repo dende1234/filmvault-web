@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  Download,
   Film,
   LayoutDashboard,
   LibraryBig,
@@ -57,6 +58,8 @@ import { Avatar } from "@/components/avatar";
 import { FeedbackDialog } from "@/components/feedback-dialog";
 import { GlobalSearch } from "@/components/global-search";
 import { ReelAssistant } from "@/components/help/reel-assistant";
+import { InstallAppDialog } from "@/components/install-app-dialog";
+import { useInstallApp } from "@/lib/install-prompt";
 import { useLocalFlag } from "@/lib/use-local-flag";
 
 const REEL_HIDDEN_KEY = "fv_reel_hidden";
@@ -158,6 +161,8 @@ export function NavShell({
   const [open, setOpen] = useState(false);
   const [adminOpen, setAdminOpen] = useState(() => pathname.startsWith("/admin"));
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [installOpen, setInstallOpen] = useState(false);
+  const { platform: installPlatform } = useInstallApp();
   const [searchOpen, setSearchOpen] = useState(false);
   const [reelOpen, setReelOpen] = useState(false);
   const [reelHidden, setReelHidden] = useLocalFlag(REEL_HIDDEN_KEY);
@@ -291,6 +296,19 @@ export function NavShell({
           <LifeBuoy className="h-4 w-4" />
           {t("reel_nav")}
         </button>
+        {installPlatform !== "installed" && (
+          <button
+            type="button"
+            onClick={() => {
+              close();
+              setInstallOpen(true);
+            }}
+            className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium text-muted-foreground transition-colors hover:bg-elevated/60 hover:text-foreground"
+          >
+            <Download className="h-4 w-4" />
+            {t("install_menu")}
+          </button>
+        )}
         <NavLink href="/my-feedback" icon={Inbox} label={t("feedback_my_nav")} onNavigate={close} />
         <NavLink href="/privacy" icon={ShieldQuestion} label={t("privacy_policy_link")} onNavigate={close} />
         <NavLink href="/about" icon={Info} label={t("nav_about")} onNavigate={close} />
@@ -315,6 +333,7 @@ export function NavShell({
   return (
     <div className="flex min-h-screen">
       <FeedbackDialog open={feedbackOpen} onOpenChange={setFeedbackOpen} />
+      <InstallAppDialog open={installOpen} onOpenChange={setInstallOpen} />
       {profile && <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />}
       {profile && (
         <div className="print:hidden">

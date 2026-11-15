@@ -1617,4 +1617,11 @@ export const nl = {
   wishlist_reservation_unavailable: "Deze wens is verwijderd of de verlanglijst wordt niet meer gedeeld.",
   wishlist_reservation_error: "Afstrepen is niet gelukt. Probeer het opnieuw.",
   wishlist_reservation_marked: "{0} is al gereserveerd of gekocht",
+  install_menu: "App installeren",
+  install_already: "Filmory is op dit apparaat al als app geïnstalleerd.",
+  install_later: "Later installeren kan altijd via Meer → App installeren.",
+  install_profile_title: "App op je telefoon of computer",
+  install_desktop_chrome: "Chrome of Edge: klik op het installeer-icoon rechts in de adresbalk, of open het browsermenu en kies \"Filmory installeren\" of \"App installeren\".",
+  install_desktop_safari: "Safari op een Mac: kies in de menubalk Archief → \"Voeg toe aan Dock\".",
+  install_desktop_phone: "Op je telefoon open je filmory.nl en kies je daar App installeren.",
 };

@@ -1614,4 +1614,11 @@ export const en: Record<keyof typeof nl, string> = {
   wishlist_reservation_unavailable: "This wish has been removed or the wishlist is no longer shared.",
   wishlist_reservation_error: "Could not update the mark. Please try again.",
   wishlist_reservation_marked: "{0} is already reserved or bought",
+  install_menu: "Install app",
+  install_already: "Filmory is already installed as an app on this device.",
+  install_later: "You can install it any time via More → Install app.",
+  install_profile_title: "App on your phone or computer",
+  install_desktop_chrome: "Chrome or Edge: click the install icon on the right of the address bar, or open the browser menu and choose \"Install Filmory\" or \"Install app\".",
+  install_desktop_safari: "Safari on a Mac: choose File → \"Add to Dock\" in the menu bar.",
+  install_desktop_phone: "On your phone, open filmory.nl and choose Install app there.",
 };
