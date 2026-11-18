@@ -153,9 +153,20 @@ function afterApproval() {
  * (supabase/sql/approve_pending.sql). Until that has run: the old step-by-
  * step version below, which guards against duplicating a barcode that a
  * near-simultaneous approval already registered for this film. */
+/** A series is only approved with its seasons (series_seasons.sql): read
+ * from the database, never trusted from the client. */
+async function assertSeasonsKnown(supabase: Awaited<ReturnType<typeof createClient>>, ids: string[]) {
+  const { data } = await supabase.from("pending_barcodes").select("tmdb_movie_id, seasons").in("id", ids);
+  const missing = ((data ?? []) as { tmdb_movie_id: number; seasons: number[] | null }[]).some(
+    (r) => r.tmdb_movie_id < 0 && !(r.seasons?.length),
+  );
+  if (missing) throw new Error("seasons_required");
+}
+
 export async function approvePendingBarcode(pendingFromClient: PendingBarcode): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
+  await assertSeasonsKnown(supabase, [pendingFromClient.id]);
   const { error: rpcError } = await supabase.rpc("approve_pending_barcode", { p_id: pendingFromClient.id });
   if (!rpcError) {
     await notifySubmitters(supabase, [pendingFromClient.id], true);
@@ -240,6 +251,7 @@ export async function rejectPendingBarcode(id: string): Promise<void> {
 export async function approvePendingBox(pendingRowsFromClient: PendingBarcode[]): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
+  await assertSeasonsKnown(supabase, pendingRowsFromClient.map((r) => r.id));
   const { error: rpcError } = await supabase.rpc("approve_pending_box", { p_ids: pendingRowsFromClient.map((r) => r.id) });
   if (!rpcError) {
     await notifySubmitters(supabase, pendingRowsFromClient.map((r) => r.id), true);

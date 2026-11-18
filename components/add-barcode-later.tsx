@@ -53,7 +53,9 @@ export function AddBarcodeLater({
                 ? "barcode_later_invalid"
                 : r.status === "has_barcode"
                   ? "barcode_later_has_barcode"
-                  : "barcode_later_error",
+                  : r.status === "seasons_required"
+                    ? "barcode_later_seasons_required"
+                    : "barcode_later_error",
           ),
         );
         return;

@@ -25,6 +25,7 @@ export type AdminAction =
   | "announcement_schedule"
   | "announcement_cancel"
   | "titles_refresh"
+  | "pending_seasons_set"
   | "help_answer_save"
   | "help_answer_delete";
 

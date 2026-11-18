@@ -27,7 +27,9 @@ const releaseSchema = z.object({
     movie_title: z.string().trim().min(1).max(500),
     movie_poster: z.string().max(500).nullable(),
     seasons: z.array(z.number().int().min(0).max(1000)).max(200).nullish(),
-  })).min(1).max(100),
+  })).min(1).max(100)
+    // A series always says which seasons are in the release (series_seasons.sql).
+    .refine((films) => films.every((f) => f.tmdb_movie_id > 0 || (f.seasons?.length ?? 0) > 0), { message: "seasons_required" }),
 });
 
 /** Read-only capability check, also used before enabling new import paths. */

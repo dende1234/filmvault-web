@@ -187,6 +187,8 @@ export interface BoxFilmInput {
   tmdb_movie_id: number;
   movie_title: string;
   movie_poster: string | null;
+  /** Series in a box: the seasons in this release (required, series_seasons.sql). */
+  seasons?: number[] | null;
 }
 
 // --- Fase 2: Vrienden & Badges ---

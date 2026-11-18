@@ -66,6 +66,8 @@ export const MIGRATIONS: Migration[] = [
   { file: "owned_releases.sql", probe: { kind: "column", table: "collection_items", column: "catalog_status" } },
   { file: "wishlist_reservations.sql", probe: { kind: "rpc", fn: "wishlist_reservations_ready" } },
   // Probed with an empty id: answers "not_found"/"invalid" without changing anything.
+  // Its function always raises on a probe call (not_admin / not_pending), so it can't be checked read-only.
+  { file: "series_seasons.sql", probe: null, note: "function" },
   { file: "mcp_tokens.sql", probe: { kind: "table", table: "mcp_tokens" } },
   { file: "media_types_check.sql", probe: null, note: "trigger" },
   { file: "add_barcode_later.sql", probe: { kind: "rpc", fn: "add_barcode_to_copy", args: { p_item_group_id: "00000000-0000-0000-0000-000000000000", p_barcode: "" } } },

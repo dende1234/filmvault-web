@@ -346,6 +346,19 @@ export function CollectionImport({ collections, mediaTypes, edities, ownedReady 
   // Only physical copies need a collection; viewings and wishlist titles don't.
   const needsCollection = groups.some((g) => isIncluded(g) && (g.status === "direct" || g.status === "pending"));
 
+  // A series that goes into the collection needs its seasons (series_seasons.sql),
+  // unless a known barcode already says which seasons it holds.
+  const seasonsMissing = groups.filter(
+    (g) =>
+      g.kind === "single" &&
+      isIncluded(g) &&
+      (g.status === "pending" || (g.status === "direct" && !g.row.barcodeInput.trim())) &&
+      !!g.row.film &&
+      isSeries(g.row.film.tmdbId) &&
+      (parseSeasons(g.row.seasonsText)?.length ?? 0) === 0 &&
+      !COMPLETE_RE.test(g.row.seasonsText),
+  ).length;
+
   const needsDirectSave = groups.some((g) => isIncluded(g) && (g.status === "pending" || (g.kind === "single" && g.status === "direct" && !g.row.barcodeInput.trim())));
 
   function updateRows(refs: string[], patch: Partial<ReviewRow>) {
@@ -709,7 +722,8 @@ export function CollectionImport({ collections, mediaTypes, edities, ownedReady 
                 );
               }
               const r = g.row;
-              const fixedByBarcode = g.status === "direct";
+              // A known barcode fixes the release (seasons included); "direct" without a barcode is a personal copy.
+              const fixedByBarcode = g.status === "direct" && !!r.barcodeInput.trim();
               return (
                 <li key={g.key} className={cn("flex flex-col gap-3 rounded-card border border-border/70 bg-card p-3", !r.include && "opacity-60")}>
                   <div className="flex items-start gap-3">
@@ -840,11 +854,16 @@ export function CollectionImport({ collections, mediaTypes, edities, ownedReady 
                   aria-label={t("import_target_new_name")}
                 />
               )}
+              {seasonsMissing > 0 && (
+                <p className="text-sm text-warning" role="status">
+                  {t("import_seasons_missing", seasonsMissing)}
+                </p>
+              )}
               <div className="flex gap-2">
                 <Button variant="ghost" onClick={() => setStep("columns")}>
                   {t("import_back")}
                 </Button>
-                <Button onClick={startImport} disabled={importCount === 0}>
+                <Button onClick={startImport} disabled={importCount === 0 || seasonsMissing > 0}>
                   {t("import_start", importCount)}
                 </Button>
               </div>

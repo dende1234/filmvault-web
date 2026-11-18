@@ -7,7 +7,8 @@
 -- auto-approve for trusted contributors). Approval doesn't add a second copy:
 -- approve_pending_barcode skips collections that already hold the barcode.
 -- A barcode the list knows for another title, or as a box, is refused.
--- Needs owned_releases.sql. Safe to run again.
+-- A series without seasons is refused ('seasons_required') until the copy
+-- has its seasons. Needs owned_releases.sql. Safe to run again.
 
 create or replace function public.add_barcode_to_copy(p_item_group_id uuid, p_barcode text)
 returns jsonb
@@ -65,6 +66,11 @@ begin
            seasons = case when r.tmdb_movie_id < 0 then known.seasons else ci.seasons end
      where ci.item_group_id = p_item_group_id and ci.collection_id = any(collection_ids);
     return jsonb_build_object('status', 'verified', 'type', known.type, 'editie', known.editie);
+  end if;
+
+  -- A series goes to review only with its seasons (series_seasons.sql).
+  if r.tmdb_movie_id < 0 and coalesce(cardinality(r.seasons), 0) = 0 then
+    return jsonb_build_object('status', 'seasons_required');
   end if;
 
   update public.collection_items ci set barcode = code
