@@ -46,8 +46,8 @@ Collection onboarding and growth:
 28. `wishlist_reservations.sql` — recipients can cross off shared wishlist gifts without an account; apply after `public_wishlist.sql`
 29. `add_barcode_later.sql` — add a barcode later to a copy without one (review like a new barcode); apply after `owned_releases.sql`
 30. `media_types_check.sql` — formats/editions are checked against media_types/edities instead of a fixed list (fixes error 23514 `collection_items_type_check` for admin-added types such as combos)
-31. `mcp_tokens.sql` — personal tokens for the Filmory MCP server (`/api/mcp`, read-only member tools)
-32. `series_seasons.sql` — series need their seasons (also in a box): box approval keeps them, admins can set them on a submission; also re-run `add_barcode_later.sql`
+31. `series_seasons.sql` — series need their seasons (also in a box): box approval keeps them, admins can set them on a submission; also re-run `add_barcode_later.sql`
+32. `mcp_tokens.sql` — personal tokens for the Filmory MCP server (`/api/mcp`, read-only member tools)
 
 
 Apply `owned_releases.sql` and `collection_growth.sql` before deploying the collection onboarding changes.
