@@ -10,6 +10,9 @@ import { createCollection, getUserCollections } from "@/actions/collections";
 import { addKnownBoxToCollections, addNewBoxAsPending, findBarcodesByCode } from "@/actions/barcodes";
 import { ownedReleasesReady } from "@/actions/owned-releases";
 import { getEdities, getMediaTypes } from "@/actions/media-types";
+import { getSeriesSeasons, type SeasonOption } from "@/actions/series";
+import { isSeries } from "@/lib/titles";
+import { SeasonsPicker } from "@/components/seasons-picker";
 import type { BoxFilmInput, Collection } from "@/types/database";
 import { Poster } from "@/components/movie/poster";
 import { Button } from "@/components/ui/button";
@@ -49,6 +52,27 @@ export function BoxDetailsDialog({ draft, onClose }: { draft: BoxDraft; onClose:
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  // Series in a new box: which seasons are in it, per series (required).
+  const seriesFilms = known ? [] : draft.films.filter((f) => isSeries(f.tmdb_movie_id));
+  const [seasons, setSeasons] = useState<Record<number, number[]>>(() =>
+    Object.fromEntries(draft.films.filter((f) => f.seasons?.length).map((f) => [f.tmdb_movie_id, f.seasons!])),
+  );
+  const [seasonOptions, setSeasonOptions] = useState<Record<number, SeasonOption[]>>({});
+  const seriesKey = seriesFilms.map((f) => f.tmdb_movie_id).join(",");
+
+  useEffect(() => {
+    if (!seriesKey) return;
+    let cancelled = false;
+    for (const id of seriesKey.split(",").map(Number)) {
+      getSeriesSeasons(id)
+        .then((o) => !cancelled && setSeasonOptions((prev) => ({ ...prev, [id]: o })))
+        .catch(() => {});
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [seriesKey]);
+  const seasonsMissing = seriesFilms.some((f) => !seasons[f.tmdb_movie_id]?.length);
 
   useEffect(() => {
     Promise.all([getUserCollections(), getMediaTypes(), getEdities(), ownedReleasesReady()]).then(([cols, types, eds, ready]) => {
@@ -62,7 +86,7 @@ export function BoxDetailsDialog({ draft, onClose }: { draft: BoxDraft; onClose:
     }).catch(() => setError(t("add_to_collection_error_load")));
   }, [draft.type, draft.editie, t]);
 
-  const canSubmit = draft.films.length > 0 && boxName.trim() && barcode.trim() && (selectedCollections.size > 0 || (collections.length === 0 && !!newCollectionName.trim())) && (known || ownedReady) && !isSubmitting;
+  const canSubmit = draft.films.length > 0 && !seasonsMissing && boxName.trim() && barcode.trim() && (selectedCollections.size > 0 || (collections.length === 0 && !!newCollectionName.trim())) && (known || ownedReady) && !isSubmitting;
 
   async function handleSubmit() {
     setIsSubmitting(true);
@@ -79,7 +103,7 @@ export function BoxDetailsDialog({ draft, onClose }: { draft: BoxDraft; onClose:
       const boxGroupId = draft.knownBoxGroupId ?? (await findBarcodesByCode(barcode.trim()))[0]?.box_group_id ?? null;
       if (boxGroupId) {
         const alreadyContaining = await addKnownBoxToCollections(
-          draft.films,
+          draft.films.map((f) => (isSeries(f.tmdb_movie_id) ? { ...f, seasons: seasons[f.tmdb_movie_id] ?? f.seasons ?? null } : f)),
           boxGroupId,
           boxName.trim(),
           barcode.trim(),
@@ -97,7 +121,8 @@ export function BoxDetailsDialog({ draft, onClose }: { draft: BoxDraft; onClose:
           if (alreadyContaining.size === collectionIds.length) return;
         }
       } else {
-        await addNewBoxAsPending(draft.films, boxName.trim(), barcode.trim(), type, editie || "Normaal", collectionIds);
+        const films = draft.films.map((f) => (isSeries(f.tmdb_movie_id) ? { ...f, seasons: seasons[f.tmdb_movie_id] ?? null } : f));
+        await addNewBoxAsPending(films, boxName.trim(), barcode.trim(), type, editie || "Normaal", collectionIds);
       }
       toast.success(t(known ? "add_to_collection_added" : "add_to_collection_added_and_submitted"));
       onClose();
@@ -135,6 +160,18 @@ export function BoxDetailsDialog({ draft, onClose }: { draft: BoxDraft; onClose:
               ))}
             </ul>
           </div>
+
+          {seriesFilms.map((f) => (
+            <div key={f.tmdb_movie_id} className="flex flex-col gap-1.5">
+              <p className="text-sm font-medium">{t("box_series_seasons", f.movie_title)}</p>
+              <SeasonsPicker
+                seasons={seasonOptions[f.tmdb_movie_id] ?? []}
+                value={seasons[f.tmdb_movie_id] ?? []}
+                onChange={(next) => setSeasons((prev) => ({ ...prev, [f.tmdb_movie_id]: next }))}
+              />
+            </div>
+          ))}
+          {seasonsMissing && <p className="text-xs text-warning">{t("box_series_seasons_required")}</p>}
 
           {!known && (
             <>

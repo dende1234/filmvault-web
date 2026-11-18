@@ -380,7 +380,7 @@ export type AddBarcodeResult =
   | { status: "verified"; type?: string; editie?: string }
   | { status: "pending" }
   | { status: "conflict"; title: string | null; isBox: boolean }
-  | { status: "has_barcode" | "box" | "not_found" | "invalid" | "not_ready" | "failed" };
+  | { status: "has_barcode" | "box" | "not_found" | "invalid" | "seasons_required" | "not_ready" | "failed" };
 
 /** Adds a barcode later to one of your copies that has none
  * (add_barcode_later.sql). Known for this title → verified at once (and the
@@ -401,7 +401,7 @@ export async function addBarcodeToCopy(itemGroupId: string, rawBarcode: string):
     return { status: "conflict", title, isBox: !!r.is_box };
   }
   if (r.status === "verified") return { status: "verified", type: r.type, editie: r.editie };
-  if (r.status === "pending" || r.status === "has_barcode" || r.status === "box" || r.status === "not_found" || r.status === "invalid") {
+  if (r.status === "pending" || r.status === "has_barcode" || r.status === "box" || r.status === "not_found" || r.status === "invalid" || r.status === "seasons_required") {
     return { status: r.status } as AddBarcodeResult;
   }
   return { status: "failed" };

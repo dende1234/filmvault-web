@@ -7,7 +7,8 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n/locale-provider";
 import { approvePendingBarcode, approvePendingBox, rejectPendingBarcode } from "@/actions/approvals";
-import { adminApprovePendingWithChanges } from "@/actions/admin";
+import { adminApprovePendingWithChanges, adminSetPendingSeasons } from "@/actions/admin";
+import { getSeriesSeasons, type SeasonOption } from "@/actions/series";
 import { getEdities, getMediaTypes } from "@/actions/media-types";
 import type { PendingBarcode, PendingBarcodeCardItem } from "@/types/database";
 import { posterUrl, type MovieSummaryDto } from "@/types/tmdb";
@@ -19,10 +20,10 @@ import { MovieSearchPickerDialog } from "@/components/movie-search-picker-dialog
 import { MediaTypeEditieSelects } from "@/components/admin/media-type-editie-selects";
 import { isSeries, titleHref } from "@/lib/titles";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ListChecks, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useSeasonsLabel } from "@/components/seasons-picker";
+import { SeasonsPicker, useSeasonsLabel } from "@/components/seasons-picker";
 
 function matches(card: PendingBarcodeCardItem, query: string): boolean {
   const q = query.toLowerCase();
@@ -30,7 +31,80 @@ function matches(card: PendingBarcodeCardItem, query: string): boolean {
   return card.boxName.toLowerCase().includes(q) || card.items.some((i) => i.pending.movie_title.toLowerCase().includes(q));
 }
 
-/** Correct film/type/editie of a single submission, then approve it. */
+/** A submitted series needs its seasons before it can be approved (series_seasons.sql). */
+const needsSeasons = (p: PendingBarcode) => isSeries(p.tmdb_movie_id) && !p.seasons?.length;
+
+/** Seasons of a series' TMDB entry, loaded when a dialog opens. */
+function useSeasonOptions(titleId: number | null) {
+  const [options, setOptions] = useState<SeasonOption[]>([]);
+  useEffect(() => {
+    if (titleId === null || !isSeries(titleId)) return;
+    let cancelled = false;
+    getSeriesSeasons(titleId)
+      .then((o) => !cancelled && setOptions(o))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [titleId]);
+  return titleId !== null && isSeries(titleId) ? options : [];
+}
+
+/** Set or correct the seasons of one submitted series (also inside a box). */
+function PendingSeasonsDialog({
+  pending,
+  onOpenChange,
+  onSaved,
+}: {
+  pending: PendingBarcode | null;
+  onOpenChange: (open: boolean) => void;
+  onSaved: (pendingId: string, seasons: number[]) => void;
+}) {
+  const { t } = useT();
+  // Remounted per submission (key={pending.id}).
+  const [seasons, setSeasons] = useState<number[]>(pending?.seasons ?? []);
+  const [saving, setSaving] = useState(false);
+  const options = useSeasonOptions(pending?.tmdb_movie_id ?? null);
+
+  async function save() {
+    if (!pending || seasons.length === 0) return;
+    setSaving(true);
+    const r = await adminSetPendingSeasons(pending.id, seasons).catch(() => ({ error: "failed" as const }));
+    setSaving(false);
+    if (r.error) {
+      toast.error(t(r.error === "not_ready" ? "pending_seasons_not_ready" : "pending_barcodes_error_action"));
+      return;
+    }
+    toast.success(t("pending_seasons_saved"));
+    onSaved(pending.id, seasons);
+  }
+
+  return (
+    <Dialog open={pending !== null} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("pending_seasons_title", pending?.movie_title ?? "")}</DialogTitle>
+        </DialogHeader>
+        {pending && (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm text-muted-foreground">{t("pending_seasons_hint")}</p>
+            <SeasonsPicker seasons={options} value={seasons} onChange={setSeasons} />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+                {t("action_cancel")}
+              </Button>
+              <Button className="flex-1" disabled={seasons.length === 0 || saving} onClick={save}>
+                {t("action_save")}
+              </Button>
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** Correct film/type/editie (and a series' seasons) of a single submission, then approve it. */
 function PendingEditDialog({
   pending,
   onOpenChange,
@@ -51,6 +125,9 @@ function PendingEditDialog({
   const [editie, setEditie] = useState(pending?.editie ?? "Normaal");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [seasons, setSeasons] = useState<number[]>(pending?.seasons ?? []);
+  const seriesSeasons = useSeasonOptions(movie?.id ?? null);
+  const series = !!movie && isSeries(movie.id);
 
   useEffect(() => {
     if (!pending) return;
@@ -64,7 +141,7 @@ function PendingEditDialog({
     if (!pending || !movie) return;
     setIsSaving(true);
     try {
-      await adminApprovePendingWithChanges(pending.id, movie.id, type, editie);
+      await adminApprovePendingWithChanges(pending.id, movie.id, type, editie, series ? seasons : undefined);
       onApproved(pending.id);
     } catch {
       toast.error(t("pending_barcodes_error_action"));
@@ -94,11 +171,17 @@ function PendingEditDialog({
                 onTypeChange={setType}
                 onEditieChange={setEditie}
               />
+              {series && (
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-xs text-muted-foreground">{t("series_pick_seasons")}</p>
+                  <SeasonsPicker seasons={seriesSeasons} value={seasons} onChange={setSeasons} />
+                </div>
+              )}
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
                   {t("action_cancel")}
                 </Button>
-                <Button className="flex-1" disabled={!movie || isSaving} onClick={save}>
+                <Button className="flex-1" disabled={!movie || isSaving || (series && seasons.length === 0)} onClick={save}>
                   {t("action_accept")}
                 </Button>
               </div>
@@ -111,6 +194,7 @@ function PendingEditDialog({
         onOpenChange={setPickerOpen}
         onSelect={(m) => {
           setMovie(m);
+          setSeasons([]);
           setPickerOpen(false);
         }}
       />
@@ -128,6 +212,7 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
   const [query, setQuery] = useState("");
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
   const [editing, setEditing] = useState<PendingBarcode | null>(null);
+  const [seasonsFor, setSeasonsFor] = useState<PendingBarcode | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const seasonsLabel = useSeasonsLabel();
 
@@ -141,7 +226,26 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
 
   const filtered = useMemo(() => (query.trim() ? cards.filter((c) => matches(c, query.trim())) : cards), [cards, query]);
 
+  const cardPendings = (card: PendingBarcodeCardItem) => (card.kind === "single" ? [card.item.pending] : card.items.map((i) => i.pending));
+  const missingSeasons = (card: PendingBarcodeCardItem) => cardPendings(card).some(needsSeasons);
+
+  function seasonsSaved(pendingId: string, seasons: number[]) {
+    setSeasonsFor(null);
+    const patch = (p: PendingBarcode) => (p.id === pendingId ? { ...p, seasons } : p);
+    setCards((prev) =>
+      prev.map((c) =>
+        c.kind === "single"
+          ? { ...c, item: { ...c.item, pending: patch(c.item.pending) } }
+          : { ...c, items: c.items.map((i) => ({ ...i, pending: patch(i.pending) })) },
+      ),
+    );
+  }
+
   async function approve(card: PendingBarcodeCardItem) {
+    if (missingSeasons(card)) {
+      toast.error(t("pending_seasons_required"));
+      return;
+    }
     setProcessingIds((prev) => new Set([...prev, ...card.pendingIds]));
     try {
       if (card.kind === "single") await approvePendingBarcode(card.item.pending);
@@ -180,7 +284,11 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
   const targets = () => (selected.size > 0 ? filtered.filter((c) => selected.has(c.id)) : filtered);
 
   async function approveAll() {
-    for (const card of targets()) await approve(card);
+    const all = targets();
+    // Series without seasons wait: those need a choice per card.
+    const ready = all.filter((c) => !missingSeasons(c));
+    for (const card of ready) await approve(card);
+    if (ready.length < all.length) toast.warning(t("pending_seasons_skipped", all.length - ready.length));
     setSelected(new Set());
   }
 
@@ -275,8 +383,20 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
                     )}
                     {card.kind === "box" &&
                       card.items.map((i) => (
-                        <p key={i.pending.id} className="text-xs text-muted-foreground">
-                          {i.pending.movie_title}
+                        <p key={i.pending.id} className="flex flex-wrap items-center gap-x-2 text-xs text-muted-foreground">
+                          <span>
+                            {i.pending.movie_title}
+                            {isSeries(i.pending.tmdb_movie_id) && ` · ${seasonsLabel(i.pending.seasons)}`}
+                          </span>
+                          {isSeries(i.pending.tmdb_movie_id) && (
+                            <button
+                              type="button"
+                              className="font-medium text-primary hover:underline"
+                              onClick={() => setSeasonsFor(i.pending)}
+                            >
+                              {t(needsSeasons(i.pending) ? "pending_seasons_choose" : "pending_seasons_change")}
+                            </button>
+                          )}
                         </p>
                       ))}
                     {(submitter || first.submitted_at) && (
@@ -327,10 +447,27 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
                         {t("pending_barcode_target_collections", targetCollectionNames.join(", "))}
                       </p>
                     )}
+                    {missingSeasons(card) && (
+                      <p className="mt-1 flex items-start gap-1.5 rounded-md bg-warning/10 px-2 py-1 text-xs text-warning">
+                        <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+                        <span>{t("pending_seasons_required")}</span>
+                      </p>
+                    )}
                     <div className="mt-2 flex flex-wrap gap-2">
-                      <Button size="sm" disabled={isProcessing} onClick={() => approve(card)}>
+                      <Button size="sm" disabled={isProcessing || missingSeasons(card)} onClick={() => approve(card)}>
                         {t("action_accept")}
                       </Button>
+                      {card.kind === "single" && isSeries(card.item.pending.tmdb_movie_id) && (
+                        <Button
+                          size="sm"
+                          variant={needsSeasons(card.item.pending) ? "default" : "outline"}
+                          disabled={isProcessing}
+                          onClick={() => setSeasonsFor(card.item.pending)}
+                        >
+                          <ListChecks className="size-4" aria-hidden />
+                          {t(needsSeasons(card.item.pending) ? "pending_seasons_choose" : "pending_seasons_change")}
+                        </Button>
+                      )}
                       <Button size="sm" variant="outline" disabled={isProcessing} onClick={() => reject(card)}>
                         {t("action_reject")}
                       </Button>
@@ -347,6 +484,13 @@ export function PendingBarcodesList({ cards: initialCards }: { cards: PendingBar
           })}
         </div>
       )}
+
+      <PendingSeasonsDialog
+        key={`seasons-${seasonsFor?.id ?? "none"}`}
+        pending={seasonsFor}
+        onOpenChange={(open) => !open && setSeasonsFor(null)}
+        onSaved={seasonsSaved}
+      />
 
       <PendingEditDialog
         key={editing?.id ?? "none"}

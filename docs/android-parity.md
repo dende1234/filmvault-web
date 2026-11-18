@@ -50,6 +50,7 @@ of failing.
 
 ## Behaviour to keep in step
 
+- A series (negative `tmdb_movie_id`) is always saved and submitted with its seasons, also inside a box (`series_seasons.sql`). Approving a pending series without seasons fails with `seasons_required`; admins set them with `admin_set_pending_seasons(id, seasons)`. Android should ask for seasons when adding a series, single or in a box.
 - Formats and editions are whatever is in `media_types` / `edities` (managed by admins, combos included); `media_types_check.sql` removed the old fixed lists in `*_type_check` / `*_editie_check`. Android should read the lists from those tables, not hard-code them.
 - Combo formats such as `4K + Blu-ray` (`lib/formats.ts`) are stored as one `type` string.
 - Only admins can change `profiles.is_admin` (`protect_admin_flag.sql`); this is

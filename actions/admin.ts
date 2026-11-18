@@ -9,6 +9,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/require-admin";
 import { logAdminAction } from "@/lib/admin/log";
+import { isMissingError } from "@/lib/admin/migrations";
 import { findBarcodesByCode } from "@/actions/barcodes";
 import { adminRegisterBarcode, approvePendingBarcode } from "@/actions/approvals";
 import { getTitleDetail, searchMovies, searchTv } from "@/lib/tmdb/server";
@@ -187,11 +188,27 @@ export async function adminMatchBarcodeRows(rows: BulkBarcodeRowInput[]): Promis
 /** "Aanpassen & goedkeuren": corrects a single (non-box) pending submission
  * — film, type, editie — and then approves it. Only ids/values come from
  * the client; the title/poster are resolved from TMDB server-side. */
+/** Sets the seasons of a submitted series (single or in a box) before it is
+ * approved; the submitter's own copy gets them too (series_seasons.sql). */
+export async function adminSetPendingSeasons(pendingId: string, seasons: number[]): Promise<{ error: "not_ready" | "failed" | null }> {
+  await requireAdmin();
+  const clean = Array.from(new Set(seasons.filter((n) => Number.isInteger(n) && n >= 0 && n <= 1000))).sort((a, b) => a - b);
+  if (clean.length === 0) return { error: "failed" };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_set_pending_seasons", { p_id: pendingId, p_seasons: clean });
+  if (isMissingError(error)) return { error: "not_ready" };
+  if (error) return { error: "failed" };
+  await logAdminAction("pending_seasons_set", { type: "pending_barcode", id: pendingId }, { seasons: clean });
+  return { error: null };
+}
+
 export async function adminApprovePendingWithChanges(
   pendingId: string,
   tmdbMovieId: number,
   type: string,
   editie: string,
+  /** Required when the title is a series. */
+  seasons?: number[],
 ): Promise<void> {
   await requireAdmin();
   const supabase = await createClient();
@@ -212,11 +229,19 @@ export async function adminApprovePendingWithChanges(
     changes.movie_title = movie.title;
     changes.movie_poster = movie.poster_path;
   }
+  const series = (changes.tmdb_movie_id ?? pending.tmdb_movie_id) < 0;
+  if (series && !seasons?.length) throw new Error("seasons_required");
   const { error: updateError } = await supabase.from("pending_barcodes").update(changes).eq("id", pendingId);
   if (updateError) throw updateError;
+  if (series) {
+    // Also puts the seasons on the submitter's own copy.
+    const r = await adminSetPendingSeasons(pendingId, seasons!);
+    if (r.error) throw new Error(r.error);
+    changes.seasons = seasons;
+  }
 
   await approvePendingBarcode({ ...pending, ...changes });
-  await logAdminAction("barcode_approve_with_changes", { type: "pending_barcode", id: pendingId }, { tmdbMovieId, type, editie });
+  await logAdminAction("barcode_approve_with_changes", { type: "pending_barcode", id: pendingId }, { tmdbMovieId, type, editie, ...(seasons?.length ? { seasons } : {}) });
 }
 
 export type GrowthStats = {
